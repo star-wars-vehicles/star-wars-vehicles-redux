@@ -25,13 +25,15 @@ properties.Add("allegiance", {
 	MenuOpen = function(self, option, ent, tr)
 		local submenu = option:AddSubMenu()
 
-		for _, allegiance in pairs(ent.Allegiances) do
-			local opt = submenu:AddOption(allegiance, function()
-				self:SetAllegiance(ent, allegiance)
-			end)
+		for _, faction in pairs(SWVR.Allegiances) do
+			for __, allegiance in pairs(faction) do
+				local opt = submenu:AddOption(allegiance, function()
+					self:SetAllegiance(ent, allegiance)
+				end)
 
-			if (ent:GetAllegiance() == allegiance) then
-				opt:SetChecked(true)
+				if (ent:GetAllegiance() == allegiance) then
+					opt:SetChecked(true)
+				end
 			end
 		end
 	end,
@@ -94,7 +96,8 @@ properties.Add("repair", {
 	Receive = function(self, length, player)
 		local ent = net.ReadEntity()
 		if (not self:Filter(ent, player)) then return end
-		ent:SetHealth(ent:GetStartHealth())
+		ent:SetCurHealth(ent:GetStartHealth())
+		ent:SetShieldHealth(ent:GetStartShieldHealth())
 	end
 })
 

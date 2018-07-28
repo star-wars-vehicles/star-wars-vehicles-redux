@@ -18,17 +18,24 @@ function ENT:SpawnFunction(ply, tr, ClassName)
 end
 
 function ENT:Initialize()
-  -- MUST call setup to initialize ship limitations
-  self:Setup(1000, 1500, nil, 550, 7, false, true)
-  self.Freelook = true
-  self.HoverStart = 0
+  -- Call setup to initialize ship limitations
+  self:Setup({
+    health = 1000,
+    shields = 600,
+    speed = 1500,
+    verticalspeed = 550,
+    acceleration = 7,
+    back = false,
+    roll = true,
+    freelook = true
+  })
 
   -- Adding a weapon group. Must be done BEFORE weapons are added to it.
   self:AddWeaponGroup("Pilot", "weapons/rz2_shoot.wav", self:InitBullet{
     damage = 50,
     color = "red",
     delay = 0.12,
-    overheatAmount = 30
+    overheatAmount = 40
   })
 
   -- Adding weapons
@@ -48,7 +55,6 @@ function ENT:Initialize()
   self:AddEvent("OnCritical", function()
     self:EmitSound("startrek/ships/kelvin/torpedo/hit0" .. tostring( math.Round( math.random( 1, 4 ) ) ) .. ".wav", 500, 255, 1, CHAN_AUTO)
   end, false)
-
 
   -- Initialize the base, do not remove.
   self.BaseClass.Initialize(self)

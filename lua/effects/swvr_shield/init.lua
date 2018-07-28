@@ -45,6 +45,9 @@ end
    Draw the effect
 ---------------------------------------------------------]]
 function EFFECT:Render()
+  local ship = LocalPlayer():GetNWEntity("Ship", NULL)
+  if IsValid(ship) and ship.IsSWVRVehicle and ship:GetFirstPerson() and ship == self:GetParent() then return end
+
   -- What fraction towards finishing are we at
   local Fraction = (self.LifeTime - CurTime()) / self.Time
   local ColFrac = (Fraction - 0.5) * 2

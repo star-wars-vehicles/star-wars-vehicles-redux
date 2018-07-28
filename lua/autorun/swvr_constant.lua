@@ -27,8 +27,10 @@ function SWVR:LightOrDark(allegiance)
     return table.HasValue(self.Allegiances.Light, allegiance) and "Light" or table.HasValue(self.Allegiances.Dark, allegiance) and "Dark" or "Neutral"
 end
 
-function SWVR:IsSWVehicle(ent)
-    return ent.IsSWVehicle or ent.IsSWVRVehicle
+local entity = FindMetaTable("Entity")
+
+function entity:IsStarWarsVehicle()
+    return Either(isbool(self.IsSWVehicle) or isbool(self.IsSWVRVehicle), self.IsSWVehicle or self.IsSWVRVehicle, false)
 end
 
 SWVR.WEAPON_GUN = 0

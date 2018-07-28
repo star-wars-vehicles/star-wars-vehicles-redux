@@ -7,7 +7,6 @@ ENT.Type = "vehicle"
 ENT.AutomaticFrameAdvance = true
 ENT.VehicleType = nil
 ENT.IsSWVRVehicle = true
-ENT.Keys = {KEY_1, KEY_2, KEY_3}
 
 --- Creates networked variables for the entity.
 -- This creates setter and getter functions for each variable.
@@ -42,6 +41,7 @@ function ENT:SetupDataTables()
   self:NetworkVar("Float", 8, "MinSpeed")
   self:NetworkVar("Float", 9, "AccelSpeed")
   self:NetworkVar("Float", 10, "ShieldHealth")
+  self:NetworkVar("Float", 11, "StartShieldHealth")
   self:NetworkVar("Entity", 0, "Pilot")
   self:NetworkVar("Entity", 1, "Avatar")
   self:NetworkVar("Vector", 0, "FPVPos")

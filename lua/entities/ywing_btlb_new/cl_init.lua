@@ -17,9 +17,21 @@ function ENT:Initialize()
   -- Adding a clientside part
   self:AddPart("Cockpit", "models/ywing/ywing_btlb_test_cockpit.mdl")
 
+  local engineOptions = {
+    startsize = 65,
+    endsize = 40,
+    lifetime =  2.7,
+    color =  Color(255, 0, 0),
+    spirte = "sprites/bluecore"
+  }
+
   -- Adding engine effects
-  self:AddEngine(Vector(-630, 240, 60), 65, 40, 2.7, Color(255, 0, 0), "sprites/bluecore")
-  self:AddEngine(Vector(-630, -240, 60), 65, 40, 2.7, Color(255, 0, 0), "sprites/bluecore")
+  self:AddEngine(Vector(-630, 240, 60), engineOptions)
+  self:AddEngine(Vector(-630, -240, 60), engineOptions)
+
+  self:AddLight(Vector(-630, 240, 60), {
+    size = 100
+  })
 
   -- Initialize the base, do not remove.
   self.BaseClass.Initialize(self)
