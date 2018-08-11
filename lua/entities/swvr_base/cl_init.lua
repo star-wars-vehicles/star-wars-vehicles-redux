@@ -32,7 +32,7 @@ function ENT:Setup(options)
     if (istable(options.cockpit) and util.IsValidModel(options.cockpit.path)) then
       self.Cockpit = {
         Path = options.cockpit.path,
-        Pos = options.cockpit.pos and self:GetRelativePos(options.cockpit.pos) or nil,
+        Pos = options.cockpit.pos and self:LocalToWorld(options.cockpit.pos) or nil,
         Ang = options.cockpit.ang or nil
       }
     elseif (isstring(options.cockpit)) then
@@ -251,7 +251,7 @@ function ENT:EngineEffects()
   local id = self:EntIndex()
 
   for k, v in pairs(self.Engines) do
-    local pos = self:GetRelativePos(v.Pos)
+    local pos = self:LocalToWorld(v.Pos)
     local sprite = self.FXEmitter:Add(v.Sprite, pos)
     sprite:SetVelocity(normal)
     sprite:SetDieTime(FrameTime() * v.Lifetime)
@@ -320,7 +320,7 @@ function ENT:AddLight(pos, options)
   self.Lights = self.Lights or {}
 
   self.Lights[table.Count(self.Lights) + 1] = {
-    Pos = self:GetRelativePos(pos),
+    Pos = self:LocalToWorld(pos),
     Brightness or options.brightness or 8,
     Size = options.size or {1, 100},
     Decay = options.decay or 1024,
@@ -341,7 +341,7 @@ function ENT:AddPart(name, path, pos, ang)
 
   self.Parts[name] = {
     Path = path,
-    Pos = pos and self:GetRelativePos(pos) or nil,
+    Pos = pos and self:LocalToWorld(pos) or nil,
     Ang = ang or nil
   }
 

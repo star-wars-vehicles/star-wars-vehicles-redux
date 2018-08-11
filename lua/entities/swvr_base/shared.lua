@@ -3,7 +3,7 @@
 -- @version 0.1
 ENT.RenderGroup = RENDERGROUP_OPAQUE
 ENT.Base = "base_anim"
-ENT.Type = "vehicle"
+ENT.Type = "anim"
 ENT.AutomaticFrameAdvance = true
 ENT.VehicleType = nil
 ENT.IsSWVRVehicle = true

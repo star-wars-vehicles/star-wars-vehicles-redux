@@ -1,13 +1,10 @@
 AddCSLuaFile("shared.lua")
 AddCSLuaFile("cl_events.lua")
 AddCSLuaFile("cl_init.lua")
+AddCSLuaFile("libs/lodash.lua")
 
 include("shared.lua")
 include("events.lua")
-
-ENT.WEAPON_TYPES = {
-  GUN = 0, PROTON_BOMB = 1, PROTON_TORPEDO = 2, CONCUSSION_MISSILE = 3
-}
 
 --- Spawns the entity.
 -- This is required for the entity to spawn.
@@ -58,8 +55,8 @@ function ENT:Initialize()
   }
 
   self.FireFunctions = {
-    [self.WEAPON_TYPES.GUN] = self.FireGuns,
-    [self.WEAPON_TYPES.PROTON_TORPEDO] = self.FireProtonTorpedo
+    [WEAPON_CANNON] = self.FireGuns,
+    [WEAPON_PROTON_TORPEDO] = self.FireProtonTorpedo
   }
 
   self.Accel = {
@@ -177,6 +174,8 @@ function ENT:ThinkWeapons()
           end
         end
       end
+
+      print(group.Overheat, group.OverheatMax)
 
       if (group.CanOverheat and group.Overheat >= group.OverheatMax) then
         group.Overheated = true
@@ -298,13 +297,13 @@ end
 -- @return A bullet structure.
 function ENT:InitBullet(bullet)
   local tbl = {
-    Type = self.WEAPON_TYPES.GUN,
+    Type = WEAPON_CANNON,
     Damage = bullet.damage or 75,
     Force = bullet.damage or 75,
     TracerName = (bullet.color or "green") .. "_tracer_fx",
     IgnoreEntity = self,
     Delay = bullet.delay or 0.2,
-    Overheat = bullet.overheat or true,
+    Overheat = Either(bullet.overheat ~= nil, tobool(bullet.overheat), true),
     OverheatAmount = bullet.overheatAmount or 50,
     Track = bullet.track or false,
     Callback = function(p, tr, damage)
@@ -336,7 +335,7 @@ end
 -- @return A proton bomb structure.
 function ENT:InitProtonBomb(data)
   return {
-    Type = self.WEAPON_TYPES.PROTON_BOMB,
+    Type = WEAPON_PROTON_BOMB,
     Damage = data.damage or 600,
     IsWhite = data.isWhite or false,
     StartSize = data.startSize or 20,
@@ -348,7 +347,7 @@ end
 
 function ENT:InitConcussionMissile(data)
   return {
-    Type = self.WEAPON_TYPES.CONCUSSION_MISSILE,
+    Type = WEAPON_CONCUSSION_MISSILE,
     Damage = data.damge or 600,
     Ent = "proton_torpedo",
     SpriteColor = data.color or Color(255, 255, 255, 255),
@@ -361,7 +360,7 @@ end
 function ENT:InitProtonTorpedo(data)
   data = data or {}
   return {
-    Type = self.WEAPON_TYPES.PROTON_TORPEDO,
+    Type = WEAPON_PROTON_TORPEDO,
     Damage = data.damage or 600,
     Ent = "proton_torpedo",
     SpriteColor = data.color or Color(255, 255, 255, 255),
@@ -419,7 +418,7 @@ function ENT:AddWeaponGroup(name, snd, bullet)
     Bullet = bullet,
     Delay = bullet.Delay or 0.25,
     Cooldown = CurTime(),
-    CanOverheat = Either(isbool(bullet.Overheat), bullet.Overheat, true),
+    CanOverheat = Either(isbool(bullet.Overheat), tobool(bullet.Overheat), true),
     OverheatMax = bullet.OverheatAmount,
     Overheat = 0,
     OverheatCooldown = 2,
@@ -427,6 +426,22 @@ function ENT:AddWeaponGroup(name, snd, bullet)
     Name = name,
     Track = bullet.Track or false
   }
+
+  function group:CanOverheat(value)
+    if value ~= nil then
+      self.CanOverheat = tobool(value)
+    end
+
+    return self.CanOverheat
+  end
+
+  function group:Overheated(value)
+    if value ~= nil then
+      self.Overheated = tobool(value)
+    end
+
+    return self.Overheated
+  end
 
   self.WeaponGroups[name] = group
 end
@@ -453,7 +468,7 @@ function ENT:AddWeapon(group, name, pos, options)
   self.Weapons[table.Count(self.Weapons) + 1] = {
     Group = group,
     Name = name,
-    Pos = self:GetRelativePos(pos),
+    Pos = self:LocalToWorld(pos),
     Gun = nil,
     Parent = (options.parent and isstring(options.parent)) and options.parent or nil
   }
@@ -496,9 +511,9 @@ function ENT:AddSeat(name, pos, ang, options)
           error("Tried to create a seat (" .. name .. ") with weapon group (" .. group[i] .. ") that does not exist!")
         end
 
-        if self.WeaponGroups[group[i]].Bullet.Type ~= SWVR.WEAPON_GUN and not hasEnergyWeapon then
+        if self.WeaponGroups[group[i]].Bullet.Type ~= WEAPON_CANNON and not hasEnergyWeapon then
           hasEnergyWeapon = true
-        elseif self.WeaponGroups[group[i]].Bullet.Type ~= SWVR.WEAPON_GUN and hasEnergyWeapon then
+        elseif self.WeaponGroups[group[i]].Bullet.Type ~= WEAPON_CANNON and hasEnergyWeapon then
           error("Seat (" .. name .. ") cannot have more than one energy weapon!")
         end
       end
@@ -514,9 +529,9 @@ function ENT:AddSeat(name, pos, ang, options)
     Name = name,
     Visible = Either(isbool(options.visible), options.visible, true),
     Weapons = buttonMap,
-    Pos = self:GetRelativePos(pos),
+    Pos = self:LocalToWorld(pos),
     Ang = ang,
-    ExitPos = self:GetRelativePos(options.exitpos)
+    ExitPos = self:LocalToWorld(options.exitpos)
   }
 end
 
@@ -548,7 +563,7 @@ function ENT:AddPilot(pilotpos, pilotang, options)
 
   self.Seats["Pilot"] = {
     Weapons = buttonMap,
-    ExitPos = self:GetRelativePos(options.exitpos),
+    ExitPos = self:LocalToWorld(options.exitpos),
     FPVPos = options.fpvpos or nil,
     PilotPos = pilotpos or nil,
     PilotAng = pilotang or nil,
@@ -568,7 +583,7 @@ function ENT:AddPart(name, path, pos, ang, options)
 
   self.Parts[name] = {
     Path = path,
-    Pos = pos and self:GetRelativePos(pos) or self:GetRelativePos(Vector(0, 0, 0)),
+    Pos = pos and self:LocalToWorld(pos) or self:LocalToWorld(Vector(0, 0, 0)),
     Ang = ang or nil,
     Parent = options.parent,
     Callback = options.callback or nil,
@@ -579,7 +594,7 @@ end
 --- Initialize the weapon locations.
 -- Create the weapons for the ship, stores internally.
 function ENT:SpawnWeapons()
-  for k, v in pairs(self.Weapons) do
+  for k, v in pairs(self.Weapons or {}) do
     local e = ents.Create("prop_physics")
     e:SetModel("models/props_junk/PopCan01a.mdl")
     e:SetPos(v.Pos)
@@ -632,7 +647,7 @@ function ENT:SpawnPilot()
   if IsValid(self:GetPilot()) and self.Seats["Pilot"].PilotPos then
     local e = ents.Create("prop_physics")
     e:SetModel(self:GetPilot():GetModel())
-    e:SetPos(self:GetRelativePos(self.Seats["Pilot"].PilotPos))
+    e:SetPos(self:LocalToWorld(self.Seats["Pilot"].PilotPos))
     local ang = self:GetAngles()
 
     if self.Seats["Pilot"].PilotAng then
@@ -871,7 +886,7 @@ end
 -- @param pos position to spawn test prop.
 function ENT:TestPos(pos)
   local e = ents.Create("prop_physics")
-  e:SetPos(self:GetRelativePos(pos))
+  e:SetPos(self:LocalToWorld(pos))
   e:SetModel("models/props_junk/PopCan01a.mdl")
   e:Spawn()
   e:Activate()
@@ -1546,3 +1561,5 @@ end)
 hook.Add("Initialize", "SWVRInitialize", function()
   util.AddNetworkString("SWVREvent")
 end)
+
+hook.Add("PlayerButtonDown")

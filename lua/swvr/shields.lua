@@ -1,0 +1,1 @@
+shields = shields or {}

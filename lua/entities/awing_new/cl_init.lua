@@ -12,9 +12,6 @@ function ENT:Initialize()
 
   self:SetupDefaults()
 
-  -- Adding a clientside sound
-  --self:AddSound("Engine", "vehicles/rz2_engine_loop.wav")
-
   -- Adding engine effects
   self:AddEngine(Vector(-105, 42, 40), {
     startsize = 18,
@@ -35,12 +32,6 @@ function ENT:Initialize()
   self:AddEvent("OnCritical", function()
     if LocalPlayer():GetNWEntity("Ship") ~= self then return end
     surface.PlaySound("atat/atat_shoot.wav")
-  end)
-
-  self:AddEvent("OnShieldsDown", function()
-    if LocalPlayer():GetNWEntity("Ship") ~= self then return end -- On people in the ship!
-
-    chat.AddText(Color(255, 0, 0), "[WARNING] ", Color(255, 255, 255), "SHIELDS OFFLINE")
   end)
 
   -- Initialize the base, do not remove.
