@@ -19,7 +19,6 @@ spawnmenu.AddContentType("swvrvehicle", function(container, obj)
   icon:SetColor(Color(205, 92, 92, 255))
 
   icon.DoClick = function()
-    print("AHHH")
     RunConsoleCommand("gm_spawnsent", obj.spawnname)
     surface.PlaySound("ui/buttonclickrelease.wav")
   end
