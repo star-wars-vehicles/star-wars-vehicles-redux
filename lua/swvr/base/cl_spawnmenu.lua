@@ -19,6 +19,7 @@ spawnmenu.AddContentType("swvrvehicle", function(container, obj)
   icon:SetColor(Color(205, 92, 92, 255))
 
   icon.DoClick = function()
+    print("AHHH")
     RunConsoleCommand("gm_spawnsent", obj.spawnname)
     surface.PlaySound("ui/buttonclickrelease.wav")
   end
@@ -100,7 +101,7 @@ hook.Add("SWVRVehiclesTab", "AddEntityContent", function(pnlContent, tree, node)
       self.PropPanel:SetTriggerSpawnlistChange(false)
 
       for k, ent in SortedPairsByMemberValue(v, "PrintName") do
-        spawnmenu.CreateContentIcon(ent.ScriptedEntityType == "entity" and "swvrvehicle" or "swvrweapon", self.PropPanel, {
+        spawnmenu.CreateContentIcon(ent.Category ~= "Weapons" and "swvrvehicle" or "swvrweapon", self.PropPanel, {
           nicename = ent.PrintName or ent.ClassName,
           spawnname = ent.ClassName,
           material = "entities/" .. ent.ClassName .. ".png",
