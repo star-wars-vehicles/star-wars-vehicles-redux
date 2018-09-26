@@ -1,0 +1,24 @@
+"VertexLitGeneric"
+
+//Y-wing
+//made by
+//Al Meerow
+{
+	"$baseTexture"		"ywing/cpitskin"
+	//"$bumpmap"		"ywing/cpitskin_norm"
+
+	"$envmap"		"env_cubemap"
+	"$envmapmask"		"ywing/cpitskin_SPEC"
+	"$envmapsaturation" 	"0.2"
+	"$envmaptint"		"[0.8 0.8 0.8]"
+
+	//"$Phong"		"1"
+	//"$PhongBoost"		"1.8"
+	//"$phongexponent"	"29.8"
+	//"$PhongFresnelRanges"	"[.05 .5 1]"
+
+	"$detail"		"detail\metal_detail_01"
+	"$detailscale"		"4.2"
+	"$detailblendfactor"	"0.65"
+	"$detailblendmode"	"0"
+}

@@ -1,0 +1,19 @@
+"VertexLitGeneric"
+
+//Y-wing
+//made by
+//Al Meerow
+{
+	"$baseTexture"		"ywing/nacelle"
+	"$bumpmap"		"ywing/nacelle_norm"
+
+	"$Phong"		"1"
+	"$PhongBoost"		"1.8"
+	"$phongexponent"	"29.8"
+	"$PhongFresnelRanges"	"[.05 .5 1]"
+
+	"$detail"		"detail\metal_detail_01"
+	"$detailscale"		"3.21"
+	"$detailblendfactor"	"1.15"
+	"$detailblendmode"	"0"
+}
