@@ -1,5 +1,5 @@
 ENT.Base = "swvr_base"
-ENT.Category = "Star Wars Vehicles: Rebels"
+ENT.Category = "Rebels"
 ENT.Spawnable = false
 ENT.AdminSpawnable = false
 ENT.PrintName = "Y-Wing New"

@@ -608,7 +608,8 @@ function ENT:HUDDrawOverheating()
     end
   end
 
-  local x, y = SWVR:XYIn3D(vpos)
+  local screenpos = vpos:ToScreen()
+  local x, y = screenpos.x, screenpos.y
   local o = self:GetNWInt("Weapon" .. seat .. "Overheat") / self:GetNWInt("Weapon" .. seat .. "OverheatMax") * 100
   local per = o / 100
   w = w * per
@@ -647,7 +648,8 @@ function ENT:HUDDrawReticles()
     end
   end
 
-  local x, y = SWVR:XYIn3D(vpos)
+  local screenpos = vpos:ToScreen()
+  local x, y = screenpos.x, screenpos.y
   local w, h = ScrW() / 100 * 2, ScrW() / 100 * 2
   surface.SetDrawColor(Color(255, 255, 255, 255))
   surface.SetMaterial(Material(material, "noclamp"))
@@ -880,6 +882,8 @@ function ENT:DispatchListeners(event, ...)
   for k, v in pairs(self.Events[string.upper(event)] or {}) do
     v(...)
   end
+
+  hook.Run("SWVR." .. event, self, ...)
 end
 
 function ENT:AddEvent(name, callback)

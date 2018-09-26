@@ -139,11 +139,3 @@ end
 function ENT:CheckHook(value)
   return not value and value ~= nil
 end
-
-function ENT:GetRelativePos(vector)
-  if not vector or not isvector(vector) then
-    return self:GetPos()
-  end
-
-  return self:GetPos() + self:GetForward() * vector.x * self:GetModelScale() + self:GetRight() * vector.y * self:GetModelScale() + self:GetUp() * vector.z * self:GetModelScale()
-end

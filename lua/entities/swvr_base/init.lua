@@ -1,7 +1,6 @@
 AddCSLuaFile("shared.lua")
 AddCSLuaFile("cl_events.lua")
 AddCSLuaFile("cl_init.lua")
-AddCSLuaFile("libs/lodash.lua")
 
 include("shared.lua")
 include("events.lua")
@@ -142,8 +141,10 @@ function ENT:ThinkWeapons()
     for _, tbl in pairs(self.Players or {}) do
       local ply = tbl.ent
       if not IsValid(ply) then continue end
+
       local seat = ply:GetNWString("SeatName")
       if not self.Seats[seat]["Weapons"][button] then continue end
+
       local group = self.WeaponGroups[self.Seats[seat]["Weapons"][button]]
 
       if (ply:KeyDown(button) and group.Cooldown < CurTime()) then
@@ -151,17 +152,17 @@ function ENT:ThinkWeapons()
           self:FireWeapons(self.Seats[seat]["Weapons"][button])
           group.Overheat = group.Overheat + 1
           group.OverheatCooldown = 2
-          self:DispatchEvent("OnFire", {Name = group.Name, CanOverheat = group.CanOverheat, Overheat = group.Overheat, OverheatMax = group.OverheatMax, Cooldown = group.Cooldown, Delay = group.Delay}, seat)
+          self:DispatchEvent("OnFire", group:GetData(), seat)
 
           if (group.CanOverheat and group.Overheat >= group.OverheatMax) then
-            self:DispatchEvent("OnOverheat", {Name = group.Name, CanOverheat = group.CanOverheat, Overheat = group.Overheat, OverheatMax = group.OverheatMax, Cooldown = group.Cooldown, Delay = group.Delay}, seat)
+            self:DispatchEvent("OnOverheat", group:GetData(), seat)
           end
         elseif (group.Overheated) then
           group.Overheat = group.Overheat - group.OverheatCooldown * 2.5 * FrameTime()
           group.OverheatCooldown = math.Approach(group.OverheatCooldown, 4, 1)
 
           if (group.CanOverheat and group.Overheat <= 0 and group.OverheatCooldown >= 4) then
-            self:DispatchEvent("OnOverheatReset", {Name = group.Name, CanOverheat = group.CanOverheat, Overheat = group.Overheat, OverheatMax = group.OverheatMax, Cooldown = group.Cooldown, Delay = group.Delay}, seat)
+            self:DispatchEvent("OnOverheatReset", group:GetData(), seat)
           end
         end
       else
@@ -174,8 +175,6 @@ function ENT:ThinkWeapons()
           end
         end
       end
-
-      print(group.Overheat, group.OverheatMax)
 
       if (group.CanOverheat and group.Overheat >= group.OverheatMax) then
         group.Overheated = true
@@ -427,20 +426,16 @@ function ENT:AddWeaponGroup(name, snd, bullet)
     Track = bullet.Track or false
   }
 
-  function group:CanOverheat(value)
-    if value ~= nil then
-      self.CanOverheat = tobool(value)
-    end
-
-    return self.CanOverheat
-  end
-
-  function group:Overheated(value)
-    if value ~= nil then
-      self.Overheated = tobool(value)
-    end
-
-    return self.Overheated
+  function group:GetData()
+    return {
+      Name = self.Name,
+      Delay = self.Delay,
+      CanOverheat = self.CanOverheat,
+      OverheatMax = self.OverheatMax,
+      Overheat = self.Overheat,
+      Overheated = self.Overheated,
+      Cooldown = self.Cooldown
+    }
   end
 
   self.WeaponGroups[name] = group
@@ -563,7 +558,7 @@ function ENT:AddPilot(pilotpos, pilotang, options)
 
   self.Seats["Pilot"] = {
     Weapons = buttonMap,
-    ExitPos = self:LocalToWorld(options.exitpos),
+    ExitPos = self:LocalToWorld(options.exitpos or Vector(0, 0, 0)),
     FPVPos = options.fpvpos or nil,
     PilotPos = pilotpos or nil,
     PilotAng = pilotang or nil,
@@ -1117,7 +1112,7 @@ function ENT:GenerateTransponder()
     code = transponder
   end
 
-  return code .. " " .. steamid .. SWVR.CountPlayerOwnedSENTs(self:GetClass(), self:GetCreator())
+  return code .. " " .. steamid .. SWVR:CountPlayerOwnedSENTs(self:GetClass(), self:GetCreator())
 end
 
 function ENT:Handbrake()
@@ -1144,7 +1139,7 @@ end
 --- Simulate the vehicle physics.
 -- This controls the flight physics of the ship, don't recommend touching
 -- @param phys The physics object of the entity.
--- @deltatime Time since the last call.
+-- @param deltatime Time since the last call.
 function ENT:PhysicsSimulate(phys, deltatime)
   local FWD = self.ForwardDir or self:GetForward()
   local UP = self:GetUp() or ZAxis
@@ -1383,6 +1378,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
   end
 end
 
+--- Calculate damage from physics collisions.
 function ENT:PhysicsCollide(colData, collider)
   if (self.LastCollide < CurTime() and not self:IsLanding() and not self:IsTakingOff()) then
     local mass = (colData.HitEntity:GetClass() == "worldspawn") and 1000 or colData.HitObject:GetMass() --if it's worldspawn use 1000 (worldspawns physobj only has mass 1), else normal mass
@@ -1426,6 +1422,7 @@ function ENT:OnTakeDamage(dmg)
   if (self:GetShieldHealth() > 0) then
     self:ShieldEffect()
     self:SetShieldHealth(math.max(0, self:GetShieldHealth() - realDamage))
+    self:DispatchEvent("OnShieldsHit")
 
     if (self:GetShieldHealth() <= 0) then
       self:DispatchEvent("OnShieldsDown")
@@ -1464,11 +1461,7 @@ function ENT:DispatchEvent(event, ...)
   -- I originally wanted to net.Send() the client event to ONLY passengers
   -- I decided this was a bad idea because it limited developers...
   -- If you want to make sure a client event is on passengers only, just check LocalPlayer():GetNWEntity("Ship") == self
-  -- local players = {}
-  -- for k, v in pairs(self.Players or {}) do
-  --   if not IsValid(v.ent) then continue end
-  --   table.insert(players, v.ent)
-  -- end
+
   net.Start("SWVREvent")
     net.WriteString(event)
     net.WriteEntity(self)
@@ -1487,7 +1480,11 @@ function ENT:DispatchEvent(event, ...)
     default = Either(not v.Default, false, default)
   end
 
-  self["_" .. event](self, default, ...)
+  if self["_" .. event] ~= nil then
+    self["_" .. event](self, default, ...)
+  end
+
+  hook.Run("SWVR." .. event, self, default, ...)
 end
 
 function ENT:Rotorwash(b)
@@ -1561,5 +1558,3 @@ end)
 hook.Add("Initialize", "SWVRInitialize", function()
   util.AddNetworkString("SWVREvent")
 end)
-
-hook.Add("PlayerButtonDown")
