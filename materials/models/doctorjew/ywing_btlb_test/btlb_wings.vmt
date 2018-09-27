@@ -1,0 +1,6 @@
+"VertexlitGeneric"
+{
+	"$basetexture" "models/doctorjew/ywing_btlb_test/btlb_wings"
+	"$bumpmap" "models/doctorjew/ywing_btlb_test/btlb_wings_n"
+	"$nocull" 1
+}

@@ -64,7 +64,7 @@ function CANNON:Fire()
 
 	local dir = tr.HitPos - self.Entity:GetPos()
 
-	if self.Group and self.Group:GetCanLock() then
+	if self.Group and self.Group:GetCanLock() or self:GetCanLock() then
 		for _, ply in pairs(self.Parent.Players) do
 			if (IsValid(ply.ent) and ply.ent:GetNWString("SeatName") == self.Group.Seat) then
 				dir = ply.ent:GetAimVector():Angle():Forward()
@@ -88,8 +88,8 @@ function CANNON:Fire()
 	local bullet = table.Copy(self.Bullet)
 	bullet.IgnoreEntity = self.Parent
 	bullet.Src = self.Entity:GetPos()
-	bullet.Attacker = self.Parent:GetPilot() or self.Parent
-	bullet.Spread = Vector(1, 1, 1) * (self.Parent.Velocity.x / 1000)
+	bullet.Attacker = self.Owner
+	bullet.Spread = Vector(1, 1, 1) * (self.Owner.Velocity.x / 1000)
 	bullet.Dir = dir
 
 	self.Entity:FireBullets(bullet)

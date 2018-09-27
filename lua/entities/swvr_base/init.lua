@@ -88,7 +88,7 @@ function ENT:Initialize()
 
   self:InitPhysics()
 
-  self:SpawnParts()
+  --self:SpawnParts()
   --self:SpawnWeapons()
   self:SpawnSeats()
 end
@@ -101,9 +101,11 @@ function ENT:Think()
       else
         self:Exit(false)
       end
-    else
-      self:ThinkWeapons() -- Can't fire if the engine isn't on...
+    --else
+      --self:ThinkWeapons() -- Can't fire if the engine isn't on...
     end
+
+    self:ThinkWeapons()
 
     self:ThinkControls()
 
@@ -192,17 +194,17 @@ end
 function ENT:ThinkParts()
   for k, v in pairs(self.Parts or {}) do
     if not v.Callback then continue end
-    if not IsValid(v.Ent) then continue end
+    if not IsValid(v.Entity) then continue end
     local passenger = (v.Seat and IsValid(self.Seats[v.Seat].Ent) and self.Seats[v.Seat].Ent:GetPassenger(1) ~= NULL) and self.Seats[v.Seat].Ent:GetPassenger(1) or nil
     if not IsValid(passenger) then continue end
-    local newPos, newAng = v.Callback(self, v.Ent, passenger)
+    local newPos, newAng = v.Callback(self, v.Entity, passenger)
 
     if newPos then
-      v.Ent:SetPos(newPos)
+      v.Entity:SetPos(newPos)
     end
 
     if newAng then
-      v.Ent:SetAngles(newAng)
+      v.Entity:SetAngles(newAng)
     end
   end
 end
@@ -213,9 +215,7 @@ function ENT:OnRemove()
   end
 
   for k, v in pairs(self.Parts or {}) do
-    if IsValid(v.Ent) then
-      v.Ent:Remove()
-    end
+    SafeRemoveEntity(v.Entity)
   end
 end
 
@@ -349,9 +349,13 @@ function ENT:AddWeaponGroup(name, weapon, options)
     error("Tried to create weapon group '" .. name .. "' that already exists!")
   end
 
+  options = options or {}
+
   local group = SWVR:WeaponGroup(weapon)
   group:SetName(name)
-  group:SetParent(self)
+  group:SetOwner(self)
+
+  if not options.Parent then group:SetParent(self) end
   group:SetOptions(options)
 
   self.WeaponGroups[name] = group
@@ -377,9 +381,18 @@ function ENT:AddWeapon(group, name, pos, options)
     end
   end
 
+  options = options or {}
+  if isstring(options.Parent) then
+    options.Parent = self.Parts[options.Parent].Entity or self
+  end
+
+
+
   local WeaponGroup = self.WeaponGroups[group]
+
+  options.Name = name
+
   local weapon = WeaponGroup:AddWeapon(options)
-  weapon:SetName(name)
   weapon:SetPos(self:LocalToWorld(pos))
 
   self.Weapons[name] = weapon
@@ -404,7 +417,7 @@ function ENT:AddSeat(name, pos, ang, options)
 
   options = options or {}
   local buttonMap = {}
-  local group = options.weapons or {}
+  local group = options.Weapons or {}
   self.Seats = self.Seats or {}
 
   for k, v in pairs(self.Seats) do
@@ -424,11 +437,11 @@ function ENT:AddSeat(name, pos, ang, options)
           error("Tried to create a seat (" .. name .. ") with weapon group (" .. group[i] .. ") that does not exist!")
         end
 
-        if self.WeaponGroups[group[i]].Bullet.Type ~= WEAPON_CANNON and not hasEnergyWeapon then
-          hasEnergyWeapon = true
-        elseif self.WeaponGroups[group[i]].Bullet.Type ~= WEAPON_CANNON and hasEnergyWeapon then
-          error("Seat (" .. name .. ") cannot have more than one energy weapon!")
-        end
+        -- if self.WeaponGroups[group[i]].Bullet.Type ~= WEAPON_CANNON and not hasEnergyWeapon then
+        --   hasEnergyWeapon = true
+        -- elseif self.WeaponGroups[group[i]].Bullet.Type ~= WEAPON_CANNON and hasEnergyWeapon then
+        --   error("Seat (" .. name .. ") cannot have more than one energy weapon!")
+        -- end
       end
 
       if group[i] and string.upper(group[i]) ~= "NONE" then
@@ -440,11 +453,11 @@ function ENT:AddSeat(name, pos, ang, options)
 
   self.Seats[name] = {
     Name = name,
-    Visible = Either(isbool(options.visible), options.visible, true),
+    Visible = Either(isbool(options.Visible), options.Visible, true),
     Weapons = buttonMap,
     Pos = self:LocalToWorld(pos),
     Ang = ang,
-    ExitPos = self:LocalToWorld(options.exitpos)
+    ExitPos = self:LocalToWorld(options.ExitPos)
   }
 end
 
@@ -456,9 +469,9 @@ end
 function ENT:AddPilot(pilotpos, pilotang, options)
   options = options or {}
   local buttonMap = {}
-  local group = options.weapons or {}
+  local group = options.Weapons or {}
   self.Seats = self.Seats or {}
-  self:SetFPVPos(options.fpvpos or Vector(0, 0, 0))
+  self:SetFPVPos(options.FPVPos or Vector(0, 0, 0))
 
   if table.Count(group) > 3 then
     error("Tried to create a seat (Pilot) with more than three weapon groups!")
@@ -483,7 +496,7 @@ function ENT:AddPilot(pilotpos, pilotang, options)
     Name = "Pilot"
   }
 
-  self:SetCanFPV(options.fpvpos ~= nil)
+  self:SetCanFPV(options.FPVPos ~= nil)
 end
 
 function ENT:AddPart(name, path, pos, ang, options)
@@ -494,14 +507,36 @@ function ENT:AddPart(name, path, pos, ang, options)
     error("You cannot add a part callback without also assigning a seat.")
   end
 
-  self.Parts[name] = {
+  local part = {
     Path = path,
     Pos = pos and self:LocalToWorld(pos) or self:LocalToWorld(Vector(0, 0, 0)),
     Ang = ang or nil,
-    Parent = options.parent,
-    Callback = options.callback or nil,
-    Seat = options.seat or nil
+    Parent = isstring(options.Parent) and self.Parts[options.Parent].Entity or self,
+    Callback = options.Callback or nil,
+    Seat = options.Seat or nil,
+    Entity = NULL
   }
+
+  local e = ents.Create("prop_dynamic")
+  e:SetPos(part.Pos or self:GetPos())
+  e:SetAngles(part.Ang or self:GetAngles())
+  e:SetModel(part.Path)
+  e:SetParent(isstring(part.Parent) and self.Parts[part.Parent].Entity or self)
+  e:Spawn()
+  e:SetModelScale(self:GetModelScale())
+  e:Activate()
+  e:GetPhysicsObject():EnableCollisions(false)
+  e:GetPhysicsObject():EnableMotion(false)
+
+  part.Entity = e
+
+  self.Parts[name] = part
+
+  return e
+end
+
+function ENT:GetPart(name)
+  return self.Parts[name]
 end
 
 function ENT:SpawnSeats()
@@ -929,14 +964,12 @@ function ENT:Bang()
   self:Ignite(10, 50)
 
   for k, v in pairs(self.Parts) do
-    v.Ent:SetColor(Color(0, 0, 0, 50))
-    v.Ent:Ignite(10, 50)
+    v.Entity:SetColor(Color(0, 0, 0, 50))
+    v.Entity:Ignite(10, 50)
   end
 
   timer.Simple(10, function()
-    if (IsValid(self)) then
-      self:Remove()
-    end
+    SafeRemoveEntity(self)
   end)
 end
 
@@ -1336,9 +1369,7 @@ function ENT:Rotorwash(b)
     e:Activate()
     self.RotorWash = e
   else
-    if (IsValid(self.RotorWash)) then
-      self.RotorWash:Remove()
-    end
+    SafeRemoveEntity(self.RotorWash)
   end
 end
 
@@ -1355,8 +1386,8 @@ function ENT:ShieldEffect()
 
   for k, v in pairs(self.Parts) do
     local partFX = EffectData()
-    partFX:SetEntity(v.Ent)
-    partFX:SetOrigin(v.Ent:GetPos())
+    partFX:SetEntity(v.Entity)
+    partFX:SetOrigin(v.Entity:GetPos())
     partFX:SetScale(self:GetModelScale())
     util.Effect("swvr_shield", partFX)
   end

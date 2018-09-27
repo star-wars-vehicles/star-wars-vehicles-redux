@@ -358,11 +358,11 @@ function ENT:AddSound(name, path, options)
       Name = name,
       Path = path,
       Patch = path,
-      Callback = options.callback or nil,
+      Callback = options.Callback or nil,
       Played = false,
-      Repeat = isbool(options.once) and (not options.once) or false,
-      Cooldown = options.cooldown or 0,
-      NextPlay = options.nextplay or CurTime()
+      Repeat = tobool(options.Repeat),
+      Cooldown = options.Cooldown or 0,
+      NextPlay = options.NextPlay or CurTime()
     }
   end
 end

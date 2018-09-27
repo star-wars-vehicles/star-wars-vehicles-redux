@@ -14,7 +14,7 @@ AccessorFunc(GROUP, "CanOverheat", "CanOverheat", FORCE_BOOL)
 AccessorFunc(GROUP, "Overheated", "Overheated", FORCE_BOOL)
 AccessorFunc(GROUP, "CanLock", "CanLock", FORCE_BOOL)
 
-AccessorFunc(GROUP, "Parent", "Parent")
+AccessorFunc(GROUP, "Owner", "Owner")
 
 function GROUP:Initialize()
 	self.Weapons = {}
@@ -31,6 +31,7 @@ function GROUP:Initialize()
 	self:SetCooldown(4)
 	self:SetOverheatCooldown(0)
 
+	self:SetOwner(NULL)
 	self:SetParent(NULL)
 end
 
@@ -46,11 +47,22 @@ function GROUP:GetTarget()
 	return self.Target
 end
 
+function GROUP:SetParent(ent)
+	if not ent == NULL or not isentity(ent) then error("Expected entity but got " .. type(ent) .. " instead!") end
+
+	self.Parent = ent
+end
+
+function GROUP:GetParent()
+	return self.Parent
+end
+
 function GROUP:SetOptions(tbl)
 	self.Options = table.Merge(self.Options, tbl or {})
 
 	for k, v in pairs(self.Options) do
 		if self["Set" .. k] then
+			print("Setting " .. k .. " in group '" .. self:GetName() .. "' to " .. tostring(v))
 			self["Set" .. k](self, v)
 		end
 	end
@@ -61,7 +73,7 @@ function GROUP:SetOptions(tbl)
 end
 
 function GROUP:GetOptions()
-	return self.Options
+	return self.Options or {}
 end
 
 function GROUP:Fire(cond)
@@ -90,11 +102,11 @@ function GROUP:AddWeapon(options)
 
 	local index = table.insert(self.Weapons, weapon)
 	weapon:SetIndex(index)
-	weapon:SetParent(self:GetParent() or NULL)
+	weapon:SetOwner(self:GetOwner())
+	weapon:SetParent(self:GetParent())
+	weapon:SetGroup(self)
 
-	if istable(options) then
-		self:SetOptions(options)
-	end
+	weapon:SetOptions(table.Merge(self:GetOptions(), options or {}))
 
 	return weapon, index
 end

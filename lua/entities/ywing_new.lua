@@ -59,8 +59,8 @@ if SERVER then
         self:AddWeapon("Turret", "Right", Vector(80, 4, 100))
 
         self:AddPilot(nil, nil, {
-            fpvpos = Vector(96, 0, 88),
-            weapons = {"Main", "Turret"}
+            FPVPos = Vector(96, 0, 88),
+            Weapons = {"Main", "Turret"}
         })
 
         self.BaseClass.Initialize(self)

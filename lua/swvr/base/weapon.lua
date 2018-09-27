@@ -9,15 +9,17 @@ AccessorFunc(WEAPON, "Index", "Index", FORCE_NUMBER)
 AccessorFunc(WEAPON, "Damage", "Damage", FORCE_NUMBER)
 
 AccessorFunc(WEAPON, "Ion", "Ion", FORCE_BOOL)
+AccessorFunc(WEAPON, "CanLock", "CanLock", FORCE_BOOL)
 
 AccessorFunc(WEAPON, "Entity", "Entity")
 AccessorFunc(WEAPON, "Target", "Target")
+AccessorFunc(WEAPON, "Owner", "Owner")
+AccessorFunc(WEAPON, "Group", "Group")
 
-AccessorFunc(WEAPON, "Group", "Group", FORCE_STRING)
 AccessorFunc(WEAPON, "Name", "Name", FORCE_STRING)
 
 function WEAPON:Initialize()
-	local e = ents.Create("prop_physics")
+	local e = ents.Create("prop_dynamic")
 	e:SetModel("models/props_junk/PopCan01a.mdl")
 
 	if IsValid(self:GetPos()) then
@@ -31,7 +33,7 @@ function WEAPON:Initialize()
 
 	e:SetRenderMode(RENDERMODE_TRANSALPHA)
 	e:AddFlags(FL_DONTTOUCH)
-	e:SetColor(Color(255, 255, 255, 0))
+	--e:SetColor(Color(255, 255, 255, 0))
 	e:DrawShadow(false)
 
 
@@ -43,6 +45,8 @@ function WEAPON:Initialize()
 end
 
 function WEAPON:SetParent(parent)
+	if not parent == NULL or not isentity(parent) then error("Expected entity but got " .. type(ent) .. " instead!") end
+
 	self.Parent = parent
 
 	if IsValid(self.Entity) then
@@ -62,6 +66,7 @@ function WEAPON:SetOptions(tbl)
 
 	for k, v in pairs(self.Options) do
 		if self["Set" .. k] then
+			print("Setting " .. k .. " in weapon '" .. self:GetName() .. "' to " .. tostring(v))
 			self["Set" .. k](self, v)
 		end
 	end
