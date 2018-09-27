@@ -1,14 +1,15 @@
 ENT.Base = "swvr_base"
-ENT.Category = "Republic"
+ENT.Category = "Empire"
 ENT.Spawnable = false
 ENT.AdminSpawnable = false
 ENT.PrintName = "Y-Wing BTL-B"
 ENT.Author = "Doctor Jew"
 ENT.WorldModel = "models/ywing/ywing_btlb_test.mdl"
 ENT.Vehicle = "YWingBtlB"
-ENT.Allegiance = "Republic"
+ENT.Allegiance = "Galactic Empire"
+ENT.Class = "Capital"
 
-list.Set("SWVRVehicles", ENT.PrintName, ENT)
+list.Set("SWVRVehicles", ENT.Folder, ENT)
 util.PrecacheModel("models/ywing/ywing_btlb_test_cockpit.mdl")
 
 if SERVER then

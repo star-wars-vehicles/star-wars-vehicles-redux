@@ -9,7 +9,6 @@ spawnmenu.AddContentType("swvrvehicle", function(container, obj)
   if (not obj.material) then return end
   if (not obj.nicename) then return end
   if (not obj.spawnname) then return end
-
   local icon = vgui.Create("ContentIcon", container)
   icon:SetContentType("entity")
   icon:SetSpawnName(obj.spawnname)
@@ -25,13 +24,22 @@ spawnmenu.AddContentType("swvrvehicle", function(container, obj)
 
   icon.OpenMenu = function()
     local menu = DermaMenu()
-    menu:AddOption("Copy to Clipboard", function() SetClipboardText(obj.spawnname) end)
-    menu:AddOption("Spawn Using Toolgun", function() RunConsoleCommand("gmod_tool", "creator") RunConsoleCommand("creator_type", "0") RunConsoleCommand("creator_name", obj.spawnname) end)
+
+    menu:AddOption("Copy to Clipboard", function()
+      SetClipboardText(obj.spawnname)
+    end)
+
+    menu:AddOption("Spawn Using Toolgun", function()
+      RunConsoleCommand("gmod_tool", "creator")
+      RunConsoleCommand("creator_type", "0")
+      RunConsoleCommand("creator_name", obj.spawnname)
+    end)
+
     menu:Open()
   end
 
-  if ( IsValid(container) ) then
-    container:Add( icon )
+  if (IsValid(container)) then
+    container:Add(icon)
   end
 
   return icon
@@ -41,7 +49,6 @@ spawnmenu.AddContentType("swvrweapon", function(container, obj)
   if (not obj.material) then return end
   if (not obj.nicename) then return end
   if (not obj.spawnname) then return end
-
   local icon = vgui.Create("ContentIcon", container)
   icon:SetContentType("weapon")
   icon:SetSpawnName(obj.spawnname)
@@ -62,59 +69,91 @@ spawnmenu.AddContentType("swvrweapon", function(container, obj)
 
   icon.OpenMenu = function()
     local menu = DermaMenu()
-    menu:AddOption("Copy to Clipboard", function() SetClipboardText(obj.spawnname) end)
-    menu:AddOption("Spawn Using Toolgun", function() RunConsoleCommand("gmod_tool", "creator") RunConsoleCommand("creator_type", "3") RunConsoleCommand("creator_name", obj.spawnname) end)
+
+    menu:AddOption("Copy to Clipboard", function()
+      SetClipboardText(obj.spawnname)
+    end)
+
+    menu:AddOption("Spawn Using Toolgun", function()
+      RunConsoleCommand("gmod_tool", "creator")
+      RunConsoleCommand("creator_type", "3")
+      RunConsoleCommand("creator_name", obj.spawnname)
+    end)
+
     menu:Open()
   end
 
-  if ( IsValid(container) ) then
-    container:Add( icon )
+  if (IsValid(container)) then
+    container:Add(icon)
   end
 
   return icon
 end)
 
 hook.Add("SWVRVehiclesTab", "AddEntityContent", function(pnlContent, tree, node)
-  local Categorised = {}
+  local Categorised = { }
+  local SpawnableEntities = table.Merge(list.Get("SWVRVehicles") or { }, list.Get("SWVRVehicles.Weapons") or { })
 
-  local SpawnableEntities = table.Merge(list.Get("SWVRVehicles") or {}, list.Get("SWVRVehicles.Weapons") or {})
-
-  if ( SpawnableEntities ) then
+  if (SpawnableEntities) then
     for k, v in pairs(SpawnableEntities) do
       v.SpawnName = k
       v.Category = v.Category or "Other"
-
       Categorised[v.Category] = Categorised[v.Category] or { }
       table.insert(Categorised[v.Category], v)
     end
   end
 
   for CategoryName, v in SortedPairs(Categorised) do
-    local child = tree:AddNode(CategoryName, "icons16/" .. string.lower(CategoryName) .. ".png")
+    local child = tree:AddNode(CategoryName, "icon16/" .. string.lower(CategoryName) .. ".png")
 
-    child.DoPopulate = function(self)
-      if (self.PropPanel) then return end
+    if (child.PropPanel) then return end
+    child.PropPanel = vgui.Create("ContentContainer", pnlContent)
+    child.PropPanel:SetVisible(false)
+    child.PropPanel:SetTriggerSpawnlistChange(false)
 
-      self.PropPanel = vgui.Create("ContentContainer", pnlContent)
-      self.PropPanel:SetVisible(false)
-      self.PropPanel:SetTriggerSpawnlistChange(false)
+    local Types = { }
+    for k, ent in pairs(v) do
+      ent.Class = ent.Class or "Other"
+      Types[ent.Class] = Types[ent.Class] or { }
+      table.insert(Types[ent.Class], ent)
+    end
 
-      for k, ent in SortedPairsByMemberValue(v, "PrintName") do
-        spawnmenu.CreateContentIcon(ent.Category ~= "Weapons" and "swvrvehicle" or "swvrweapon", self.PropPanel, {
+    for Type, tbl in SortedPairs(Types) do
+      local path = "icon16/" .. string.lower(CategoryName) .. "_" .. string.lower(Type) .. ".png"
+      path = file.Exists("materials/" .. path, "GAME") and path or "icon16/" .. string.lower(CategoryName) .. ".png"
+
+      local typeNode = child:AddNode(Type, path)
+      local panel = vgui.Create("ContentContainer", pnlContent)
+      panel:SetVisible(false)
+
+      local header = vgui.Create("ContentHeader", child.PropPanel)
+      header:SetText(Type)
+      child.PropPanel:Add(header)
+
+      for k, ent in SortedPairsByMemberValue(tbl, "PrintName") do
+        local data = {
           nicename = ent.PrintName or ent.ClassName,
           spawnname = ent.ClassName,
           material = "entities/" .. ent.ClassName .. ".png",
           admin = ent.AdminOnly or false,
           author = ent.Author,
           info = ent.Instructions
-        })
+        }
+
+        spawnmenu.CreateContentIcon(ent.Category ~= "Weapons" and "swvrvehicle" or "swvrweapon", panel, data)
+        spawnmenu.CreateContentIcon(ent.Category ~= "Weapons" and "swvrvehicle" or "swvrweapon", child.PropPanel, data)
+      end
+
+      typeNode.DoClick = function()
+        pnlContent:SwitchPanel(panel)
       end
     end
 
-    child.DoClick = function(self)
-      self:DoPopulate()
+    function child:DoClick()
       pnlContent:SwitchPanel(self.PropPanel)
     end
+
+    child:SetExpanded(true)
   end
 
   local FirstNode = tree:Root():GetChildNode(0)

@@ -5,7 +5,7 @@ ENT.RenderGroup = RENDERGROUP_OPAQUE
 ENT.Base = "base_anim"
 ENT.Type = "anim"
 ENT.AutomaticFrameAdvance = true
-ENT.VehicleType = nil
+ENT.Class = "Other"
 ENT.IsSWVRVehicle = true
 
 --- Creates networked variables for the entity.

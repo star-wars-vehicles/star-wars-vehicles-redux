@@ -1,34 +1,90 @@
 local WEAPON = {}
+WEAPON.Base = "swvr_base_weapon"
+WEAPON.Options = {}
 
 AccessorFunc(WEAPON, "Cooldown", "Cooldown", FORCE_NUMBER)
 AccessorFunc(WEAPON, "Overheat", "Overheat", FORCE_NUMBER)
 AccessorFunc(WEAPON, "Delay", "Delay", FORCE_NUMBER)
 AccessorFunc(WEAPON, "Index", "Index", FORCE_NUMBER)
+AccessorFunc(WEAPON, "Damage", "Damage", FORCE_NUMBER)
 
 AccessorFunc(WEAPON, "Ion", "Ion", FORCE_BOOL)
 
 AccessorFunc(WEAPON, "Entity", "Entity")
 AccessorFunc(WEAPON, "Target", "Target")
-AccessorFunc(WEAPON, "Parent", "Parent")
 
 AccessorFunc(WEAPON, "Group", "Group", FORCE_STRING)
+AccessorFunc(WEAPON, "Name", "Name", FORCE_STRING)
 
 function WEAPON:Initialize()
 	local e = ents.Create("prop_physics")
 	e:SetModel("models/props_junk/PopCan01a.mdl")
-	e:SetPos(self:GetPos())
-	e:SetRenderMode(RENDERMODE_TRANSALPHA)
-	e:GetPhysicsObject():EnableCollisions(false)
-	e:GetPhysicsObject():EnableMotion(false)
+
+	if IsValid(self:GetPos()) then
+		e:SetPos(self:GetPos())
+		e:Spawn()
+		e.Spawned = true
+	end
+
 	e:SetSolid(SOLID_NONE)
+	e:PhysicsInit(SOLID_NONE)
+
+	e:SetRenderMode(RENDERMODE_TRANSALPHA)
 	e:AddFlags(FL_DONTTOUCH)
 	e:SetColor(Color(255, 255, 255, 0))
 	e:DrawShadow(false)
-	e:SetParent(self:GetParent() or self:GetEntity())
-	e:Spawn()
-	e:Activate()
+
+
+	if IsValid(self:GetParent()) then
+		e:SetParent(self:GetParent())
+	end
 
 	self.Entity = e
+end
+
+function WEAPON:SetParent(parent)
+	self.Parent = parent
+
+	if IsValid(self.Entity) then
+		self.Entity:SetParent(parent)
+
+		if not IsValid(self.Entity:GetParent()) then return end
+		self.Entity:SetAngles(self.Entity:GetParent():GetAngles())
+	end
+end
+
+function WEAPON:GetParent()
+	return self.Parent
+end
+
+function WEAPON:SetOptions(tbl)
+	self.Options = table.Merge(self.Options, tbl or {})
+
+	for k, v in pairs(self.Options) do
+		if self["Set" .. k] then
+			self["Set" .. k](self, v)
+		end
+	end
+end
+
+function WEAPON:GetOptions()
+	return self.Options
+end
+
+function WEAPON:SetPos(pos)
+	if not IsValid(self.Entity) then return end
+
+	self.Entity:SetPos(pos)
+
+	if not self.Entity.Spawned then
+		self.Entity:Spawn()
+	end
+end
+
+function WEAPON:GetPos()
+	if not IsValid(self.Entity) then return end
+
+	return self.Entity:GetPos()
 end
 
 function WEAPON:Fire()
@@ -39,132 +95,87 @@ function WEAPON:Remove()
 	SafeRemoveEntity(self.Entity)
 end
 
-local CANNON = {}
-CANNON.Base = "swvr_base_weapon"
-CANNON.Type = "cannon"
-CANNON.Bullet = {}
-
-AccessorFunc(CANNON, "Bullet", "Bullet")
-AccessorFunc(CANNON.Bullet, "TracerName", "Tracer", FORCE_STRING)
-AccessorFunc(CANNON.Bullet, "Damage", "Damage", FORCE_NUMBER)
-
-function CANNON:Initialize()
-	self.BaseClass.Initialize(self)
-
-	self.Bullet = {
-		Callback = function(attacker, tr, dmgInfo)
-			local ship = dmgInfo:GetInflictor():GetParent()
-
-			util.Decal("fadingscorch", tr.HitPos + tr.HitNormal, tr.HitPos - tr.HitNormal)
-
-			local fx = EffectData()
-			fx:SetOrigin(tr.HitPos)
-			fx:SetNormal(tr.HitNormal)
-
-			util.Effect("StunstickImpact", fx, true)
-
-			if IsValid(ship) and ship ~= tr.Entity then
-				if self.Bullet.splash then
-					util.BlastDamage(ship, ship.Pilot or ship, tr.HitPos, self.Bullet.Damage * 1.5, self.Bullet.Damage * 0.66)
-				end
-
-				if self.Ion and tr.Entity.IsSWVRVehicle then
-					tr.Entity.IonShots = tr.Entity.IonShots + 1
-				end
-			end
-		end
-	}
-end
-
-function CANNON:Fire()
-	if not (IsValid(self.Parent) and IsValid(self.Entity)) then return end
-
-	if not self.Group then
-		print("Yikes")
-	end
-
-	local tr = util.TraceLine({
-		start = self.Parent:GetPos(),
-		endpos = self.Parent:GetPos() + self.Parent:GetForward() * 10000,
-		filter = { self.Parent }
-	})
-
-	local dir = tr.HitPos - self.Entity:GetPos()
-
-	if IsValid(self.Target) then
-		local lock = util.TraceLine({
-			start = self.Entity:GetPos(),
-			endpos = self.Target:GetPos(),
-			filter = { self.Parent }
-		})
-
-		if not lock.HitWorld then
-			dir = (self.Target:GetPos() + self.Target:GetUp() * (self.Target:GetModelRadius() / 3)) - self.Entity:GetPos()
-		end
-	end
-
-	local bullet = table.Copy(self.Bullet)
-	bullet.Src = self.Entity:GetPos()
-	bullet.Attacker = self.Parent:GetPilot() or self.Parent
-	bullet.Spread = Vector(1, 1, 1) * (self.Parent.Accel.FWD / 1000)
-	bullet.Dir = dir
-
-	self.Entity:FireBullets(self.Bullet)
-end
-
-local MISSILE = {}
-MISSILE.Base = "swvr_base_weapon"
-MISSILE.Type = "missile"
-
-function MISSILE:Initialize()
-	self.BaseClass.Initialize(self)
-end
-
-function MISSILE:Fire()
-
-end
-
 local BaseClasses = {}
 BaseClasses["weapon"] = "swvr_base_weapon"
 BaseClasses["cannon"]  = "swvr_base_cannon"
 BaseClasses["missile"] = "swvr_base_missile"
 
-SWVR.Weapons = {
-	["swvr_base_weapon"] = WEAPON
-}
+local Weapons = {}
 
-function SWVR:RegisterWeapon(weapon, name)
+SWVR.Weapons = {}
+
+function SWVR.Weapons:Register(weapon, name)
 	local Base = weapon.Base
 	if not Base then Base = BaseClasses[string.lower(weapon.Type)] end
 
-	local old = self.Weapons[name]
+	--local old = Weapons[name]
 	local tab = {}
 	tab.type 		= weapon.Type
 	tab.t 	 		= weapon
 	tab.isBaseType  = true
 	tab.Base 		= Base
-	tab.t.ClassName = weapon.Name
+	tab.t.ClassName = name
 
 	if not Base then
 		error("Trying to register SWVR weapon without a valid base/type!")
 	end
 
-	self.Weapons[name] = tab
+	Weapons[name] = tab
 
-	if old ~= nil then
-		for _, wep in ipairs(SWVR:GetWeapons()) do
-			table.Merge(wep, tab.t)
+	-- if old ~= nil then
+	-- 	for _, wep in ipairs(Weapons) do
+	-- 		table.Merge(wep, tab.t)
 
-			if wep.OnReloaded then
-				wep:OnReloaded()
-			end
-		end
-	end
+	-- 		if wep.OnReloaded then
+	-- 			wep:OnReloaded()
+	-- 		end
+	-- 	end
+	-- end
+
+	list.Set("SWVR.Weapons", name, {
+		Name = weapon.Name,
+		Author = weapon.Author
+	})
 end
 
-SWVR:RegisterWeapon(CANNON, "swvr_base_cannon")
-SWVR:RegisterWeapon(MISSILE, "swvr_base_missile")
+function SWVR.Weapons:Get(name)
+	if Weapons[name] == nil then return nil end
+
+	local retval = {}
+	for k, v in pairs(Weapons[name].t) do
+		retval[k] = v
+	end
+
+	if name ~= Weapons[name].Base then
+		local base = self:Get(Weapons[name].Base)
+
+		if not base then
+			error("Trying to derive SWVR weapon '" .. name .. "' from non existant base '" .. Weapons[name].Base .. "'!")
+		end
+
+		retval = table.Inherit(retval, base)
+	end
+
+	return retval
+end
+
+function SWVR.Weapons:GetTable()
+	local results = {}
+	for k, v in pairs(Weapons) do
+		results[k] = v
+	end
+
+	return results
+end
+
+hook.Add("InitPostEntity", "SWVROnLoaded", function()
+	for k, v in pairs(Weapons) do
+		baseclass.Set(k, SWVR.Weapons:Get(k))
+	end
+end)
+
+SWVR.Weapons:Register(WEAPON, "swvr_base_weapon")
 
 function SWVR:Weapon(class)
-	return table.Copy(self.Weapons[class])
+	return self.Weapons:Get(class)
 end

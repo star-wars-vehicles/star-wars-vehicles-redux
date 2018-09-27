@@ -58,17 +58,8 @@ function ENT:Initialize()
     [WEAPON_PROTON_TORPEDO] = self.FireProtonTorpedo
   }
 
-  self.Accel = {
-    FWD = 0,
-    RIGHT = 0,
-    UP = 0
-  }
-
-  self.Throttle = {
-    FWD = 0,
-    RIGHT = 0,
-    UP = 0
-  }
+  self.Velocity = Vector()
+  self.Throttle = Vector()
 
   self.Acceleration = 1
   self.Roll = 0
@@ -98,7 +89,7 @@ function ENT:Initialize()
   self:InitPhysics()
 
   self:SpawnParts()
-  self:SpawnWeapons()
+  --self:SpawnWeapons()
   self:SpawnSeats()
 end
 
@@ -116,7 +107,7 @@ function ENT:Think()
 
     self:ThinkControls()
 
-    if (not self:IsTakingOff() and not self:IsLanding() and self.Accel.FWD == 0 and self.Accel.UP == 0 and self.Accel.RIGHT == 0) then
+    if (not self:IsTakingOff() and not self:IsLanding() and self.Velocity:IsZero()) then
       if self.HoverStart > 0 then
         if CurTime() - self.HoverStart > 3 then
           local curPos = self:GetPos()
@@ -148,38 +139,38 @@ function ENT:ThinkWeapons()
       local group = self.WeaponGroups[self.Seats[seat]["Weapons"][button]]
 
       if (ply:KeyDown(button) and group.Cooldown < CurTime()) then
-        if (not group.Overheated or not group.CanOverheat and not self:IsCritical()) then
+        if (not group:GetOverheated() or not group:GetCanOverheat() and not self:IsCritical()) then
           self:FireWeapons(self.Seats[seat]["Weapons"][button])
-          group.Overheat = group.Overheat + 1
-          group.OverheatCooldown = 2
-          self:DispatchEvent("OnFire", group:GetData(), seat)
+          group:SetOverheat(group:GetOverheat() + 1)
+          group:SetOverheatCooldown(2)
+          self:DispatchEvent("OnFire", group:Serialize(), seat)
 
-          if (group.CanOverheat and group.Overheat >= group.OverheatMax) then
-            self:DispatchEvent("OnOverheat", group:GetData(), seat)
+          if (group:GetCanOverheat() and group:GetOverheat() >= group:GetMaxOverheat()) then
+            self:DispatchEvent("OnOverheat", group:Serialize(), seat)
           end
-        elseif (group.Overheated) then
-          group.Overheat = group.Overheat - group.OverheatCooldown * 2.5 * FrameTime()
+        elseif (group:GetOverheated()) then
+          group:SetOverheat(group:GetOverheat() - group:OverheatCooldown() * 2.5 * FrameTime())
           group.OverheatCooldown = math.Approach(group.OverheatCooldown, 4, 1)
 
-          if (group.CanOverheat and group.Overheat <= 0 and group.OverheatCooldown >= 4) then
-            self:DispatchEvent("OnOverheatReset", group:GetData(), seat)
+          if (group:GetCanOverheat() and group:GetOverheat() <= 0 and group:GetOverheatCooldown() >= 4) then
+            self:DispatchEvent("OnOverheatReset", group:Serialize(), seat)
           end
         end
       else
-        if (group.Cooldown < CurTime() and group.Overheat > 0) then
-          group.Overheat = group.Overheat - group.OverheatCooldown * 2.5 * FrameTime()
-          group.OverheatCooldown = math.Approach(group.OverheatCooldown, 4, 1)
+        if (group:GetCooldown() < CurTime() and group:GetOverheat() > 0) then
+          group:SetOverheat(group:GetOverheat() - group:GetOverheatCooldown() * 2.5 * FrameTime())
+          group:SetOverheatCooldown(math.Approach(group:GetOverheatCooldown(), 4, 1))
 
-          if (group.Overheated and group.Overheat <= 0) then
-            self:DispatchEvent("OnOverheatReset", {Name = group.Name, CanOverheat = group.CanOverheat, Overheat = group.Overheat, OverheatMax = group.OverheatMax, Cooldown = group.Cooldown, Delay = group.Delay}, seat)
+          if (group:GetOverheated() and group:GetOverheat() <= 0) then
+            self:DispatchEvent("OnOverheatReset", group:Serialize(), seat)
           end
         end
       end
 
-      if (group.CanOverheat and group.Overheat >= group.OverheatMax) then
-        group.Overheated = true
-      elseif (group.CanOverheat and group.Overheat <= 0) then
-        group.Overheated = false
+      if (group:GetCanOverheat() and group:GetOverheat() >= group:GetMaxOverheat()) then
+        group:SetOverheated(true)
+      elseif (group:GetCanOverheat() and group:GetOverheat() <= 0) then
+        group:SetOverheated(false)
       end
     end
   end
@@ -290,44 +281,6 @@ function ENT:InitPhysics()
   end
 end
 
---- Setup a bullet structure.
--- Create a bullet structure given table data.
--- @param bullet The table to construct the bullet with.
--- @return A bullet structure.
-function ENT:InitBullet(bullet)
-  local tbl = {
-    Type = WEAPON_CANNON,
-    Damage = bullet.damage or 75,
-    Force = bullet.damage or 75,
-    TracerName = (bullet.color or "green") .. "_tracer_fx",
-    IgnoreEntity = self,
-    Delay = bullet.delay or 0.2,
-    Overheat = Either(bullet.overheat ~= nil, tobool(bullet.overheat), true),
-    OverheatAmount = bullet.overheatAmount or 50,
-    Track = bullet.track or false,
-    Callback = function(p, tr, damage)
-      local ship = damage:GetInflictor():GetParent()
-      util.Decal("fadingscorch", tr.HitPos + tr.HitNormal, tr.HitPos - tr.HitNormal)
-      local fx = EffectData()
-      fx:SetOrigin(tr.HitPos)
-      fx:SetNormal(tr.HitNormal)
-      util.Effect("StunstickImpact", fx, true)
-
-      if IsValid(ship) and ship ~= tr.Entity then
-        if bullet.splash then
-          util.BlastDamage(ship, ship.Pilot or ship, tr.HitPos, bullet.damage * 1.5, bullet.damage * 0.66)
-        end
-
-        if bullet.ion and tr.Entity.IsSWVRVehicle then
-          tr.Entity.IonShots = tr.Entity.IonShots + 1
-        end
-      end
-    end
-  }
-
-  return tbl
-end
-
 -- Setup proton bomb structure.
 -- Create a proton bomb structure given table data.
 -- @param bomb The table to contrsuct the proton bomb with.
@@ -389,56 +342,21 @@ end
 -- Create a weapon group for weapons to parent to.
 -- @param name The name of the weapon group.
 -- @param bullet The type of bullet the group will use.
-function ENT:AddWeaponGroup(name, snd, bullet)
+function ENT:AddWeaponGroup(name, weapon, options)
   self.WeaponGroups = self.WeaponGroups or {}
 
-  if self.WeaponGroups[name] ~= nil then
-    error("Tried to create weapon group (" .. name .. ") that already exists!")
+  if self.WeaponGroups[name] then
+    error("Tried to create weapon group '" .. name .. "' that already exists!")
   end
 
-  local added = false
-
-  if (not sound.GetProperties(snd)) then
-    sound.Add({
-      name = name .. "Fire",
-      channel = CHAN_WEAPON,
-      volume = 0.5,
-      level = 100,
-      pitch = {90, 110},
-      sound = snd
-    })
-
-    added = true
-  end
-
-  local group = {
-    Sound = added and (name .. "Fire") or snd,
-    Type = bullet.Type,
-    Bullet = bullet,
-    Delay = bullet.Delay or 0.25,
-    Cooldown = CurTime(),
-    CanOverheat = Either(isbool(bullet.Overheat), tobool(bullet.Overheat), true),
-    OverheatMax = bullet.OverheatAmount,
-    Overheat = 0,
-    OverheatCooldown = 2,
-    Overheated = false,
-    Name = name,
-    Track = bullet.Track or false
-  }
-
-  function group:GetData()
-    return {
-      Name = self.Name,
-      Delay = self.Delay,
-      CanOverheat = self.CanOverheat,
-      OverheatMax = self.OverheatMax,
-      Overheat = self.Overheat,
-      Overheated = self.Overheated,
-      Cooldown = self.Cooldown
-    }
-  end
+  local group = SWVR:WeaponGroup(weapon)
+  group:SetName(name)
+  group:SetParent(self)
+  group:SetOptions(options)
 
   self.WeaponGroups[name] = group
+
+  return group
 end
 
 -- Add a new weapon.
@@ -448,25 +366,25 @@ end
 -- @param pos The position of the weapon.
 function ENT:AddWeapon(group, name, pos, options)
   self.Weapons = self.Weapons or {}
-  options = options or {}
 
-  if self.WeaponGroups[group] == nil then
-    error("Tried to create weapon with group (" .. group .. ") that doesn't exist!\nMake sure the group is added first.")
-  else
-    for k, v in pairs(self.Weapons) do
-      if v.Name == name then
-        error("Tried to create a weapon (" .. name .. ") that already exists!")
-      end
+  if not self.WeaponGroups[group] then
+    return error("Tried to add weapon '" .. name .. "' to group '" .. group .. "' which doesn't exist! (Make sure to add the group first)")
+  end
+
+  for k, v in pairs(self.Weapons) do
+    if v:GetName() == name then
+      return error("Tried to add weapon '" .. name .. "' which already exists! (Weapons cannot have duplicate names)")
     end
   end
 
-  self.Weapons[table.Count(self.Weapons) + 1] = {
-    Group = group,
-    Name = name,
-    Pos = self:LocalToWorld(pos),
-    Gun = nil,
-    Parent = (options.parent and isstring(options.parent)) and options.parent or nil
-  }
+  local WeaponGroup = self.WeaponGroups[group]
+  local weapon = WeaponGroup:AddWeapon(options)
+  weapon:SetName(name)
+  weapon:SetPos(self:LocalToWorld(pos))
+
+  self.Weapons[name] = weapon
+
+  return weapon
 end
 
 --- Add a new seat.
@@ -584,27 +502,6 @@ function ENT:AddPart(name, path, pos, ang, options)
     Callback = options.callback or nil,
     Seat = options.seat or nil
   }
-end
-
---- Initialize the weapon locations.
--- Create the weapons for the ship, stores internally.
-function ENT:SpawnWeapons()
-  for k, v in pairs(self.Weapons or {}) do
-    local e = ents.Create("prop_physics")
-    e:SetModel("models/props_junk/PopCan01a.mdl")
-    e:SetPos(v.Pos)
-    e:Spawn()
-    e:Activate()
-    e:SetRenderMode(RENDERMODE_TRANSALPHA)
-    e:GetPhysicsObject():EnableCollisions(false)
-    e:GetPhysicsObject():EnableMotion(false)
-    e:SetSolid(SOLID_NONE)
-    e:AddFlags(FL_DONTTOUCH)
-    e:SetColor(Color(255, 255, 255, 0))
-    e:DrawShadow(false)
-    e:SetParent(v.Parent and self.Parts[v.Parent].Ent or self)
-    self.Weapons[k].Ent = e
-  end
 end
 
 function ENT:SpawnSeats()
@@ -893,30 +790,25 @@ end
 function ENT:FireWeapons(g)
   local group = self.WeaponGroups[g]
 
-  if group.Cooldown > CurTime() then
+  if group:GetCooldown() > CurTime() then
     return
   end
 
-  if group.Overheated then
+  if group:GetOverheated() then
     return
   end
 
-  for k, v in pairs(self.Weapons) do
-    if not (IsValid(v.Ent) and v.Group == g) then continue end
-
-    local e = NULL
-    if (self:CanLock()) then
-      e = self:FindTarget()
-    end
-
-    self.FireFunctions[group.Type](self, v, e)
+  if group:GetCanLock() then
+    group:SetTarget(self:FindTarget())
   end
+
+  group:Fire()
 
   if group.Sound then
     self:EmitSound(group.Sound)
   end
 
-  self.WeaponGroups[g].Cooldown = CurTime() + group.Delay
+  self.WeaponGroups[g]:SetCooldown(CurTime() + group:GetDelay())
 end
 
 function ENT:FindTarget()
@@ -930,52 +822,6 @@ function ENT:FindTarget()
   end
 
   return NULL
-end
-
-function ENT:FireGuns(w, target)
-  local tr = util.TraceLine({
-    start = self:GetPos(),
-    endpos = self:GetPos() + self:GetForward() * 10000,
-    filter = {self}
-  })
-
-  local angPos = tr.HitPos - w.Ent:GetPos()
-  local group = self.WeaponGroups[w.Group]
-
-  if group.Track then
-    local ply = nil
-
-    for _, tbl in pairs(self.Players) do
-      if (IsValid(tbl.ent) and tbl.ent:GetNWString("SeatName") == group.Seat) then
-        ply = tbl.ent
-        break
-      end
-    end
-
-    if IsValid(ply) then
-      angPos = ply:GetAimVector():Angle():Forward()
-    end
-  end
-
-  if IsValid(target) then
-    local lock = util.TraceLine({
-      start = w.Ent:GetPos(),
-      endpos = target:GetPos(),
-      filter = {self}
-    })
-
-    if not lock.HitWorld then
-      angPos = (target:GetPos() + target:GetUp() * (target:GetModelRadius() / 3)) - w.Ent:GetPos()
-    end
-  end
-
-  local spread = self.Accel.FWD / 1000
-  local bullet = group.Bullet
-  bullet.Attacker = self:GetPilot() or self
-  bullet.Src = w.Ent:GetPos()
-  bullet.Spread = Vector(spread, spread, spread)
-  bullet.Dir = angPos
-  w.Ent:FireBullets(bullet)
 end
 
 --- Fire a torpedo.
@@ -1116,22 +962,16 @@ function ENT:GenerateTransponder()
 end
 
 function ENT:Handbrake()
-  for k, v in pairs(self.Throttle) do
-    self.Throttle[k] = 0
-  end
+  self.Throttle:Zero()
 
-  self.Accel.FWD = math.Approach(self.Accel.FWD, 0, self:GetAccelSpeed() * 4)
+  self.Velocity.x = math.Approach(self.Velocity.x, 0, self:GetAccelSpeed() * 4)
   self:SetHandbrake(true)
 end
 
 function ENT:ResetThrottle()
-  for k, v in pairs(self.Throttle) do
-    self.Throttle[k] = 0
-  end
+  self.Throttle:Zero()
 
-  for k, v in pairs(self.Accel) do
-    self.Accel[k] = 0
-  end
+  self.Velocity:Zero()
 
   self.Acceleration = 1
 end
@@ -1169,9 +1009,9 @@ function ENT:PhysicsSimulate(phys, deltatime)
           self:Handbrake()
         else
           if (self:GetPilot():KeyDown(IN_FORWARD)) then
-            self.Throttle.FWD = self.Throttle.FWD + self.Acceleration * 0.7
+            self.Throttle.x = self.Throttle.x + self.Acceleration * 0.7
           elseif (self:GetPilot():KeyDown(IN_BACK)) then
-            self.Throttle.FWD = self.Throttle.FWD - self.Acceleration * 0.85
+            self.Throttle.x = self.Throttle.x - self.Acceleration * 0.85
           end
         end
 
@@ -1190,46 +1030,46 @@ function ENT:PhysicsSimulate(phys, deltatime)
         end
 
         if (not self:GetHandbrake()) then
-          self.Throttle.FWD = math.Clamp(self.Throttle.FWD, min, max)
-          self.Accel.FWD = math.Approach(self.Accel.FWD, self.Throttle.FWD, self.Acceleration)
+          self.Throttle.x = math.Clamp(self.Throttle.x, min, max)
+          self.Velocity.x = math.Approach(self.Velocity.x, self.Throttle.x, self.Acceleration)
         end
 
         if (self:GetRoll()) then
           if (self:GetPilot():KeyDown(IN_MOVERIGHT)) then
             self.Roll = self.Roll + 3
-            self.Throttle.RIGHT = self:GetVerticalSpeed() / 1.5
+            self.Throttle.y = self:GetVerticalSpeed() / 1.5
           elseif (self:GetPilot():KeyDown(IN_MOVELEFT)) then
             self.Roll = self.Roll - 3
-            self.Throttle.RIGHT = (self:GetVerticalSpeed() / 1.5) * -1
+            self.Throttle.y = (self:GetVerticalSpeed() / 1.5) * -1
           elseif (self:GetPilot():KeyDown(IN_RELOAD)) then
             self.Roll = 0
           else
-            self.Throttle.RIGHT = 0
+            self.Throttle.y = 0
           end
         else
           if (self:GetPilot():KeyDown(IN_MOVERIGHT)) then
-            self.Throttle.RIGHT = self:GetVerticalSpeed() / 1.2
+            self.Throttle.y = self:GetVerticalSpeed() / 1.2
             self.Roll = 20
           elseif (self:GetPilot():KeyDown(IN_MOVELEFT)) then
-            self.Throttle.RIGHT = (self:GetVerticalSpeed() / 1.2) * -1
+            self.Throttle.y = (self:GetVerticalSpeed() / 1.2) * -1
             self.Roll = -20
           else
-            self.Throttle.RIGHT = 0
+            self.Throttle.y = 0
             self.Roll = 0
           end
 
-          self.Accel.RIGHT = math.Approach(self.Accel.RIGHT, self.Throttle.RIGHT, self.Acceleration)
+          self.Velocity.y = math.Approach(self.Velocity.y, self.Throttle.y, self.Acceleration)
         end
 
         if (self:GetPilot():KeyDown(IN_JUMP) and not self:GetPilot():KeyDown(IN_RELOAD)) then
-          self.Throttle.UP = self:GetVerticalSpeed()
+          self.Throttle.z = self:GetVerticalSpeed()
         elseif (self:GetPilot():KeyDown(IN_DUCK) and not self:GetPilot():KeyDown(IN_RELOAD)) then
-          self.Throttle.UP = -self:GetVerticalSpeed()
+          self.Throttle.z = -self:GetVerticalSpeed()
         else
-          self.Throttle.UP = 0
+          self.Throttle.z = 0
         end
 
-        self.Accel.UP = math.Approach(self.Accel.UP, self.Throttle.UP, self.Acceleration * 0.9)
+        self.Velocity.z = math.Approach(self.Velocity.z, self.Throttle.z, self.Acceleration * 0.9)
 
       local velocity = self:GetVelocity()
       local aim = self:GetPilot():GetAimVector()
@@ -1282,11 +1122,11 @@ function ENT:PhysicsSimulate(phys, deltatime)
         })
 
         if (heightTrace.Hit) then
-          local nextPos = self:GetPos() + (FWD * self.Accel.FWD) + (UP * self.Accel.UP) + (RIGHT * self.Accel.RIGHT)
+          local nextPos = self:GetPos() + (FWD * self.Velocity.x) + (UP * self.Velocity.z) + (RIGHT * self.Velocity.y)
 
           if (nextPos.z <= heightTrace.HitPos.z + 100) then
             newZ = heightTrace.HitPos.z + 100
-            self.Accel.FWD = math.Clamp(self.Accel.FWD, 0, 1000)
+            self.Velocity.x = math.Clamp(self.Velocity.x, 0, 1000)
           end
         end
 
@@ -1297,14 +1137,14 @@ function ENT:PhysicsSimulate(phys, deltatime)
         })
 
         if (forwardTrace.Hit) then
-          self.Accel.FWD = 0
+          self.Velocity.x = 0
         end
       end
 
-      local fPos = pos + (FWD * self.Accel.FWD) + (UP * self.Accel.UP)
+      local fPos = pos + (FWD * self.Velocity.x) + (UP * self.Velocity.z)
 
       if (not self:GetRoll()) then
-        fPos = fPos + (RIGHT * self.Accel.RIGHT)
+        fPos = fPos + (RIGHT * self.Velocity.y)
       end
 
       if (newZ) then
@@ -1344,7 +1184,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
         self.NewPos = nil
       end
 
-      self.Accel.FWD = 0
+      self.Velocity.x = 0
     elseif (self:IsLanding()) then
       if (self:HasWings()) then
         self:ToggleWings()
@@ -1363,11 +1203,11 @@ function ENT:PhysicsSimulate(phys, deltatime)
         self:IsTakingOff(self.TakeOff)
       end
 
-      self.Accel.FWD = 0
+      self.Velocity.x = 0
     end
 
     phys:Wake()
-    self:SetSpeed(self.Accel.FWD)
+    self:SetSpeed(self.Velocity.x)
   else
     if (self.ShouldStandby and (self.TakeOff or self.Docked) and self.CanStandby) then
       self.Phys.angle = self.StandbyAngles or Angle(0, self:GetAngles().y, 0)
@@ -1391,8 +1231,8 @@ function ENT:PhysicsCollide(colData, collider)
     end
 
     local dmg = (colData.OurOldVelocity:Length() * s * math.Clamp(mass, 0, 1000)) / 3500
-    self.Accel.FWD = math.Clamp(self.Accel.FWD - dmg, 0, self.Accel.FWD)
-    self.Throttle.FWD = math.Clamp(self.Throttle.FWD - dmg, 0, self.Throttle.FWD)
+    self.Velocity.x = math.Clamp(self.Velocity.x - dmg, 0, self.Velocity.x)
+    self.Throttle.x = math.Clamp(self.Throttle.x - dmg, 0, self.Throttle.x)
 
     if (self:GetShieldHealth() > 0) then
       dmg = dmg * 0.25
@@ -1530,12 +1370,12 @@ function ENT:NetworkWeapons()
   for name, group in pairs(self.WeaponGroups) do
     weaponGroups = weaponGroups .. "|" .. name
     local n = "Weapon" .. name
-    self:SetNWBool(n .. "CanOverheat", group.CanOverheat)
-    self:SetNWBool(n .. "IsOverheated", group.Overheated)
-    self:SetNWBool(n .. "Track", group.Track)
-    self:SetNWInt(n .. "Overheat", group.Overheat)
-    self:SetNWInt(n .. "OverheatMax", group.OverheatMax)
-    self:SetNWInt(n .. "OverheatCooldown", group.OverheatCooldown)
+    self:SetNWBool(n .. "CanOverheat", group:GetCanOverheat())
+    self:SetNWBool(n .. "IsOverheated", group:GetOverheated())
+    self:SetNWBool(n .. "Track", group:GetCanLock())
+    self:SetNWInt(n .. "Overheat", group:GetOverheat())
+    self:SetNWInt(n .. "OverheatMax", group:GetMaxOverheat())
+    self:SetNWInt(n .. "OverheatCooldown", group:GetOverheatCooldown())
   end
 
   self:SetNWString("WeaponGroups", string.sub(weaponGroups, 2))

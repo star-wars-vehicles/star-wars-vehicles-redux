@@ -2,13 +2,14 @@ ENT.Base = "swvr_base"
 ENT.Category = "Rebels"
 ENT.Spawnable = false
 ENT.AdminSpawnable = false
-ENT.PrintName = "Y-Wing New"
+ENT.PrintName = "BTL-A4 Y-Wing"
 ENT.Author = "Doctor Jew"
 ENT.WorldModel = "models/ywing/ywing1.mdl"
 ENT.Vehicle = "YWingNew"
 ENT.Allegiance = "Rebels"
+ENT.Class = "Bomber"
 
-list.Set("SWVRVehicles", ENT.PrintName, ENT)
+list.Set("SWVRVehicles", ENT.Folder, ENT)
 util.PrecacheModel("models/ywing/ywing1.mdl")
 
 if SERVER then
@@ -39,29 +40,27 @@ if SERVER then
             roll = true
         })
 
-        self:AddWeaponGroup("Main", "ywing_fire", self:InitBullet{
-            damage = 85,
-            color = "red",
-            delay = 0.2,
-            overheat = true
+        self:AddWeaponGroup("Main", "rg9_cannon", {
+            Delay = 0.2,
+            Damage = 85,
+            Tracer = "blue_tracer_fx"
         })
 
         self:AddWeapon("Main", "MainR", Vector(200, 18, 50))
         self:AddWeapon("Main", "MainL", Vector(200, -18, 50))
 
-        self:AddWeaponGroup("Front", "weapons/xwing_shoot.wav", self:InitBullet{
-            damage = 40,
-            color = "blue",
-            delay = 0.2,
-            overheat = false
+        self:AddWeaponGroup("Turret", "rg9_cannon", {
+            Delay = 0.5,
+            Damage = 40,
+            Tracer = "blue_tracer_fx"
         })
 
-        self:AddWeapon("Front", "Left", Vector(80, -4, 100))
-        self:AddWeapon("Front", "Right", Vector(80, 4, 100))
+        self:AddWeapon("Turret", "Left", Vector(80, -4, 100))
+        self:AddWeapon("Turret", "Right", Vector(80, 4, 100))
 
         self:AddPilot(nil, nil, {
             fpvpos = Vector(96, 0, 88),
-            weapons = {"Main", "Front"}
+            weapons = {"Main", "Turret"}
         })
 
         self.BaseClass.Initialize(self)
