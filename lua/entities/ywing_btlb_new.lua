@@ -1,5 +1,5 @@
 ENT.Base = "swvr_base"
-ENT.Category = "Empire"
+ENT.Category = "Republic"
 ENT.Spawnable = false
 ENT.AdminSpawnable = false
 ENT.PrintName = "Y-Wing BTL-B"
@@ -7,7 +7,7 @@ ENT.Author = "Doctor Jew"
 ENT.WorldModel = "models/ywing/ywing_btlb_test.mdl"
 ENT.Vehicle = "YWingBtlB"
 ENT.Allegiance = "Galactic Empire"
-ENT.Class = "Capital"
+ENT.Class = "Bomber"
 
 list.Set("SWVRVehicles", ENT.Folder, ENT)
 util.PrecacheModel("models/ywing/ywing_btlb_test_cockpit.mdl")
@@ -115,12 +115,12 @@ end
 if CLIENT then
     function ENT:Initialize()
         self:Setup({
-            viewdistance = 1200,
-            viewheight = 375,
-            cockpit = {
-                path = "models/ywing/ywing_btlb_test_cockpit.mdl"
+            ViewDistance = 1200,
+            ViewHeight = 375,
+            Cockpit = {
+                Path = "models/ywing/ywing_btlb_test_cockpit.mdl"
             },
-            enginesound = "vehicles/ywing_eng_loop2.wav"
+            EngineSound = "vehicles/ywing_eng_loop2.wav"
         })
 
         self:SetupDefaults()
@@ -132,11 +132,11 @@ if CLIENT then
         })
 
         local engineOptions = {
-            startsize = 65,
-            endsize = 40,
-            lifetime = 2.7,
-            color = Color(255, 0, 0),
-            spirte = "sprites/bluecore"
+            StartSize = 65,
+            EndSize = 40,
+            Lifetime = 2.7,
+            Color = Color(255, 0, 0),
+            Sprite = "sprites/bluecore"
         }
 
         -- Adding engine effects
@@ -144,7 +144,7 @@ if CLIENT then
         self:AddEngine(Vector(-630, -240, 60), engineOptions)
 
         self:AddLight(Vector(-630, 240, 60), {
-            size = 100
+            Size = 100
         })
 
         -- Initialize the base, do not remove.

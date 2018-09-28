@@ -25,32 +25,32 @@ end
 
 function ENT:Setup(options)
   options = options or {}
-  self.ViewDistance = options.viewdistance or 1000
-  self.ViewHeight = options.viewheight or 300
+  self.ViewDistance = options.ViewDistance or 1000
+  self.ViewHeight = options.ViewHeight or 300
 
   if (options.cockpit) then
-    if (istable(options.cockpit) and util.IsValidModel(options.cockpit.path)) then
+    if (istable(options.Cockpit) and util.IsValidModel(options.Cockpit.Path)) then
       self.Cockpit = {
-        Path = options.cockpit.path,
-        Pos = options.cockpit.pos and self:LocalToWorld(options.cockpit.pos) or nil,
-        Ang = options.cockpit.ang or nil
+        Path = options.Cockpit.Path,
+        Pos = options.Cockpit.Pos and self:LocalToWorld(options.Cockpit.Pos) or nil,
+        Ang = options.Cockpit.Ang or nil
       }
-    elseif (isstring(options.cockpit)) then
-      local mat = Material(options.cockpit)
+    elseif (isstring(options.Cockpit)) then
+      local mat = Material(options.Cockpit)
 
       if (mat:IsError()) then
         error("Invalid cockpit texture specified!")
       end
 
-      self.Cockpit = surface.GetTextureID(options.cockpit)
+      self.Cockpit = surface.GetTextureID(options.Cockpit)
     end
   end
 
-  if (options.enginesound) then
+  if (options.EngineSound) then
     self.Sounds = self.Sounds or {}
     self.Sounds.Engine = {}
     self.Sounds.Engine.Name = "Engine"
-    self.Sounds.Engine.Path = options.enginesound
+    self.Sounds.Engine.Path = options.EngineSound
   end
 end
 
@@ -69,16 +69,12 @@ function ENT:SetupDefaults(options)
 
   if options.OnFire == nil or tobool(options.OnFire) then
     self:AddEvent("OnFire", function(group, seat)
-      if LocalPlayer():GetNWEntity("Ship") ~= self then
-        return
-      end
+      if not group.CanOverheat then return end
+      if LocalPlayer():GetNWEntity("Ship") ~= self then return end
+      if LocalPlayer():GetNWString("SeatName") ~= seat then return end
 
-      if LocalPlayer():GetNWString("SeatName") ~= seat then
-        return
-      end
-
-      if (group.Overheat >= group.OverheatMax - 10) then
-        self:EmitSound("swvr/weapons/swvr_overheat_ping.wav", 75, 100, math.Clamp(math.exp(math.pow(group.Overheat / group.OverheatMax * 0.98, 7)) - 1, 0, 1))
+      if (group.Overheat >= group.MaxOverheat - 10) then
+        self:EmitSound("swvr/weapons/swvr_overheat_ping.wav", 75, 100, math.Clamp(math.exp(math.pow(group.Overheat / group.MaxOverheat * 0.98, 7)) - 1, 0, 1))
       end
     end)
   end
@@ -238,7 +234,7 @@ function ENT:OnRemove()
     SafeRemoveEntity(v.Ent)
   end
 
-  SafeRemoveEntity(self.Cockpit.Ent)
+  SafeRemoveEntity(self.Cockpit and self.Cockpit.Ent or NULL)
 end
 
 function ENT:EngineEffects()
@@ -303,11 +299,11 @@ function ENT:AddEngine(pos, options)
 
   self.Engines[table.Count(self.Engines) + 1] = {
     Pos = pos,
-    Color = options.color or Color(0, 0, 255, 255),
-    Sprite = options.sprite or "sprites/bluecore",
-    Lifetime = options.lifetime or 1.25,
-    StartSize = options.startsize or 25,
-    EndSize = options.endsize or 18.75
+    Color = options.Color or Color(0, 0, 255, 255),
+    Sprite = options.Sprite or "sprites/bluecore",
+    Lifetime = options.Lifetime or 1.25,
+    StartSize = options.StartSize or 25,
+    EndSize = options.EndSize or 18.75
   }
 end
 
@@ -317,12 +313,12 @@ function ENT:AddLight(pos, options)
 
   self.Lights[table.Count(self.Lights) + 1] = {
     Pos = self:LocalToWorld(pos),
-    Brightness or options.brightness or 8,
-    Size = options.size or {1, 100},
-    Decay = options.decay or 1024,
-    Color = options.color or Color(255, 255, 255),
-    DieTime = options.lifetime or 1,
-    Callback = options.callback or nil
+    Brightness or options.Brightness or 8,
+    Size = options.Size or {1, 100},
+    Decay = options.Decay or 1024,
+    Color = options.Color or Color(255, 255, 255),
+    DieTime = options.Lifetime or 1,
+    Callback = options.Callback or nil
   }
 end
 
@@ -900,4 +896,11 @@ net.Receive("SWVREvent", function()
   local event = net.ReadString()
   local ship = net.ReadEntity()
   ship:DispatchEvent(event)
+end)
+
+net.Receive("SWVR.NetworkWeapons", function()
+  local ship = net.ReadEntity()
+  local group = net.ReadTable()
+
+  ship.WeaponGroups[group.Name] = group
 end)

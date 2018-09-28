@@ -53,18 +53,12 @@ function ENT:Initialize()
     View = CurTime()
   }
 
-  self.FireFunctions = {
-    [WEAPON_CANNON] = self.FireGuns,
-    [WEAPON_PROTON_TORPEDO] = self.FireProtonTorpedo
-  }
-
   self.Velocity = Vector()
   self.Throttle = Vector()
 
   self.Acceleration = 1
   self.Roll = 0
   self.LastCollide = CurTime()
-  self.CollideTimer = 1
 
   self.Phys = {
     secondstoarrive = 1,
@@ -88,8 +82,6 @@ function ENT:Initialize()
 
   self:InitPhysics()
 
-  --self:SpawnParts()
-  --self:SpawnWeapons()
   self:SpawnSeats()
 end
 
@@ -236,24 +228,6 @@ function ENT:InitModel()
   --self:Activate()
 end
 
-function ENT:SpawnParts()
-  self.Parts = self.Parts or {}
-
-  for k, v in pairs(self.Parts) do
-    local e = ents.Create("prop_dynamic")
-    e:SetPos(v.Pos or self:GetPos())
-    e:SetAngles(v.Ang or self:GetAngles())
-    e:SetModel(v.Path)
-    e:SetParent(isstring(v.Parent) and self.Parts[v.Parent].Ent or self)
-    e:Spawn()
-    e:SetModelScale(self:GetModelScale())
-    e:Activate()
-    e:GetPhysicsObject():EnableCollisions(false)
-    e:GetPhysicsObject():EnableMotion(false)
-    v.Ent = e
-  end
-end
-
 --- Setup the hyperdrive system.
 -- Checks if user/server has WireMod installed and uses it.
 function ENT:InitDrive()
@@ -377,9 +351,9 @@ end
 -- @param groups[opt="None"] The weapon group associated with the seat.
 function ENT:AddSeat(name, pos, ang, options)
   if string.upper(name) == "PILOT" then
-    error("Seats cannot have the name \"Pilot\"")
+    error("Seats cannot have the name 'Pilot'! Use AddPilot instead.")
   elseif self.Seats[name] ~= nil then
-    error("Tried to create a seat (" .. name .. ") that already exists!")
+    error("Tried to create seat '" .. name .. "' that already exists!")
   end
 
   options = options or {}
@@ -389,26 +363,18 @@ function ENT:AddSeat(name, pos, ang, options)
 
   for k, v in pairs(self.Seats) do
     if v.Group == group and v.Group ~= "None" then
-      error("Tried to create a seat (" .. name .. ") with a weapon group that is in use!")
+      error("Tried to create seat '" .. name .. "' with weapon group '" .. group .. "' that is in use!")
     end
   end
 
-  local hasEnergyWeapon = false
-
   if table.Count(group) > 3 then
-    error("Tried to create a seat (" .. name .. ") with more than three weapon groups!")
+    error("Tried to create seat '" .. name .. "' with more than three weapon groups!")
   else
     for i = 1, 3 do
       if group[i] then
         if not self.WeaponGroups[group[i]] then
           error("Tried to create a seat (" .. name .. ") with weapon group (" .. group[i] .. ") that does not exist!")
         end
-
-        -- if self.WeaponGroups[group[i]].Bullet.Type ~= WEAPON_CANNON and not hasEnergyWeapon then
-        --   hasEnergyWeapon = true
-        -- elseif self.WeaponGroups[group[i]].Bullet.Type ~= WEAPON_CANNON and hasEnergyWeapon then
-        --   error("Seat (" .. name .. ") cannot have more than one energy weapon!")
-        -- end
 
         if string.upper(group[i]) ~= "NONE" then
           buttonMap[SWVR.Buttons[i]] = group[i]
@@ -470,7 +436,7 @@ function ENT:AddPart(name, path, pos, ang, options)
   self.Parts = self.Parts or {}
   options = options or {}
 
-  if (options.callback and not options.seat) then
+  if (options.Callback and not options.Seat) then
     error("You cannot add a part callback without also assigning a seat.")
   end
 
@@ -502,9 +468,6 @@ function ENT:AddPart(name, path, pos, ang, options)
   return e
 end
 
-function ENT:GetPart(name)
-  return self.Parts[name]
-end
 
 function ENT:SpawnSeats()
   self.Seats = self.Seats or {}
@@ -627,17 +590,10 @@ function ENT:Enter(p)
 end
 
 function ENT:PassengerEnter(p)
-  if self:GetPilot() == p then
-    return
-  end -- This could cause weirdness...
+  if self:GetPilot() == p then return end -- This could cause weirdness...
+  if self.Cooldown.Use > CurTime() then return end
 
-  if self.Cooldown.Use > CurTime() then
-    return
-  end
-
-  if self:CheckHook(hook.Run("SWVRPassengerEnter", p)) then
-    return
-  end
+  if self:CheckHook(hook.Run("SWVRPassengerEnter", p)) then return end
 
   for k, v in pairs(self.Seats) do
     if v.Ent:GetPassenger(1) == NULL then
@@ -674,25 +630,16 @@ function ENT:Exit(kill)
     p:DrawViewModel(true)
     p:DrawWorldModel(true)
     p:Spawn()
-    p:SetNWEntity("Ship", NULL)
-    p:SetNWEntity("Seat", NULL)
-    p:SetNWBool("Flying", false)
-    p:SetNWBool("Pilot", false)
-    local exit = p:GetNWVector("ExitPos", nil)
-    p:SetPos(exit)
+
     p:SetCollisionGroup(COLLISION_GROUP_PLAYER)
     p:SetViewEntity(NULL)
-    self:LoadPlayer(p)
+
     p:SetRenderMode(RENDERMODE_NORMAL)
     p:SetColor(Color(255, 255, 255, 255))
     p:SetVelocity(self:GetVelocity())
     p:SetModelScale(1)
 
-    if (kill and p:Alive() and not p:HasGodMode()) then
-      p:Kill()
-    end
-
-    p:SetNWVector("ExitPos", nil)
+    self:LoadPlayer(p, kill)
   end
 
   self:Rotorwash(false)
@@ -707,12 +654,6 @@ function ENT:Exit(kill)
   end
 
   self.Cooldown.Use = CurTime() + 1
-
-  for k, v in pairs(self.WeaponGroups) do
-    if v.Seat == "Pilot" then
-      v:SetPlayer(NULL)
-    end
-  end
 end
 
 function ENT:Eject()
@@ -725,27 +666,7 @@ function ENT:Eject()
 end
 
 function ENT:PassengerExit(p, kill)
-  for k, v in pairs(self.WeaponGroups) do
-    if v.Seat == p:GetNWString("SeatName") then
-      v:SetPlayer(NULL)
-    end
-  end
-
-  p:SetNWEntity("Ship", NULL)
-  p:SetNWEntity("Seat", NULL)
-  p:SetNWString("SeatName", nil)
-  p:SetNWBool("Flying", false)
-  p:SetNWBool("Pilot", false)
-
-  if not kill then
-    p:SetPos(p:GetNWVector("ExitPos", Vector(0, 0, 0)))
-  elseif kill and p:Alive() and not p:HasGodMode() then
-    p:Kill()
-  end
-
-  p:SetNWVector("ExitPos", nil)
-  table.Empty(self.Players[p:EntIndex()])
-  table.remove(self.Players, p:EntIndex())
+  self:LoadPlayer(p, kill)
 end
 
 --- Save a player's state.
@@ -778,42 +699,63 @@ end
 --- Load a player's state.
 -- This loads a player's weapons, health, and armor.
 -- @param p The player to load.
-function ENT:LoadPlayer(p)
-  local data = self.Players[p:EntIndex()]
-  p:SetHealth(data.health)
-  p:SetArmor(data.armor)
-
-  for k, v in pairs(data.weaponTable) do
-    if not p:HasWeapon(tostring(v)) then
-      p:Give(tostring(v))
+function ENT:LoadPlayer(p, kill)
+  for k, v in pairs(self.WeaponGroups) do
+    if v.Seat == p:GetNWString("SeatName") then
+      v:SetPlayer(NULL)
     end
   end
 
-  if data.activeWeapon ~= "" then
-    p:SelectWeapon(data.activeWeapon)
+  local data = self.Players[p:EntIndex()]
+  if istable(data) then
+    p:SetHealth(data.health)
+    p:SetArmor(data.armor)
+
+    for k, v in pairs(data.weaponTable) do
+      if not p:HasWeapon(tostring(v)) then
+        p:Give(tostring(v))
+      end
+    end
+
+    if data.activeWeapon ~= "" then
+      p:SelectWeapon(data.activeWeapon)
+    end
+
+    p:StripAmmo()
+
+    for k, v in pairs(data.ammoTable) do
+      p:SetAmmo(v[2], v[1])
+    end
+
+    p:SetCanZoom(true)
+    table.Empty(self.Players[p:EntIndex()])
+    table.remove(self.Players, p:EntIndex())
   end
 
-  p:StripAmmo()
+  p:SetNWEntity("Ship", NULL)
+  p:SetNWEntity("Seat", NULL)
+  p:SetNWString("SeatName", nil)
+  p:SetNWBool("Flying", false)
+  p:SetNWBool("Pilot", false)
 
-  for k, v in pairs(data.ammoTable) do
-    p:SetAmmo(v[2], v[1])
+  if not kill then
+    p:SetPos(p:GetNWVector("ExitPos", Vector(0, 0, 0)))
+  elseif kill and p:Alive() and not p:HasGodMode() then
+    p:Kill()
   end
 
-  p:SetCanZoom(true)
-  table.Empty(self.Players[p:EntIndex()])
-  table.remove(self.Players, p:EntIndex())
+  p:SetNWVector("ExitPos", nil)
 end
 
---- Spawn a test prop at a location.
--- Useful for testing weapon/engine positions.
--- @param pos position to spawn test prop.
-function ENT:TestPos(pos)
-  local e = ents.Create("prop_physics")
-  e:SetPos(self:LocalToWorld(pos))
-  e:SetModel("models/props_junk/PopCan01a.mdl")
-  e:Spawn()
-  e:Activate()
-  e:SetParent(self)
+function ENT:GetPlayers()
+  local players = {}
+  for k, v in pairs(self.Players) do
+    if IsValid(v.ent) then
+      table.insert(players, v.ent)
+    end
+  end
+
+  return players
 end
 
 --- Fire a specific weapon group.
@@ -834,72 +776,6 @@ function ENT:FindTarget()
   end
 
   return NULL
-end
-
---- Fire a torpedo.
--- Fire a proton torpedo specified by table.
--- @param data Torpedo table data
-function ENT:FireTorpedo(data, target)
-  local ent = {
-    class = data.class or "torpedo_blast",
-    sound = self.name .. "_torpedo",
-    target = data.target or nil,
-    damage = data.damage or 600,
-    color = data.color or Color(255, 255, 255, 255),
-    size = data.size or 20,
-    ion = data.ion or false,
-    pos = data.pos,
-    vel = data.velocity
-  }
-
-  local torpedo = ents.Create(ent.class)
-  torpedo.Damage = ent.damage
-  torpedo.SpriteColour = ent.color
-  torpedo.StartSize = ent.size
-  torpedo.EndSize = torpedo.StartSize * 0.75 or 15
-  torpedo.Ion = ent.ion
-  torpedo:SetPos(ent.pos)
-  torpedo:SetAngles(self:GetAngles())
-  torpedo:SetCollisionGroup(COLLISION_GROUP_PROJECTILE)
-  torpedo:Prepare(self, ent.sound, {})
-  torpedo:SetColor(Color(255, 255, 255, 1))
-  torpedo.Ang = self:GetAngles()
-
-  if (IsValid(target)) then
-    torpedo.Target = target
-    torpedo.Targetting = true
-  end
-
-  torpedo:Spawn()
-  torpedo:Activate()
-  constraint.NoCollide(self, torpedo, 0, 0)
-end
-
-function ENT:FireProtonTorpedo(w, target)
-  local e = ents.Create("proton_torpedo")
-  local group = self.WeaponGroups[w.Group]
-  local snd = group.Sound or Sound("weapons/n1_cannon.wav")
-
-  e.Damage = group.Bullet.Damage or 600
-  e.SpriteColor = group.Bullet.Color or Color(255, 255, 255, 255)
-  e.StartSize = group.Bullet.StartSize or 20
-  e.EndSize = group.Bullet.EndSize or group.Bullet.StartSize * 0.75
-  e.Ion = group.Bullet.Ion or false
-  e:SetPos(w.Pos)
-  e:SetAngles(self:GetAngles())
-  e:SetCollisionGroup(COLLISION_GROUP_PROJECTILE)
-  e:Prepare(self, snd, group.Bullet)
-  e:SetColor(Color(255, 255, 255, 1))
-  e.Ang = self:GetAngles()
-
-  if (IsValid(target)) then
-    e.Target = target
-    e.Targetting = true
-  end
-
-  e:Spawn()
-  e:Activate()
-  constraint.NoCollide(self, e, 0, 0)
 end
 
 --- Destroy the vehicle.
@@ -929,10 +805,7 @@ function ENT:Bang()
       if v.Name == "Pilot" then continue end
       local p = v.Ent:GetPassenger(1)
 
-      if (IsValid(p)) then
-        p:ExitVehicle()
-        p:Kill()
-      end
+      self:PassengerExit(p, true)
     end
   end
 
@@ -980,9 +853,7 @@ end
 
 function ENT:ResetThrottle()
   self.Throttle:Zero()
-
   self.Velocity:Zero()
-
   self.Acceleration = 1
 end
 
@@ -1254,7 +1125,7 @@ function ENT:PhysicsCollide(colData, collider)
     d:SetInflictor(game.GetWorld())
 
     self:TakeDamageInfo(d)
-    self.LastCollide = CurTime() + self.CollideTimer
+    self.LastCollide = CurTime() + 1
   end
 end
 
@@ -1293,48 +1164,6 @@ function ENT:OnTakeDamage(dmg)
   if (self:GetCurHealth() <= 0) then
     self:Bang()
   end
-end
-
-function ENT:AddEvent(name, callback, default)
-  self.Events = self.Events or {}
-  self.Events[string.upper(name)] = self.Events[string.upper(name)] or {}
-
-  table.insert(self.Events[string.upper(name)], {
-    Callback = callback or function()
-      return
-    end,
-    Default = Either(isbool(default) and not default, false, true)
-  })
-end
-
-function ENT:DispatchEvent(event, ...)
-  -- I originally wanted to net.Send() the client event to ONLY passengers
-  -- I decided this was a bad idea because it limited developers...
-  -- If you want to make sure a client event is on passengers only, just check LocalPlayer():GetNWEntity("Ship") == self
-
-  net.Start("SWVREvent")
-    net.WriteString(event)
-    net.WriteEntity(self)
-
-  for _, v in ipairs({...}) do
-    local t = type(v):gsub("^%l", string.upper)
-    t = isnumber(v) and "Float" or isentity(v) and "Entity" or isbool(v) and "Bool" or t -- Due to the nature of Lua 5.1, only floats are supported
-    net["Write" .. t](v) -- This is some ghetto hack...
-  end
-
-  net.Broadcast()
-  local default = true
-
-  for k, v in pairs(self.Events[string.upper(event)] or {}) do
-    v.Callback(...)
-    default = Either(not v.Default, false, default)
-  end
-
-  if self["_" .. event] ~= nil then
-    self["_" .. event](self, default, ...)
-  end
-
-  hook.Run("SWVR." .. event, self, default, ...)
 end
 
 function ENT:Rotorwash(b)
@@ -1380,13 +1209,60 @@ function ENT:NetworkWeapons()
     local n = "Weapon" .. name
     self:SetNWBool(n .. "CanOverheat", group:GetCanOverheat())
     self:SetNWBool(n .. "IsOverheated", group:GetOverheated())
-    self:SetNWBool(n .. "Track", group:GetCanLock())
+    self:SetNWBool(n .. "Track", group:GetIsTracking())
     self:SetNWInt(n .. "Overheat", group:GetOverheat())
     self:SetNWInt(n .. "OverheatMax", group:GetMaxOverheat())
     self:SetNWInt(n .. "OverheatCooldown", group:GetOverheatCooldown())
   end
 
   self:SetNWString("WeaponGroups", string.sub(weaponGroups, 2))
+end
+
+-- function ENT:NetworkWeapons()
+--   for name, group in pairs(self.WeaponGroups) do
+--     net.Start("SWVR.NetworkWeapons")
+--       net.WriteEntity(self)
+--       net.WriteTable(group:Serialize())
+--     net.Send(self:GetPlayers())
+--   end
+-- end
+
+function ENT:AddEvent(name, callback, default)
+  self.Events = self.Events or {}
+  self.Events[string.upper(name)] = self.Events[string.upper(name)] or {}
+
+  table.insert(self.Events[string.upper(name)], {
+    Callback = callback or function()
+      return
+    end,
+    Default = Either(isbool(default) and not default, false, true)
+  })
+end
+
+function ENT:DispatchEvent(event, ...)
+  net.Start("SWVREvent")
+    net.WriteString(event)
+    net.WriteEntity(self)
+
+  for _, v in ipairs({...}) do
+    local t = type(v):gsub("^%l", string.upper)
+    t = isnumber(v) and "Float" or isentity(v) and "Entity" or isbool(v) and "Bool" or t -- Due to the nature of Lua 5.1, only floats are supported
+    net["Write" .. t](v) -- This is some ghetto hack...
+  end
+
+  net.Broadcast()
+  local default = true
+
+  for k, v in pairs(self.Events[string.upper(event)] or {}) do
+    v.Callback(...)
+    default = Either(not v.Default, false, default)
+  end
+
+  if self["_" .. event] ~= nil then
+    self["_" .. event](self, default, ...)
+  end
+
+  hook.Run("SWVR." .. event, self, default, ...)
 end
 
 hook.Add("PlayerSpawnedSENT", "SWVRServerSpawnedSENT", function(p, e)
@@ -1405,4 +1281,5 @@ end)
 
 hook.Add("Initialize", "SWVRInitialize", function()
   util.AddNetworkString("SWVREvent")
+  util.AddNetworkString("SWVR.NetworkWeapons")
 end)

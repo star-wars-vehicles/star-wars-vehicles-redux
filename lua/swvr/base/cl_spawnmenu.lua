@@ -92,7 +92,15 @@ end)
 
 hook.Add("SWVRVehiclesTab", "AddEntityContent", function(pnlContent, tree, node)
   local Categorised = { }
-  local SpawnableEntities = table.Merge(list.Get("SWVRVehicles") or { }, list.Get("SWVRVehicles.Weapons") or { })
+  local SpawnableEntities = table.Merge(--[[list.Get("SWVRVehicles") or ]]{ }, list.Get("SWVRVehicles.Weapons") or { })
+
+  for k, v in pairs(scripted_ents.GetList()) do
+    if v.t.Base == "swvr_base" then
+      table.insert(SpawnableEntities, v.t)
+    end
+  end
+
+  PrintTable(SpawnableEntities)
 
   if (SpawnableEntities) then
     for k, v in pairs(SpawnableEntities) do

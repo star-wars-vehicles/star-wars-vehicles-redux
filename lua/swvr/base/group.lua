@@ -115,9 +115,12 @@ function GROUP:Serialize()
 		Class = self:GetClass(),
 		Delay = self:GetDelay(),
 		Cooldown = self:GetCooldown(),
-		OverheatMax = self:GetMaxOverheat(),
+		CanOverheat = self:GetCanOverheat(),
+		MaxOverheat = self:GetMaxOverheat(),
 		Overheat = self:GetOverheat(),
-		Overheated = self:GetOverheated()
+		OverheatCooldown = self:GetOverheatCooldown(),
+		Overheated = self:GetOverheated(),
+		IsTracking = self:GetIsTracking()
 	}
 end
 

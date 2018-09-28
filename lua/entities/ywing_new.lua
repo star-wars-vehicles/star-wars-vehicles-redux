@@ -9,7 +9,6 @@ ENT.Vehicle = "YWingNew"
 ENT.Allegiance = "Rebels"
 ENT.Class = "Bomber"
 
-list.Set("SWVRVehicles", ENT.Folder, ENT)
 util.PrecacheModel("models/ywing/ywing1.mdl")
 
 if SERVER then
@@ -43,7 +42,8 @@ if SERVER then
         self:AddWeaponGroup("Main", "rg9_cannon", {
             Delay = 0.2,
             Damage = 85,
-            Tracer = "blue_tracer_fx"
+            CanOverheat = true,
+            MaxOverheat = 10
         })
 
         self:AddWeapon("Main", "MainR", Vector(200, 18, 50))
@@ -70,28 +70,28 @@ end
 if CLIENT then
     function ENT:Initialize()
         self:Setup({
-            cockpit = "vgui/ywing_cockpit",
-            enginesound = "vehicles/xwing/xwing_fly2.wav",
-            viewdistance = 700,
-            viewheight = 200
+            Cockpit = "vgui/ywing_cockpit",
+            EngineSound = "vehicles/xwing/xwing_fly2.wav",
+            ViewDistance = 700,
+            ViewHeight = 200
         })
 
         self:SetupDefaults()
 
         self:AddEngine(Vector(-270, 122, 53), {
-            startsize = 15,
-            endsize = 13.5,
-            lifetime = 2.7,
-            color = Color(255, 100, 100),
-            sprite = "sprites/orangecore1"
+            StartSize = 15,
+            EndSize = 13.5,
+            Lifetime = 2.7,
+            Color = Color(255, 100, 100),
+            Sprite = "sprites/orangecore1"
         })
 
         self:AddEngine(Vector(-270, -122, 53), {
-            startsize = 15,
-            endsize = 13.5,
-            lifetime = 2.7,
-            color = Color(255, 100, 100),
-            sprite = "sprites/orangecore1"
+            StartSize = 15,
+            EndSize = 13.5,
+            Lifetime = 2.7,
+            Color = Color(255, 100, 100),
+            Sprite = "sprites/orangecore1"
         })
 
         self.BaseClass.Initialize(self)
