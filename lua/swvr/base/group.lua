@@ -13,6 +13,7 @@ AccessorFunc(GROUP, "MaxOverheat", "MaxOverheat", FORCE_NUMBER)
 AccessorFunc(GROUP, "CanOverheat", "CanOverheat", FORCE_BOOL)
 AccessorFunc(GROUP, "Overheated", "Overheated", FORCE_BOOL)
 AccessorFunc(GROUP, "CanLock", "CanLock", FORCE_BOOL)
+AccessorFunc(GROUP, "IsTracking", "IsTracking", FORCE_BOOL)
 
 AccessorFunc(GROUP, "Owner", "Owner")
 
@@ -48,13 +49,25 @@ function GROUP:GetTarget()
 end
 
 function GROUP:SetParent(ent)
-	if not ent == NULL or not isentity(ent) then error("Expected entity but got " .. type(ent) .. " instead!") end
+	if not ent == NULL or not isentity(ent) then error("Expected entity but got " .. type(ent) .. " (" .. tostring(ent) .. ") instead!") end
 
 	self.Parent = ent
 end
 
 function GROUP:GetParent()
 	return self.Parent
+end
+
+function GROUP:SetPlayer(ply)
+	self.Player = (isentity(ply) and ply:IsPlayer()) and ply or NULL
+
+	for _, weapon in ipairs(self.Weapons) do
+			weapon:SetOptions({ Player = self.Player })
+	end
+end
+
+function GROUP:GetPlayer()
+	return self.Player
 end
 
 function GROUP:SetOptions(tbl)
@@ -77,11 +90,23 @@ function GROUP:GetOptions()
 end
 
 function GROUP:Fire(cond)
+	if self:GetCooldown() > CurTime() or self:GetOverheated() then return end
+
+	if self:GetCanLock() then
+		self:SetTarget(self:GetOwner():FindTarget())
+	end
+
+	if self.Sound then
+		self.Owner:EmitSound(self.Sound)
+	end
+
 	for _, weapon in ipairs(self.Weapons) do
 		if type(cond) == "function" and not cond(weapon) then continue end
 		weapon:Fire()
 		self.Parent:EmitSound("ywing_fire")
 	end
+
+	self:SetCooldown(CurTime() + self:GetDelay())
 end
 
 function GROUP:Serialize()

@@ -105,8 +105,6 @@ function ENT:Think()
       --self:ThinkWeapons() -- Can't fire if the engine isn't on...
     end
 
-    self:ThinkWeapons()
-
     self:ThinkControls()
 
     if (not self:IsTakingOff() and not self:IsLanding() and self.Velocity:IsZero()) then
@@ -122,6 +120,8 @@ function ENT:Think()
       self.HoverStart = 0
     end
   end
+
+  self:ThinkWeapons()
 
   self:ThinkParts()
   self:NextThink(CurTime())
@@ -151,7 +151,7 @@ function ENT:ThinkWeapons()
             self:DispatchEvent("OnOverheat", group:Serialize(), seat)
           end
         elseif (group:GetOverheated()) then
-          group:SetOverheat(group:GetOverheat() - group:OverheatCooldown() * 2.5 * FrameTime())
+          group:SetOverheat(group:GetOverheat() - group:GetOverheatCooldown() * 2.5 * FrameTime())
           group.OverheatCooldown = math.Approach(group.OverheatCooldown, 4, 1)
 
           if (group:GetCanOverheat() and group:GetOverheat() <= 0 and group:GetOverheatCooldown() >= 4) then
@@ -195,8 +195,12 @@ function ENT:ThinkParts()
   for k, v in pairs(self.Parts or {}) do
     if not v.Callback then continue end
     if not IsValid(v.Entity) then continue end
-    local passenger = (v.Seat and IsValid(self.Seats[v.Seat].Ent) and self.Seats[v.Seat].Ent:GetPassenger(1) ~= NULL) and self.Seats[v.Seat].Ent:GetPassenger(1) or nil
+
+    local seat = self.Seats[v.Seat]
+    local passenger = (seat and IsValid(seat.Ent)) and seat.Ent:GetPassenger(1) or NULL
+
     if not IsValid(passenger) then continue end
+
     local newPos, newAng = v.Callback(self, v.Entity, passenger)
 
     if newPos then
@@ -281,47 +285,6 @@ function ENT:InitPhysics()
   end
 end
 
--- Setup proton bomb structure.
--- Create a proton bomb structure given table data.
--- @param bomb The table to contrsuct the proton bomb with.
--- @return A proton bomb structure.
-function ENT:InitProtonBomb(data)
-  return {
-    Type = WEAPON_PROTON_BOMB,
-    Damage = data.damage or 600,
-    IsWhite = data.isWhite or false,
-    StartSize = data.startSize or 20,
-    EndSize = data.endSize or (data.startSize or 20) * 0.75,
-    Gravity = data.gravity or true,
-    Velocity = data.velocity or 0.5
-  }
-end
-
-function ENT:InitConcussionMissile(data)
-  return {
-    Type = WEAPON_CONCUSSION_MISSILE,
-    Damage = data.damge or 600,
-    Ent = "proton_torpedo",
-    SpriteColor = data.color or Color(255, 255, 255, 255),
-    StartSize = data.startsize or 20,
-    EndSize = data.endsize or (data.startsize or 20) * 0.75,
-    Ion = data.ion or false
-  }
-end
-
-function ENT:InitProtonTorpedo(data)
-  data = data or {}
-  return {
-    Type = WEAPON_PROTON_TORPEDO,
-    Damage = data.damage or 600,
-    Ent = "proton_torpedo",
-    SpriteColor = data.color or Color(255, 255, 255, 255),
-    StartSize = data.startsize or 20,
-    EndSize = data.endsize or (data.startsize or 20) * 0.75,
-    Ion = data.ion or false
-  }
-end
-
 --- Setup the necessary flight model for the ship
 -- @param health
 function ENT:Setup(options)
@@ -350,6 +313,11 @@ function ENT:AddWeaponGroup(name, weapon, options)
   end
 
   options = options or {}
+  if isstring(options.Parent) then
+    options.Parent = self.Parts[options.Parent].Entity
+  end
+
+  options.Parent = options.Parent or self
 
   local group = SWVR:WeaponGroup(weapon)
   group:SetName(name)
@@ -381,15 +349,14 @@ function ENT:AddWeapon(group, name, pos, options)
     end
   end
 
-  options = options or {}
-  if isstring(options.Parent) then
-    options.Parent = self.Parts[options.Parent].Entity or self
-  end
-
-
-
   local WeaponGroup = self.WeaponGroups[group]
 
+  options = options or {}
+  if isstring(options.Parent) then
+    options.Parent = self.Parts[options.Parent].Entity
+  end
+
+  options.Parent = options.Parent or WeaponGroup:GetParent() or self
   options.Name = name
 
   local weapon = WeaponGroup:AddWeapon(options)
@@ -442,11 +409,11 @@ function ENT:AddSeat(name, pos, ang, options)
         -- elseif self.WeaponGroups[group[i]].Bullet.Type ~= WEAPON_CANNON and hasEnergyWeapon then
         --   error("Seat (" .. name .. ") cannot have more than one energy weapon!")
         -- end
-      end
 
-      if group[i] and string.upper(group[i]) ~= "NONE" then
-        buttonMap[SWVR.Buttons[i]] = group[i]
-        self.WeaponGroups[group[i]].Seat = name
+        if string.upper(group[i]) ~= "NONE" then
+          buttonMap[SWVR.Buttons[i]] = group[i]
+          self.WeaponGroups[group[i]].Seat = name
+        end
       end
     end
   end
@@ -628,23 +595,34 @@ function ENT:Enter(p)
     p:SetColor(Color(255, 255, 255, 0))
     p:SetMoveType(MOVETYPE_NOCLIP)
     p:SetCollisionGroup(COLLISION_GROUP_IN_VEHICLE)
+
     self:SavePlayer(p)
     self:IsTakingOff(true)
     self:SetFlight(true)
+
     p:StripWeapons()
     p:SetViewEntity(self)
     p:SetModelScale(self:GetModelScale())
+
     self:GetPhysicsObject():Wake()
     self:GetPhysicsObject():EnableMotion(true)
     self:StartMotionController()
+
     self:Rotorwash(true)
     self:SetPilot(p)
     self:SpawnPilot()
     self.Cooldown.Use = CurTime() + 1
     self.StartPos = self:GetPos()
     self.LandPos = self:GetPos() + Vector(0, 0, 10)
+
     p:SetNWVector("ExitPos", self.Seats["Pilot"].ExitPos)
     p:SetEyeAngles(self:GetAngles())
+
+    for k, v in pairs(self.WeaponGroups) do
+      if "Pilot" == v.Seat then
+        v:SetPlayer(p)
+      end
+    end
   end
 end
 
@@ -670,6 +648,12 @@ function ENT:PassengerEnter(p)
       p:SetNWBool("Flying", true)
       p:SetNWVector("ExitPos", v.ExitPos)
       self:SavePlayer(p)
+
+      for g, t in pairs(self.WeaponGroups) do
+        if v.Name == t.Seat then
+          t:SetPlayer(p)
+        end
+      end
 
       return
     end
@@ -723,6 +707,12 @@ function ENT:Exit(kill)
   end
 
   self.Cooldown.Use = CurTime() + 1
+
+  for k, v in pairs(self.WeaponGroups) do
+    if v.Seat == "Pilot" then
+      v:SetPlayer(NULL)
+    end
+  end
 end
 
 function ENT:Eject()
@@ -735,6 +725,12 @@ function ENT:Eject()
 end
 
 function ENT:PassengerExit(p, kill)
+  for k, v in pairs(self.WeaponGroups) do
+    if v.Seat == p:GetNWString("SeatName") then
+      v:SetPlayer(NULL)
+    end
+  end
+
   p:SetNWEntity("Ship", NULL)
   p:SetNWEntity("Seat", NULL)
   p:SetNWString("SeatName", nil)
@@ -824,26 +820,7 @@ end
 -- @param g The weapon group to fire
 function ENT:FireWeapons(g)
   local group = self.WeaponGroups[g]
-
-  if group:GetCooldown() > CurTime() then
-    return
-  end
-
-  if group:GetOverheated() then
-    return
-  end
-
-  if group:GetCanLock() then
-    group:SetTarget(self:FindTarget())
-  end
-
   group:Fire()
-
-  if group.Sound then
-    self:EmitSound(group.Sound)
-  end
-
-  self.WeaponGroups[g]:SetCooldown(CurTime() + group:GetDelay())
 end
 
 function ENT:FindTarget()

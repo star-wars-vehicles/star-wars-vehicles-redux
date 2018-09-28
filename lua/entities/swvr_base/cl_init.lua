@@ -63,7 +63,7 @@ function ENT:SetupDefaults(options)
         return
       end
 
-      surface.PlaySound("vehicles/shared/swvr_shields_down.wav")
+      surface.PlaySound("swvr/shields/swvr_shields_down.wav")
     end)
   end
 
@@ -78,7 +78,7 @@ function ENT:SetupDefaults(options)
       end
 
       if (group.Overheat >= group.OverheatMax - 10) then
-        self:EmitSound("vehicles/shared/swvr_overheat_ping.wav", 75, 100, math.Clamp(math.exp(math.pow(group.Overheat / group.OverheatMax * 0.98, 7)) - 1, 0, 1))
+        self:EmitSound("swvr/weapons/swvr_overheat_ping.wav", 75, 100, math.Clamp(math.exp(math.pow(group.Overheat / group.OverheatMax * 0.98, 7)) - 1, 0, 1))
       end
     end)
   end
@@ -95,7 +95,7 @@ function ENT:SetupDefaults(options)
         return
       end
 
-      surface.PlaySound("vehicles/shared/swvr_overheat_cooldown.wav")
+      surface.PlaySound("swvr/weapons/swvr_overheat_cooldown.wav")
     end)
   end
 
@@ -111,7 +111,7 @@ function ENT:SetupDefaults(options)
         return
       end
 
-      surface.PlaySound("vehicles/shared/swvr_overheat_reset.wav")
+      surface.PlaySound("swvr/weapons/swvr_overheat_reset.wav")
     end)
   end
 
@@ -121,9 +121,9 @@ function ENT:SetupDefaults(options)
       local ship = ply:GetNWEntity("Ship")
 
       if (IsValid(ship) and ship == self and ship:GetFirstPerson()) then
-        self:EmitSound("vehicles/shared/swvr_impact_fp_" .. math.random(1, 5) .. ".wav", 75, 100, 1)
+        self:EmitSound("swvr/impact/swvr_impact_fp_" .. math.random(1, 5) .. ".wav", 75, 100, 1)
       else
-        self:EmitSound("vehicles/shared/swvr_impact_" .. math.random(1, 6) .. ".wav", 60, 100, 0.25)
+        self:EmitSound("swvr/impact/swvr_impact_" .. math.random(1, 6) .. ".wav", 60, 100, 0.25)
       end
     end)
   end
@@ -235,14 +235,10 @@ function ENT:OnRemove()
   end
 
   for k, v in pairs(self.Parts or {}) do
-    if v.Ent and IsValid(v.Ent) then
-      v.Ent:Remove()
-    end
+    SafeRemoveEntity(v.Ent)
   end
 
-  if istable(self.Cockpit) and IsValid(self.Cockpit.Ent) then
-    self.Cockpit.Ent:Remove()
-  end
+  SafeRemoveEntity(self.Cockpit.Ent)
 end
 
 function ENT:EngineEffects()
@@ -421,7 +417,7 @@ function ENT:UpdateClientsideSound()
     if ((self:GetFirstPerson() or (isPassenger and not veh:GetThirdPersonMode())) and LocalPlayer():GetNWEntity("Ship") == self) then
       self.EngineSound:ChangeVolume(0.3)
     else
-      self.EngineSound:ChangeVolume(1)
+      self.EngineSound:ChangeVolume(0.7)
     end
   end
 end
@@ -567,14 +563,16 @@ function ENT:GetReticleLock()
 end
 
 function ENT:HUDDrawOverheating()
-  local seat = LocalPlayer():GetNWString("SeatName")
+  local seat = "Weapon" .. LocalPlayer():GetNWString("SeatName")
 
-  if (self:GetNWBool("Weapon" .. seat .. "IsOverheated")) then
+  if not self:GetNWBool(seat .. "CanOverheat") then return end
+
+  if (self:GetNWBool(seat .. "IsOverheated")) then
     surface.SetDrawColor(Color(255, 0, 0, 255))
   else
-    if (self:GetNWInt("Weapon" .. seat .. "Overheat") > 0 and self:GetNWInt("Weapon" .. seat .. "Overheat") <= 16) then
+    if (self:GetNWInt(seat .. "Overheat") > 0 and self:GetNWInt(seat .. "Overheat") <= 16) then
       surface.SetDrawColor(Color(128, 255, 0, 255))
-    elseif (self:GetNWInt("Weapon" .. seat .. "Overheat") > 16 and self:GetNWInt("Weapon" .. seat .. "Overheat") <= 32) then
+    elseif (self:GetNWInt(seat .. "Overheat") > 16 and self:GetNWInt(seat .. "Overheat") <= 32) then
       surface.SetDrawColor(Color(255, 255, 0, 255))
     else
       surface.SetDrawColor(Color(255, 128, 0, 255))
@@ -584,7 +582,7 @@ function ENT:HUDDrawOverheating()
   local w, h = ScrW() / 100 * 3.5, ScrH() / 100 * 0.5
   local tr
 
-  if (self:GetNWBool("Weapon" .. seat .. "Track")) then
+  if (self:GetNWBool(seat .. "Track")) then
     tr = util.TraceLine({
       start = LocalPlayer():EyePos(),
       endpos = LocalPlayer():EyePos() + LocalPlayer():GetAimVector():Angle():Forward() * 10000,
@@ -610,7 +608,7 @@ function ENT:HUDDrawOverheating()
 
   local screenpos = vpos:ToScreen()
   local x, y = screenpos.x, screenpos.y
-  local o = self:GetNWInt("Weapon" .. seat .. "Overheat") / self:GetNWInt("Weapon" .. seat .. "OverheatMax") * 100
+  local o = self:GetNWInt(seat .. "Overheat") / self:GetNWInt(seat .. "OverheatMax") * 100
   local per = o / 100
   w = w * per
   surface.DrawRect(x - w / 2, y + ScrW() / 100 * 1.5, w, h)
@@ -893,7 +891,9 @@ function ENT:AddEvent(name, callback)
 end
 
 function ENT:DispatchEvent(event)
-  self["_" .. event](self)
+  if self["_" .. event] then
+    self["_" .. event](self)
+  end
 end
 
 net.Receive("SWVREvent", function()

@@ -44,6 +44,7 @@ if SERVER then
 
         -- Adding a weapon group. Must be done BEFORE weapons are added to it.
         self:AddWeaponGroup("Pilot", "rg9_cannon", {
+            CanOverheat = true,
             Damage = 80,
             Tracer = "blue_tracer_fx",
             Delay = 0.15
@@ -59,26 +60,10 @@ if SERVER then
 
          -- self:AddWeapon("Torpedo", "Front", Vector(530, 0, -40))
 
-        self:AddWeaponGroup("Back", "rg9_cannon", {
-            Damage = 75,
-            Tracer = "blue_tracer_fx",
-            Delay = 0.2,
-            --CanLock = true
-        })
-
-        -- Please note, if you are adding a seat/pilot with weapon groups, those groups must be added BEFORE (the weapons can be added to the groups whenever)
-        -- Setting up the pilot seat.
         self:AddPilot(Vector(300, 0, 60), nil, {
             ExitPos = Vector(-400, 0, 0),
             FPVPos = Vector(300, 0, 95),
             Weapons = {"Pilot"--[[, "Torpedo"]]}
-        })
-
-        -- Adding a seat.
-        self:AddSeat("Back", Vector(255, 0, 85), self:GetAngles() + Angle(0, 90, 0), {
-            Visible = false,
-            ExitPos = Vector(0, 35, -20),
-            Weapons = {"Back"}
         })
 
         -- Adding a parent with a custom callback, the callback gets called every tick to update the part's position and angles
@@ -103,13 +88,23 @@ if SERVER then
             end
         })
 
-        -- These weapons techincally could have been added before the parts, but good practice says to initialize them AFTER the parent
-        local wep = self:AddWeapon("Back", "TurretRight", Vector(195, 18, 120), {
-            Parent = "Turret"
+        self:AddWeaponGroup("Back", "rg9_cannon", {
+            Parent = "Turret",
+            Damage = 75,
+            Tracer = "blue_tracer_fx",
+            Delay = 0.2,
+            IsTracking = true
         })
 
-        self:AddWeapon("Back", "TurretLeft", Vector(195, -18, 120), {
-            Parent = "Turret"
+        self:AddWeapon("Back", "TurretRight", Vector(195, 18, 120))
+
+        self:AddWeapon("Back", "TurretLeft", Vector(195, -18, 120))
+
+        -- Adding a seat.
+        self:AddSeat("Back", Vector(255, 0, 85), self:GetAngles() + Angle(0, 90, 0), {
+            Visible = false,
+            ExitPos = Vector(0, 35, -20),
+            Weapons = {"Back"}
         })
 
         -- Initialize the base, do not remove.

@@ -54,7 +54,7 @@ function CANNON:SetTracer(name)
 end
 
 function CANNON:Fire()
-	if not (IsValid(self.Parent) and IsValid(self.Entity)) then return end
+	if not (IsValid(self.Owner) and IsValid(self.Parent) and IsValid(self.Entity)) then return end
 
 	local tr = util.TraceLine({
 		start = self.Parent:GetPos(),
@@ -64,16 +64,11 @@ function CANNON:Fire()
 
 	local dir = tr.HitPos - self.Entity:GetPos()
 
-	if self.Group and self.Group:GetCanLock() or self:GetCanLock() then
-		for _, ply in pairs(self.Parent.Players) do
-			if (IsValid(ply.ent) and ply.ent:GetNWString("SeatName") == self.Group.Seat) then
-				dir = ply.ent:GetAimVector():Angle():Forward()
-				break
-			end
-		end
+	if self:GetIsTracking() and IsValid(self.Player) then
+		dir = self.Player:GetAimVector():Angle():Forward()
 	end
 
-	if IsValid(self.Target) then
+	if self:GetCanLock() and IsValid(self.Target) then
 		local lock = util.TraceLine({
 			start = self.Entity:GetPos(),
 			endpos = self.Target:GetPos(),

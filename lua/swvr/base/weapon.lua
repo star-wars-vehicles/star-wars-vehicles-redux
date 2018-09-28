@@ -15,6 +15,8 @@ AccessorFunc(WEAPON, "Entity", "Entity")
 AccessorFunc(WEAPON, "Target", "Target")
 AccessorFunc(WEAPON, "Owner", "Owner")
 AccessorFunc(WEAPON, "Group", "Group")
+AccessorFunc(WEAPON, "Player", "Player")
+AccessorFunc(WEAPON, "IsTracking", "IsTracking", FORCE_BOOL)
 
 AccessorFunc(WEAPON, "Name", "Name", FORCE_STRING)
 
@@ -33,7 +35,7 @@ function WEAPON:Initialize()
 
 	e:SetRenderMode(RENDERMODE_TRANSALPHA)
 	e:AddFlags(FL_DONTTOUCH)
-	--e:SetColor(Color(255, 255, 255, 0))
+	e:SetColor(Color(255, 255, 255, 0))
 	e:DrawShadow(false)
 
 
@@ -105,7 +107,7 @@ BaseClasses["weapon"] = "swvr_base_weapon"
 BaseClasses["cannon"]  = "swvr_base_cannon"
 BaseClasses["missile"] = "swvr_base_missile"
 
-local Weapons = {}
+local Weapons = Weapons or {}
 
 SWVR.Weapons = {}
 
