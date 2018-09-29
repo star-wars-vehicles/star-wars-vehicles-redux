@@ -7,9 +7,19 @@ SWVR.Buttons = {
 }
 
 SWVR.Allegiances = {
-  Light = {"Rebel Alliance", "Galactic Republic"},
-  Dark = {"Imperial Empire", "Confederacy of Independent Systems", "First Order"},
-  Neutral = {}
+  ["Republic"] = "Galactic Republic",
+  ["Empire"] = "Galactic Empire",
+  ["CIS"] = "Confederacy of Independent Systems",
+  ["First Order"] = "First Order",
+  ["Rebels"] = "Rebel Alliance",
+  ["Other"] = "Neutral",
+  ["Independent"] = "Independent"
+}
+
+SWVR.Sides = {
+  Light = { SWVR.Allegiances["Republic"], SWVR.Allegiances["Rebels"] },
+  Dark = { SWVR.Allegiances["Empire"], SWVR.Allegiances["CIS"], SWVR.Allegiances["First Order"]},
+  Neutral = {SWVR.Allegiances["Neutral"], SWVR.Allegiances["Independent"] }
 }
 
 SWVR.InputMap = {
@@ -78,5 +88,5 @@ function SWVR:GetWeapons()
 end
 
 function SWVR:LightOrDark(allegiance)
-  return table.HasValue(self.Allegiances.Light, allegiance) and "Light" or table.HasValue(self.Allegiances.Dark, allegiance) and "Dark" or "Neutral"
+  return table.HasValue(self.Sides.Light, allegiance) and "Light" or table.HasValue(self.Sides.Dark, allegiance) and "Dark" or "Neutral"
 end

@@ -23,14 +23,10 @@ function CANNON:Initialize()
 
 		util.Effect("StunstickImpact", fx, true)
 
-		if IsValid(ship) and ship ~= tr.Entity then
-			if self.Bullet.splash then
-				util.BlastDamage(ship, ship.Pilot or ship, tr.HitPos, self.Bullet.Damage * 1.5, self.Bullet.Damage * 0.66)
-			end
+		if not IsValid(ship) or ship == tr.Entity then return end
 
-			if self.Ion and tr.Entity.IsSWVRVehicle then
-				tr.Entity.IonShots = tr.Entity.IonShots + 1
-			end
+		if self.Bullet.splash then
+			util.BlastDamage(ship, ship.Pilot or ship, tr.HitPos, self.Bullet.Damage * 1.5, self.Bullet.Damage * 0.66)
 		end
 	end)
 

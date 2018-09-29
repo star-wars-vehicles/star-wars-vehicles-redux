@@ -71,14 +71,13 @@ function ENT:Initialize()
   }
 
   self:CanLock(true)
-  self:SetAllegiance(self.Allegiance)
+  self:SetAllegiance(SWVR.Allegiances[self.Category])
   self:SetLandHeight(self.LandHeight or 0)
   self:IsLanding(false)
   self:IsTakingOff(true)
   self:SetStartHealth(self.StartHP or 800)
   self:SetCurHealth(self:GetStartHealth())
-  self:SetOverheatLevel(0)
-  self:SetOverheat(false)
+  self:ShouldAutoCorrect(true)
 
   self:InitPhysics()
 
@@ -218,6 +217,8 @@ end
 --- Setup the ship model.
 -- Sets proper model, render, and physics modes.
 function ENT:InitModel()
+  util.PrecacheModel(self.WorldModel)
+
   self:SetModel(self.WorldModel)
   self:PhysicsInit(SOLID_VPHYSICS)
   self:SetMoveType(MOVETYPE_VPHYSICS)
@@ -262,17 +263,19 @@ end
 --- Setup the necessary flight model for the ship
 -- @param health
 function ENT:Setup(options)
-  self:SetStartHealth(options.health or 1000)
-  self:SetStartShieldHealth(options.shields or self:GetStartHealth() * 0.5)
+  self.WorldModel = options.Model
+
+  self:SetStartHealth(options.Health or 1000)
+  self:SetStartShieldHealth(options.Shields or 0)
   self:SetShieldHealth(self:GetStartShieldHealth())
-  self:SetBack(Either(isbool(options.back), options.back, false))
-  self:SetMaxSpeed(options.speed or 1500)
+  self:SetBack(Either(isbool(options.Back), options.Back, false))
+  self:SetMaxSpeed(options.Speed or 1500)
   self:SetMinSpeed(self:GetBack() and (self:GetMaxSpeed() * 0.66) * -1 or 0)
-  self:SetVerticalSpeed(options.verticalspeed or 500)
-  self:SetBoostSpeed(options.boostspeed or self:GetMaxSpeed())
-  self:SetAccelSpeed(options.acceleration or 7)
-  self:SetRoll(Either(isbool(options.roll), options.roll, true))
-  self:SetFreeLook(options.freelook or true)
+  self:SetVerticalSpeed(options.VerticalSpeed or self:GetMaxSpeed() * 1 / 3)
+  self:SetBoostSpeed(options.BoostSpeed or self:GetMaxSpeed())
+  self:SetAccelSpeed(options.Acceleration or 7)
+  self:SetRoll(Either(isbool(options.Roll), options.Roll, true))
+  self:SetFreeLook(options.Freelook or true)
 end
 
 --- Add a new weapon group.
@@ -434,6 +437,9 @@ end
 
 function ENT:AddPart(name, path, pos, ang, options)
   self.Parts = self.Parts or {}
+
+  util.PrecacheModel(path)
+
   options = options or {}
 
   if (options.Callback and not options.Seat) then
@@ -474,6 +480,7 @@ function ENT:SpawnSeats()
 
   for k, v in pairs(self.Seats) do
     if string.upper(k) == "PILOT" then continue end
+
     local e = ents.Create(self.SeatClass or "prop_vehicle_prisoner_pod")
     e:SetPos(v.Pos or self:GetPos())
     e:SetAngles(v.Ang or self:GetAngles())
@@ -488,15 +495,14 @@ function ENT:SpawnSeats()
     e:GetPhysicsObject():EnableMotion(false)
     e:GetPhysicsObject():EnableCollisions(false)
     e:SetCollisionGroup(COLLISION_GROUP_WEAPON)
-    e["Is" .. self.Vehicle .. "Seat"] = true
-    e[self.Vehicle] = self
+
     e.ExitPos = v.ExitPos
-    e.IsSWVRVehicle = true
-    self.Seats[k].Ent = e
 
     if (self.DisableThirdpersonSeats) then
       e:SetNWBool("NoFirstPerson", true)
     end
+
+    self.Seats[k].Ent = e
   end
 end
 
@@ -813,7 +819,7 @@ function ENT:Bang()
   self:SetColor(Color(0, 0, 0, 50))
   self:Ignite(10, 50)
 
-  for k, v in pairs(self.Parts) do
+  for k, v in pairs(self.Parts or {}) do
     v.Entity:SetColor(Color(0, 0, 0, 50))
     v.Entity:Ignite(10, 50)
   end
@@ -863,7 +869,7 @@ end
 -- @param deltatime Time since the last call.
 function ENT:PhysicsSimulate(phys, deltatime)
   local FWD = self.ForwardDir or self:GetForward()
-  local UP = self:GetUp() or ZAxis
+  local UP = self:GetUp()
   local RIGHT = FWD:Cross(UP):GetNormalized()
 
   if not (self:IsTakingOff() or self:IsLanding()) and self:InFlight() then
@@ -876,14 +882,14 @@ function ENT:PhysicsSimulate(phys, deltatime)
     self.Acceleration = math.Approach(self.Acceleration, acceleration, acceleration)
   end
 
-  if not (not self.Done and not self.Tractored and (not self.DeactivateInWater or (self.DeactivateInWater and self:WaterLevel() < 3))) then
+  if (self.Done or self.Tractored or (self.DeactivateInWater and self:WaterLevel() >= 3)) then
     return
   end
 
   if (self:InFlight() and IsValid(self:GetPilot())) then
     local pos = self:GetPos()
 
-    if (not self:IsTakingOff() and not self:IsLanding()) then
+    if not (self:IsTakingOff() or self:IsLanding()) then
       self:SetHandbrake(false)
 
         if (self:GetPilot():KeyDown(IN_RELOAD) and self:GetPilot():KeyDown(IN_JUMP)) then
@@ -995,7 +1001,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
       self.Phys.deltatime = deltatime
       local newZ
 
-      if (self.AutoCorrect or Should_AlwaysCorrect) then
+      if (self:ShouldAutoCorrect()) then
         local heightTrace = util.TraceLine({
           start = self:GetPos(),
           endpos = self:GetPos() + Vector(0, 0, -100),

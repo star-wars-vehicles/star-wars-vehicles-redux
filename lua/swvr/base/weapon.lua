@@ -8,15 +8,15 @@ AccessorFunc(WEAPON, "Delay", "Delay", FORCE_NUMBER)
 AccessorFunc(WEAPON, "Index", "Index", FORCE_NUMBER)
 AccessorFunc(WEAPON, "Damage", "Damage", FORCE_NUMBER)
 
-AccessorFunc(WEAPON, "Ion", "Ion", FORCE_BOOL)
 AccessorFunc(WEAPON, "CanLock", "CanLock", FORCE_BOOL)
+AccessorFunc(WEAPON, "IsTracking", "IsTracking", FORCE_BOOL)
 
 AccessorFunc(WEAPON, "Entity", "Entity")
 AccessorFunc(WEAPON, "Target", "Target")
 AccessorFunc(WEAPON, "Owner", "Owner")
 AccessorFunc(WEAPON, "Group", "Group")
 AccessorFunc(WEAPON, "Player", "Player")
-AccessorFunc(WEAPON, "IsTracking", "IsTracking", FORCE_BOOL)
+
 
 AccessorFunc(WEAPON, "Name", "Name", FORCE_STRING)
 

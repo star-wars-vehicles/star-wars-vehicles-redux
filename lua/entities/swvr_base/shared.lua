@@ -8,6 +8,16 @@ ENT.AutomaticFrameAdvance = true
 ENT.Class = "Other"
 ENT.IsSWVRVehicle = true
 
+local function AccessorBool(tbl, name, prefix)
+  tbl[prefix .. name] = function(self, value)
+    if value == nil then
+      return tobool(self["Get" .. name](self))
+    end
+
+    self["Set" .. name](self, value)
+  end
+end
+
 --- Creates networked variables for the entity.
 -- This creates setter and getter functions for each variable.
 -- Example: self:NetworkVar("Bool", 0, "Flight") creates self:GetFlight() and self:SetFlight()
@@ -18,91 +28,47 @@ function ENT:SetupDataTables()
   self:NetworkVar("Bool", 3, "Wings")
   self:NetworkVar("Bool", 4, "Lock")
   self:NetworkVar("Bool", 5, "Landing")
-  self:NetworkVar("Bool", 6, "TakeOff")
+  self:NetworkVar("Bool", 6, "TakingOff")
   self:NetworkVar("Bool", 7, "FirstPerson")
   self:NetworkVar("Bool", 8, "Handbrake")
   self:NetworkVar("Bool", 9, "CanFPV")
   self:NetworkVar("Bool", 10, "Back")
   self:NetworkVar("Bool", 11, "Roll")
   self:NetworkVar("Bool", 12, "WingState")
-  self:NetworkVar("Bool", 13, "Overheat")
+  self:NetworkVar("Bool", 13, "AutoCorrect")
+
   self:NetworkVar("String", 0, "Allegiance")
   self:NetworkVar("String", 1, "Transponder")
+
   self:NetworkVar("Int", 0, "Hyperdrive")
-  self:NetworkVar("Int", 1, "OverheatLevel")
+  self:NetworkVar("Int", 1, "Ion")
+
   self:NetworkVar("Float", 0, "CurHealth")
   self:NetworkVar("Float", 1, "StartHealth")
   self:NetworkVar("Float", 2, "Speed")
   self:NetworkVar("Float", 3, "MaxSpeed")
   self:NetworkVar("Float", 4, "BoostSpeed")
   self:NetworkVar("Float", 5, "VerticalSpeed")
-  self:NetworkVar("Float", 6, "NextTorpedo")
-  self:NetworkVar("Float", 7, "LandHeight")
-  self:NetworkVar("Float", 8, "MinSpeed")
-  self:NetworkVar("Float", 9, "AccelSpeed")
-  self:NetworkVar("Float", 10, "ShieldHealth")
-  self:NetworkVar("Float", 11, "StartShieldHealth")
+  self:NetworkVar("Float", 6, "LandHeight")
+  self:NetworkVar("Float", 7, "MinSpeed")
+  self:NetworkVar("Float", 8, "AccelSpeed")
+  self:NetworkVar("Float", 9, "ShieldHealth")
+  self:NetworkVar("Float", 10, "StartShieldHealth")
+
   self:NetworkVar("Entity", 0, "Pilot")
   self:NetworkVar("Entity", 1, "Avatar")
+
   self:NetworkVar("Vector", 0, "FPVPos")
-end
 
--- Wrapper functions that follow proper naming standards
-
-function ENT:InFlight(value)
-  if not value and value == nil then
-    return self:GetFlight()
-  end
-
-  self:SetFlight(value)
-end
-
-function ENT:CanFreeLook(value)
-  if not value and value == nil then
-    return self:GetFreeLook()
-  end
-
-  self:SetFreeLook(value)
-end
-
-function ENT:IsLanding(value)
-  if not value and value == nil then
-    return self:GetLanding()
-  end
-
-  self:SetLanding(value)
-end
-
-function ENT:IsCritical(value)
-  if not value and value == nil then
-    return self:GetCritical()
-  end
-
-  self:SetCritical(value)
-end
-
-function ENT:HasWings(value)
-  if not value and value == nil then
-    return self:GetWings()
-  end
-
-  self:SetWings(value)
-end
-
-function ENT:CanLock(value)
-  if not value and value == nil then
-    return self:GetLock()
-  end
-
-  self:SetLock(value)
-end
-
-function ENT:IsTakingOff(value)
-  if not value and value == nil then
-    return self:GetTakeOff()
-  end
-
-  self:SetTakeOff(value)
+  -- Wrapper functions that follow proper naming standards
+  AccessorBool(self, "AutoCorrect", "Should")
+  AccessorBool(self, "FreeLook", "Can")
+  AccessorBool(self, "Lock", "Can")
+  AccessorBool(self, "Flight", "In")
+  AccessorBool(self, "TakingOff", "Is")
+  AccessorBool(self, "Landing", "Is")
+  AccessorBool(self, "Critical", "Is")
+  AccessorBool(self, "Wings", "Has")
 end
 
 --- Get child entities of ship.

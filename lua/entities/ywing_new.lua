@@ -1,15 +1,10 @@
 ENT.Base = "swvr_base"
+
 ENT.Category = "Rebels"
-ENT.Spawnable = false
-ENT.AdminSpawnable = false
-ENT.PrintName = "BTL-A4 Y-Wing"
-ENT.Author = "Doctor Jew"
-ENT.WorldModel = "models/ywing/ywing1.mdl"
-ENT.Vehicle = "YWingNew"
-ENT.Allegiance = "Rebels"
 ENT.Class = "Bomber"
 
-util.PrecacheModel("models/ywing/ywing1.mdl")
+ENT.PrintName = "BTL-A4 Y-Wing"
+ENT.Author = "Doctor Jew"
 
 if SERVER then
     AddCSLuaFile()
@@ -30,13 +25,13 @@ if SERVER then
 
     function ENT:Initialize()
         self:Setup({
-            health = 1500,
-            shields = 0,
-            speed = 1250,
-            boostspeed = 2100,
-            verticalspeed = 500,
-            acceleration = 7,
-            roll = true
+            Model = "models/ywing/ywing1.mdl",
+            Health = 1500,
+            Speed = 1250,
+            BoostSpeed = 2100,
+            VerticalSpeed = 500,
+            Acceleration = 7,
+            Roll = true
         })
 
         self:AddWeaponGroup("Main", "rg9_cannon", {

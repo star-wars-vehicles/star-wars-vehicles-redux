@@ -9,9 +9,9 @@ WEAPON.Name = "RG-9 Laser Cannon"
 WEAPON.Author = "Borstel"
 
 function WEAPON:Initialize()
-	self.Bullet:SetTracer("red_tracer_fx")
-
 	BaseClass.Initialize(self)
+
+	self.Bullet:SetTracer("red_tracer_fx")
 end
 
 function WEAPON:Fire()

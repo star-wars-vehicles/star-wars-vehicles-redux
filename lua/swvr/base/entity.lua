@@ -2,7 +2,7 @@ local ENTITY = FindMetaTable("Entity")
 
 function ENTITY:Side()
 	local allegiance = self.Allegiance
-	return table.HasValue(SWVR.Allegiances.Light, allegiance) and "Light" or table.HasValue(SWVR.Allegiances.Dark, allegiance) and "Dark" or "Neutral"
+	return table.HasValue(SWVR.Sides.Light, allegiance) and "Light" or table.HasValue(SWVR.Sides.Dark, allegiance) and "Dark" or "Neutral"
 end
 
 function ENTITY:IsStarWarsVehicle(swvr)

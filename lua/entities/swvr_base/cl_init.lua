@@ -10,8 +10,6 @@ function ENT:Initialize()
   self.SoundsOn = {}
   self.Engines = self.Engines or {}
   self:InitParts()
-  self._HealthSmooth = self:GetCurHealth()
-  self._ShieldSmooth = self:GetShieldHealth()
   self.Events = self.Events or {}
 
   if self.Sounds and self.Sounds.Engine then
@@ -28,7 +26,7 @@ function ENT:Setup(options)
   self.ViewDistance = options.ViewDistance or 1000
   self.ViewHeight = options.ViewHeight or 300
 
-  if (options.cockpit) then
+  if (options.Cockpit) then
     if (istable(options.Cockpit) and util.IsValidModel(options.Cockpit.Path)) then
       self.Cockpit = {
         Path = options.Cockpit.Path,
@@ -234,7 +232,7 @@ function ENT:OnRemove()
     SafeRemoveEntity(v.Ent)
   end
 
-  SafeRemoveEntity(self.Cockpit and self.Cockpit.Ent or NULL)
+  SafeRemoveEntity(istable(self.Cockpit) and self.Cockpit.Ent or NULL)
 end
 
 function ENT:EngineEffects()
@@ -330,6 +328,8 @@ end
 -- @param ang The angle of the part
 function ENT:AddPart(name, path, pos, ang)
   self.Parts = self.Parts or {}
+
+  util.PrecacheModel(path)
 
   self.Parts[name] = {
     Path = path,
@@ -473,16 +473,14 @@ function ENT:HUDDrawHull()
   local w, h = ScrW() / 100 * 20, ScrW() / 100 * 20 / 4
   local x, y = ScrW() - w - w / 8, ScrH() / 4 * 3.4
   local per = self:GetCurHealth() / self:GetStartHealth()
-  self._HealthSmooth = math.Approach(self._HealthSmooth, self:GetCurHealth(), 300 * RealFrameTime())
-  self._ShieldSmooth = math.Approach(self._ShieldSmooth, self:GetShieldHealth(), 300 * RealFrameTime())
+
   surface.SetDrawColor(Color(255, 255, 255, 255))
   surface.SetMaterial(Material("hud/hull/hp_frame_under.png", "noclamp"))
   surface.DrawTexturedRectUV(x, y, w, h, 0, 0, 1, 1)
 
   if (self:GetCritical()) then
     if (self:GetCurHealth() >= self:GetStartHealth() * 0.1) then
-      surface.SetDrawColor(Color(50, 120, 255, 255)) -- Ion shots
-      -- Less than 10%
+      surface.SetDrawColor(Color(50, 120, 255, 255))
     else
       surface.SetDrawColor(Color(255, 35, 35, 255))
     end
@@ -490,18 +488,23 @@ function ENT:HUDDrawHull()
 
   local barW, barH = w * 0.90625, h * 0.4
   local barX, barY = x + w * 0.02832, y + h * 0.27343
+
   surface.SetMaterial(Material("hud/hull/hp_bar.png", "noclamp"))
-  surface.DrawTexturedRectUV(barX, barY, barW * (self._HealthSmooth / self:GetStartHealth()), barH, 0, 0, per, 1)
+  surface.DrawTexturedRectUV(barX, barY, barW * (self:GetCurHealth() / self:GetStartHealth()), barH, 0, 0, per, 1)
   surface.SetMaterial(Material("hud/hull/hp_bar.png", "noclamp"))
   surface.SetDrawColor(Color(50, 120, 255, 255))
-  surface.DrawTexturedRectUV(barX, barY, barW * self._ShieldSmooth / self:GetStartShieldHealth(), barH, 0, 0, per, 1)
+  surface.DrawTexturedRectUV(barX, barY, barW * self:GetShieldHealth() / self:GetStartShieldHealth(), barH, 0, 0, per, 1)
   surface.SetMaterial(Material("hud/hull/hp_frame_over.png", "noclamp"))
   surface.SetDrawColor(Color(255, 255, 255, 255))
   surface.DrawTexturedRectUV(x, y, w, h, 0, 0, 1, 1)
+
   local health = math.Round(per * 100) .. "%"
   local tW, tH = surface.GetTextSize(health)
+
   surface.SetTextColor(Color(255, 255, 255, 255))
+
   x, y = x + w * 0.35 - tW / 2, y - tH / 2 + h * 0.06
+
   surface.SetTextPos(x, y + tH / 2)
   surface.DrawText(health)
 end
