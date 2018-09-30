@@ -11,6 +11,8 @@ AccessorFunc(WEAPON, "Damage", "Damage", FORCE_NUMBER)
 AccessorFunc(WEAPON, "CanLock", "CanLock", FORCE_BOOL)
 AccessorFunc(WEAPON, "IsTracking", "IsTracking", FORCE_BOOL)
 
+AccessorFunc(WEAPON, "Sound", "Sound", FORCE_STRING)
+
 AccessorFunc(WEAPON, "Entity", "Entity")
 AccessorFunc(WEAPON, "Target", "Target")
 AccessorFunc(WEAPON, "Owner", "Owner")
@@ -95,7 +97,9 @@ function WEAPON:GetPos()
 end
 
 function WEAPON:Fire()
-
+	if self.Sound and not self.Group then
+		self.Owner:EmitSound(self.Sound)
+	end
 end
 
 function WEAPON:Remove()

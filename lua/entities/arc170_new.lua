@@ -1,17 +1,12 @@
 ENT.Base = "swvr_base"
-ENT.Category = "Republic"
-ENT.Spawnable = false
-ENT.AdminSpawnable = false
+ENT.Category = "In Development"
+
 ENT.PrintName = "ARC-170"
 ENT.Author = "Doctor Jew"
 ENT.WorldModel = "models/arc170/arc170_bf2.mdl"
 ENT.FlightModel = "models/arc170/arc170_bf2_wings.mdl"
-ENT.Vehicle = "Arc170BF2"
-ENT.Allegiance = "Republic"
-ENT.Class = "Fighter"
 
-list.Set("SWVRVehicles", ENT.Folder, ENT)
-util.PrecacheModel("models/arc170/arc170_bf2_cockpit.mdl") -- Precache clientside models please!
+ENT.Class = "Fighter"
 
 if SERVER then
     AddCSLuaFile()

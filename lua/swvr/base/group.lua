@@ -2,7 +2,6 @@ local GROUP = {}
 GROUP.Options = {}
 
 AccessorFunc(GROUP, "Name", "Name", FORCE_STRING)
-AccessorFunc(GROUP, "Class", "Class", FORCE_STRING)
 
 AccessorFunc(GROUP, "Delay", "Delay", FORCE_NUMBER)
 AccessorFunc(GROUP, "Cooldown", "Cooldown", FORCE_NUMBER)
@@ -14,6 +13,8 @@ AccessorFunc(GROUP, "CanOverheat", "CanOverheat", FORCE_BOOL)
 AccessorFunc(GROUP, "Overheated", "Overheated", FORCE_BOOL)
 AccessorFunc(GROUP, "CanLock", "CanLock", FORCE_BOOL)
 AccessorFunc(GROUP, "IsTracking", "IsTracking", FORCE_BOOL)
+
+AccessorFunc(GROUP, "Sound", "Sound")
 
 AccessorFunc(GROUP, "Owner", "Owner")
 
@@ -34,6 +35,20 @@ function GROUP:Initialize()
 
 	self:SetOwner(NULL)
 	self:SetParent(NULL)
+end
+
+function GROUP:SetClass(class)
+	if not isstring(class) then error("Invalid class set for weapon group! Classes must be strings!") end
+
+	self.Class = class
+
+	if #class == 0 then return end
+
+	self.Sound = SWVR:Weapon(class).Sound
+end
+
+function GROUP:GetClass()
+	return self.Class
 end
 
 function GROUP:SetTarget(ent)
@@ -103,7 +118,6 @@ function GROUP:Fire(cond)
 	for _, weapon in ipairs(self.Weapons) do
 		if type(cond) == "function" and not cond(weapon) then continue end
 		weapon:Fire()
-		self.Parent:EmitSound("ywing_fire")
 	end
 
 	self:SetCooldown(CurTime() + self:GetDelay())

@@ -26,6 +26,8 @@ function ENT:Setup(options)
   self.ViewDistance = options.ViewDistance or 1000
   self.ViewHeight = options.ViewHeight or 300
 
+  self.AlwaysDraw = tobool(options.AlwaysDraw)
+
   if (options.Cockpit) then
     if (istable(options.Cockpit) and util.IsValidModel(options.Cockpit.Path)) then
       self.Cockpit = {
@@ -177,7 +179,7 @@ function ENT:Draw()
     end
   end
 
-  if self.Cockpit == nil or not self:GetFirstPerson() or LocalPlayer() ~= self:GetPilot() then
+  if self.Cockpit == nil or not self:GetFirstPerson() or LocalPlayer() ~= self:GetPilot() or self.AlwaysDraw then
     self:DrawModel()
   end
 end

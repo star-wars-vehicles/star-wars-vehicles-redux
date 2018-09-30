@@ -1,16 +1,10 @@
 ENT.Base = "swvr_base"
-ENT.Category = "Rebels"
-ENT.Spawnable = false
-ENT.AdminSpawnable = false
+ENT.Category = "In Development"
+
 ENT.PrintName = "RZ-1 A-Wing"
 ENT.Author = "Doctor Jew"
-ENT.WorldModel = "models/awing/awing_bf2.mdl"
-ENT.Vehicle = "AWingNew"
-ENT.Allegiance = "Rebel Alliance"
-ENT.Class = "Interceptor"
 
-list.Set("SWVRVehicles", ENT.Folder, ENT)
-util.PrecacheModel("models/awing/new_awing_cockpit.mdl") -- Precache clientside models please!
+ENT.Class = "Interceptor"
 
 if SERVER then
     AddCSLuaFile()
@@ -32,22 +26,23 @@ if SERVER then
     function ENT:Initialize()
         -- Call setup to initialize ship limitations
         self:Setup({
-            health = 1000,
-            shields = 600,
-            speed = 1500,
-            verticalspeed = 550,
-            acceleration = 7,
-            back = false,
-            roll = true,
-            freelook = true
+            Model = "models/awing/awing_bf2.mdl",
+            Health = 1000,
+            Shields = 600,
+            Speed = 1500,
+            VerticalSpeed = 550,
+            Acceleration = 7,
+            Back = false,
+            Roll = true,
+            Freelook = true
         })
 
         -- Adding a weapon group. Must be done BEFORE weapons are added to it.
         self:AddWeaponGroup("Pilot", "weapons/rz2_shoot.wav", self:InitBullet{
-            damage = 50,
-            color = "red",
-            delay = 0.12,
-            overheatAmount = 40
+            Damage = 50,
+            Color = "red",
+            Delay = 0.12,
+            OverheatAmount = 40
         })
 
         -- Adding weapons
@@ -58,9 +53,9 @@ if SERVER then
         -- Setting up the pilot seat.
         --- self:AddPilot(exitpos, fpvpos, pilotpos, pilotang, weapon(s)...)
         self:AddPilot(Vector(-20, 0, 35), nil, {
-            exitpos = Vector(-180, 0, 0),
-            fpvpos = Vector(-15, 0, 75),
-            weapons = {"Pilot"}
+            ExitPos = Vector(-180, 0, 0),
+            FPVPos = Vector(-15, 0, 75),
+            Weapons = {"Pilot"}
         })
 
         self:AddEvent("OnCritical", function()
@@ -75,31 +70,31 @@ end
 if CLIENT then
     function ENT:Initialize()
         self:Setup({
-            viewdistance = 950,
-            viewheight = 200,
-            cockpit = {
-                path = "models/awing/new_awing_cockpit.mdl"
+            ViewDistance = 950,
+            ViewHeight = 200,
+            Cockpit = {
+                Path = "models/awing/new_awing_cockpit.mdl"
             },
-            enginesound = "vehicles/rz2_engine_loop.wav"
+            EngineSound = "vehicles/rz2_engine_loop.wav"
         })
 
         self:SetupDefaults()
 
         -- Adding engine effects
         self:AddEngine(Vector(-105, 42, 40), {
-            startsize = 18,
-            endsize = 10,
-            lifetime = 2.7,
-            color = Color(255, 204, 102),
-            sprite = "sprites/orangecore1"
+            StartSize = 18,
+            EndSize = 10,
+            Lifetime = 2.7,
+            Color = Color(255, 204, 102),
+            Sprite = "sprites/orangecore1"
         })
 
         self:AddEngine(Vector(-105, -42, 40), {
-            startsize = 18,
-            endsize = 10,
-            lifetime = 2.7,
-            color = Color(255, 204, 102),
-            sprite = "sprites/orangecore1"
+            StartSize = 18,
+            EndSize = 10,
+            Lifetime = 2.7,
+            Color = Color(255, 204, 102),
+            Sprite = "sprites/orangecore1"
         })
 
         self:AddEvent("OnCritical", function()

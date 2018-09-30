@@ -34,15 +34,15 @@ if SERVER then
             Roll = true
         })
 
-        self:AddWeaponGroup("Main", "rg9_cannon", {
+        self:AddWeaponGroup("Pilot", "rg9_cannon", {
             Delay = 0.2,
             Damage = 85,
             CanOverheat = true,
             MaxOverheat = 10
         })
 
-        self:AddWeapon("Main", "MainR", Vector(200, 18, 50))
-        self:AddWeapon("Main", "MainL", Vector(200, -18, 50))
+        self:AddWeapon("Pilot", "MainR", Vector(200, 18, 50))
+        self:AddWeapon("Pilot", "MainL", Vector(200, -18, 50))
 
         self:AddWeaponGroup("Turret", "rg9_cannon", {
             Delay = 0.5,
@@ -55,7 +55,7 @@ if SERVER then
 
         self:AddPilot(nil, nil, {
             FPVPos = Vector(96, 0, 88),
-            Weapons = {"Main", "Turret"}
+            Weapons = {"Pilot", "Turret"}
         })
 
         self.BaseClass.Initialize(self)

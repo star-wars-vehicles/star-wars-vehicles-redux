@@ -1,0 +1,16 @@
+"VertexLitGeneric"
+{
+	"$baseTexture"		"tri/cockpit"
+	"$bumpmap"		"tri/cockpit_n"
+	"$nocull"		"1"
+
+	"$Phong"		"1"
+	"$PhongBoost"		"2"
+	"$phongexponent"	"19.8"
+	"$PhongFresnelRanges"	"[.05 .5 1]"
+
+	"$detail"		"detail\metal_detail_01"
+	"$detailscale"		"5"
+	"$detailblendfactor"	"0.85"
+	"$detailblendmode"	"0"
+}

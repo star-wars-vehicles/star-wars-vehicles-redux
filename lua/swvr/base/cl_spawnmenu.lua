@@ -100,8 +100,6 @@ hook.Add("SWVRVehiclesTab", "AddEntityContent", function(pnlContent, tree, node)
     end
   end
 
-  PrintTable(SpawnableEntities)
-
   if (SpawnableEntities) then
     for k, v in pairs(SpawnableEntities) do
       v.SpawnName = k

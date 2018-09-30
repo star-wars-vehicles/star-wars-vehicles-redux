@@ -115,6 +115,7 @@ function ENT:Think()
   self:ThinkWeapons()
 
   self:ThinkParts()
+
   self:NextThink(CurTime())
 
   return true
@@ -268,13 +269,13 @@ function ENT:Setup(options)
   self:SetStartHealth(options.Health or 1000)
   self:SetStartShieldHealth(options.Shields or 0)
   self:SetShieldHealth(self:GetStartShieldHealth())
-  self:SetBack(Either(isbool(options.Back), options.Back, false))
+  self:SetBack(tobool(options.Back))
   self:SetMaxSpeed(options.Speed or 1500)
   self:SetMinSpeed(self:GetBack() and (self:GetMaxSpeed() * 0.66) * -1 or 0)
   self:SetVerticalSpeed(options.VerticalSpeed or self:GetMaxSpeed() * 1 / 3)
   self:SetBoostSpeed(options.BoostSpeed or self:GetMaxSpeed())
   self:SetAccelSpeed(options.Acceleration or 7)
-  self:SetRoll(Either(isbool(options.Roll), options.Roll, true))
+  self:SetRoll(tobool(options.Roll))
   self:SetFreeLook(options.Freelook or true)
 end
 

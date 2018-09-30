@@ -1,6 +1,6 @@
 "UnlitGeneric" 
 { 
-	"$basetexture"		"VGUI/entities/ywing_new" 
+	"$basetexture"		"VGUI/entities/ywing_swvr" 
 	"$vertexcolor" 		1 
 	"$vertexalpha" 		1 
 	"$nolod" 			1 

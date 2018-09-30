@@ -24,7 +24,7 @@ properties.Add("allegiance", {
     MenuOpen = function(self, option, ent, tr)
         local submenu = option:AddSubMenu()
 
-        for _, faction in pairs(SWVR.Allegiances) do
+        for _, faction in pairs(SWVR.Sides) do
             for __, allegiance in pairs(faction) do
                 local opt = submenu:AddOption(allegiance, function()
                     self:SetAllegiance(ent, allegiance)
