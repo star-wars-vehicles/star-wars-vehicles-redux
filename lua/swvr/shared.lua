@@ -12,14 +12,15 @@ SWVR.Allegiances = {
   ["CIS"] = "Confederacy of Independent Systems",
   ["First Order"] = "First Order",
   ["Rebels"] = "Rebel Alliance",
-  ["Other"] = "Neutral",
-  ["Independent"] = "Independent"
+  ["Neutral"] = "Neutral",
+  ["Independent"] = "Independent",
+  ["In Development"] = "Neutral"
 }
 
 SWVR.Sides = {
   Light = { SWVR.Allegiances["Republic"], SWVR.Allegiances["Rebels"] },
   Dark = { SWVR.Allegiances["Empire"], SWVR.Allegiances["CIS"], SWVR.Allegiances["First Order"]},
-  Neutral = {SWVR.Allegiances["Neutral"], SWVR.Allegiances["Independent"] }
+  Neutral = { SWVR.Allegiances["Neutral"], SWVR.Allegiances["Independent"], SWVR.Allegiances["Other"] }
 }
 
 SWVR.InputMap = {

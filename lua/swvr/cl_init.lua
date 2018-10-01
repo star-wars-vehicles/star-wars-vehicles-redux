@@ -33,6 +33,7 @@ function SWVR:Initialize()
 
   LoadDirectory("libraries")
   LoadDirectory("base")
+  LoadDirectory("weapons")
 
   MsgN("----------------------------------------------")
   MsgN("  Initialized Star Wars Vehicles Redux [CL]   ")

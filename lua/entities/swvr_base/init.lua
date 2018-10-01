@@ -265,6 +265,8 @@ end
 -- @param health
 function ENT:Setup(options)
   self.WorldModel = options.Model
+  self.TakeOffVector = options.TakeOffVector
+  self.LandAngles = options.LandAngles
 
   self:SetStartHealth(options.Health or 1000)
   self:SetStartShieldHealth(options.Shields or 0)
@@ -394,7 +396,7 @@ function ENT:AddSeat(name, pos, ang, options)
     Weapons = buttonMap,
     Pos = self:LocalToWorld(pos),
     Ang = ang,
-    ExitPos = self:LocalToWorld(options.ExitPos)
+    ExitPos = options.ExitPos
   }
 end
 
@@ -426,7 +428,7 @@ function ENT:AddPilot(pilotpos, pilotang, options)
 
   self.Seats["Pilot"] = {
     Weapons = buttonMap,
-    ExitPos = self:LocalToWorld(options.exitpos or Vector(0, 0, 0)),
+    ExitPos = options.ExitPos or Vector(0, 0, 0),
     FPVPos = options.fpvpos or nil,
     PilotPos = pilotpos or nil,
     PilotAng = pilotang or nil,
@@ -746,7 +748,7 @@ function ENT:LoadPlayer(p, kill)
   p:SetNWBool("Pilot", false)
 
   if not kill then
-    p:SetPos(p:GetNWVector("ExitPos", Vector(0, 0, 0)))
+    p:SetPos(self:LocalToWorld(p:GetNWVector("ExitPos")))
   elseif kill and p:Alive() and not p:HasGodMode() then
     p:Kill()
   end
@@ -1078,7 +1080,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
         self:ToggleWings()
       end
 
-      self.Phys.angle = self.LandAngles or Angle(0, self:GetAngles().y, 0)
+      self.Phys.angle = Angle(0, self:GetAngles().y, 0) + (self.LandAngles or Angle(0, 0, 0))
       self.Phys.deltatime = deltatime
       self.Phys.pos = self.LandPos
       phys:ComputeShadowControl(self.Phys)
@@ -1194,10 +1196,10 @@ function ENT:ShieldEffect()
   local fx = EffectData()
   fx:SetEntity(self)
   fx:SetOrigin(self:GetPos())
-  fx:SetScale(1)
+  fx:SetScale(self:GetModelScale())
   util.Effect("swvr_shield", fx)
 
-  for k, v in pairs(self.Parts) do
+  for k, v in pairs(self.Parts or {}) do
     local partFX = EffectData()
     partFX:SetEntity(v.Entity)
     partFX:SetOrigin(v.Entity:GetPos())
@@ -1205,7 +1207,7 @@ function ENT:ShieldEffect()
     util.Effect("swvr_shield", partFX)
   end
 
-  self:EmitSound("vehicles/shared/swvr_shield_absorb_" .. tostring(math.Round(math.random(1, 4))) .. ".wav", 500, 100, 1, CHAN_AUTO)
+  self:EmitSound("swvr/shields/swvr_shield_absorb_" .. tostring(math.Round(math.random(1, 4))) .. ".wav", 500, 100, 1, CHAN_BODY)
 end
 
 function ENT:NetworkWeapons()
@@ -1223,6 +1225,15 @@ function ENT:NetworkWeapons()
   end
 
   self:SetNWString("WeaponGroups", string.sub(weaponGroups, 2))
+end
+
+function ENT:TestLoc(pos)
+  local e = ents.Create("prop_physics")
+  e:SetPos(self:LocalToWorld(pos))
+  e:SetModel("models/props_junk/PopCan01a.mdl")
+  e:Spawn()
+  e:Activate()
+  e:SetParent(self)
 end
 
 -- function ENT:NetworkWeapons()

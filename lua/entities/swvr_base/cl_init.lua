@@ -27,6 +27,7 @@ function ENT:Setup(options)
   self.ViewHeight = options.ViewHeight or 300
 
   self.AlwaysDraw = tobool(options.AlwaysDraw)
+  self.DrawGlass = tobool(options.DrawGlass)
 
   if (options.Cockpit) then
     if (istable(options.Cockpit) and util.IsValidModel(options.Cockpit.Path)) then
@@ -386,7 +387,7 @@ function ENT:StopClientsideSound(mode)
 
   if (self.SoundsOn[mode]) then
     if (mode == "Engine" and self.EngineSound) then
-      self.EngineSound:FadeOut(2)
+      self.EngineSound:Stop()
     end
 
     self.SoundsOn[mode] = nil
@@ -408,6 +409,12 @@ function ENT:UpdateClientsideSound()
   end
 
   if (self.SoundsOn.Engine) then
+    if self.SoundDisabled then
+      self.EngineSound:ChangeVolume(0)
+
+      return
+    end
+
     self.EngineSound:ChangePitch(math.Clamp(60 + pitch / 25, 75, 100) + doppler, 0)
     local veh = LocalPlayer():GetVehicle()
     local isPassenger = IsValid(veh) and IsValid(veh:GetParent()) and veh:GetParent().IsSWVRVehicle
@@ -765,8 +772,12 @@ function ENT:HUDDrawTransponder()
 end
 
 function ENT:HUDDrawOverlay()
-  if not isnumber(self.Cockpit) then
-    return
+  if not isnumber(self.Cockpit) then return end
+
+  if self.DrawGlass then
+    surface.SetTexture(surface.GetTextureID("models/props_c17/frostedglass_01a_dx60")) -- Print the texture to the screen
+    surface.SetDrawColor(255, 255, 255, 255) -- Colour of the HUD
+    surface.DrawTexturedRect(0,0, ScrW(), ScrH()) -- Position, Size
   end
 
   surface.SetTexture(self.Cockpit) -- Print the texture to the screen
