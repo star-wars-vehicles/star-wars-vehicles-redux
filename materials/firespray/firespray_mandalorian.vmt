@@ -1,0 +1,16 @@
+"VertexLitGeneric"
+{
+	"$baseTexture"		"firespray\firespray_mandalorian"
+	"$bumpmap"		"firespray\firespray_n"
+	//"$nocull"		"1"
+
+	"$Phong"		"1"
+	"$PhongBoost"		"2.5"
+	"$phongexponent"	"59.8"
+	"$PhongFresnelRanges"	"[.05 .5 1]"
+
+	"$detail" 		"detail\metal_detail_01"
+	"$detailscale" 		"24.4"
+	"$detailblendfactor" 	"1.35"
+	"$detailblendmode" 	"0"
+}
