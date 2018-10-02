@@ -162,14 +162,6 @@ if CLIENT then
 
 				local disabled = charge:GetPos():DistToSqr(v:GetPos()) <= 700000
 
-				if v.SoundDisabled and disabled then
-					continue
-				end
-
-				if not v.SoundDisabled and disabled then
-					v:StopClientsideSound("Engine")
-				end
-
 				v.SoundDisabled = disabled
 			end
 		end)

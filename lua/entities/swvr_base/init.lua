@@ -1139,7 +1139,7 @@ function ENT:PhysicsCollide(colData, collider)
 end
 
 function ENT:OnTakeDamage(dmg)
-  if (dmg:GetInflictor():GetParent() == self) then
+  if not IsValid(dmg:GetInflictor()) or (dmg:GetInflictor():GetParent() == self) then
     return
   end
 

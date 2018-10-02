@@ -64,12 +64,22 @@ end
 if CLIENT then
     function ENT:Initialize()
         self:Setup({
-            EngineSound = "ambient/atmosphere/ambience_base.wav",
+            EngineSound = "n1_engine",
             ViewDistance = 575,
             ViewHeight = 125
         })
 
         self:SetupDefaults()
+
+        self:AddSound("Drone", "n1_drone", {
+            Is3D = true,
+            Looping = true,
+            Volume = 0.3,
+            Repeat = true,
+            Callback = function(ship)
+                return ship:GetFlight()
+            end
+        })
 
         self:AddEngine(Vector(36, 145, 32.5), {
             StartSize = 25,

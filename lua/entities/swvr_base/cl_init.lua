@@ -52,11 +52,8 @@ function ENT:Setup(options)
     end
   end
 
-  if (options.EngineSound) then
-    self.Sounds = self.Sounds or {}
-    self.Sounds.Engine = {}
-    self.Sounds.Engine.Name = "Engine"
-    self.Sounds.Engine.Path = options.EngineSound
+  if options.EngineSound then
+    self:AddSound("Engine", options.EngineSound, { Is3D = true, Looping = true, Callback = function(ship) return ship:GetFlight() end, ChangePitch = true, Repeat = true })
   end
 end
 
@@ -195,11 +192,6 @@ function ENT:Think()
     if not (self:IsTakingOff() and self:IsLanding()) then
       self:EngineEffects()
     end
-
-    self:StartClientsideSound("Engine")
-    self:UpdateClientsideSound()
-  else
-    self:StopClientsideSound("Engine")
   end
 
   self:LightEffects()
@@ -211,18 +203,36 @@ end
 
 function ENT:ThinkSounds()
   for _, snd in pairs(self.Sounds or {}) do
-    if snd.Name == "Engine" then continue end
-    if not self:GetFlight() then continue end
+    local patch = istable(snd.Patch) and table.Random(snd.Patch) or snd.Patch
 
-    if snd.NextPlay < CurTime() and (snd.Repeat or not snd.Played) and (not snd.Callback or snd.Callback(self)) then
-      local ship = LocalPlayer():GetNWEntity("Ship")
+    if snd.Is3D then
+      self:UpdateClientsideSound(snd, patch)
+    end
 
-      if ship == self then
-        local patch = istable(snd.Patch) and table.Random(snd.Patch) or snd.Patch
+    if self.SoundDisabled and patch:IsPlaying() then
+      patch:Stop()
 
-        patch:Stop()
-        patch:PlayEx(1, 100)
+      return
+    end
+
+    if snd.Callback then
+      -- Explicitly return false to stop the sound from playing
+      -- Returning true/nil continues normally
+      local result = snd.Callback(self)
+
+      if not result and result ~= nil then
+        snd.Patch:Stop()
+        return
       end
+    end
+
+    if snd.NextPlay < CurTime() and (snd.Repeat or not snd.Played) then
+      if (snd.Looping and patch:IsPlaying()) then return end
+
+      if not snd.Is3D and LocalPlayer():GetNWEntity("Ship") ~= self then return end
+
+      self:StopClientsideSound(snd, patch)
+      self:StartClientsideSound(snd, patch)
 
       snd.Played = true
       snd.NextPlay = CurTime() + snd.Cooldown
@@ -230,23 +240,25 @@ function ENT:ThinkSounds()
   end
 end
 
-function ENT:AddSound(name, path, options)
-  if string.upper(name) == "ENGINE" then
-    error("Cannot add sound with name 'engine'.")
-  end
+local DEFAULT_SOUND_OPTIONS = {
+  Is3D = false,
+  Callback = nil,
+  Played = false,
+  Repeat = false,
+  Looping = false,
+  ChangePitch = false,
+  Cooldown = 0,
+  NextPlay = CurTime(),
+  Volume = 1
+}
 
+function ENT:AddSound(name, path, options)
   options = options or {}
   self.Sounds = self.Sounds or {}
 
-  local snd = {
-    Name = name,
-    Path = path,
-    Callback = options.Callback or nil,
-    Played = false,
-    Repeat = tobool(options.Repeat),
-    Cooldown = options.Cooldown or 0,
-    NextPlay = options.NextPlay or CurTime()
-  }
+  local snd = table.Inherit(options or {}, DEFAULT_SOUND_OPTIONS)
+  snd.Name = name
+  snd.Path = path
 
   if istable(path) then
     local patches = {}
@@ -265,40 +277,29 @@ end
 --- Start a sound on the client.
 -- Starts a sound on any clients with a mode
 -- @param mode the mode of the sound
-function ENT:StartClientsideSound(mode)
-  self.SoundsOn = self.SoundsOn or {}
+function ENT:StartClientsideSound(snd, patch)
+  if self.SoundDisabled or patch:IsPlaying() then return end
 
-  if self.SoundDisabled or self.SoundsOn[mode] then return end
-
-  if (mode == "Engine" and self.EngineSound) then
-    self.EngineSound:Stop()
-    self.EngineSound:SetSoundLevel(100)
-    self.EngineSound:PlayEx(1, 100)
-  end
-
-  self.SoundsOn[mode] = true
-
+  patch:Stop()
+  patch:SetSoundLevel(100)
+  patch:PlayEx(snd.Volume, 100)
 end
 
 --- Stop a sound on the client.
 -- Stops a sound on any clients with a mode
 -- @param mode the mode of the sound
-function ENT:StopClientsideSound(mode)
-  self.SoundsOn = self.SoundsOn or {}
+function ENT:StopClientsideSound(snd, patch)
+  if not patch:IsPlaying() then return end
 
-  if not self.SoundsOn[mode] then return end
-
-  if (mode == "Engine" and self.EngineSound) then
-    self.EngineSound:Stop()
-  end
-
-  self.SoundsOn[mode] = nil
+  patch:Stop()
 end
 
 --- Doppler effect on sounds.
 -- Currently hard coded for engine only (I know kill me)
-function ENT:UpdateClientsideSound(snd)
+function ENT:UpdateClientsideSound(snd, patch)
   if self.SoundDisabled then return end
+  if not patch:IsPlaying() then return end
+
 
   local velo = self:GetVelocity()
   local pitch = self:GetVelocity():Length()
@@ -311,23 +312,27 @@ function ENT:UpdateClientsideSound(snd)
     doppler = velo:Dot(dir) / (150 * dir:Length())
   end
 
-  if not self.SoundsOn.Engine then return end
+  patch:ChangePitch((snd.ChangePitch and math.Clamp(60 + pitch / 25, 75, 100) or patch:GetPitch()) + doppler, 0)
 
-  self.EngineSound:ChangePitch(math.Clamp(60 + pitch / 25, 75, 100) + doppler, 0)
+
   local veh = LocalPlayer():GetVehicle()
   local isPassenger = IsValid(veh) and IsValid(veh:GetParent()) and veh:GetParent().IsSWVRVehicle
 
   -- Sound is quieter from the interior
   if (((self:GetFirstPerson() and self:GetPilot() == LocalPlayer()) or (isPassenger and not veh:GetThirdPersonMode())) and LocalPlayer():GetNWEntity("Ship") == self) then
-    self.EngineSound:ChangeVolume(0.3)
+    patch:ChangeVolume(0.3)
   else
-    self.EngineSound:ChangeVolume(0.7)
+    patch:ChangeVolume(0.7)
   end
 end
 
 function ENT:OnRemove()
   if (self.EngineSound) then
     self.EngineSound:Stop()
+  end
+
+  for k, v in pairs(self.Sounds) do
+    if v.Patch then v.Patch:Stop() end
   end
 
   if (IsValid(self.FXEmitter)) then
