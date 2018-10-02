@@ -122,6 +122,8 @@ function ENT:Think()
 end
 
 function ENT:ThinkWeapons()
+  if not cvars.Bool("swvr_weapons_enabled") then return end
+
   for _, button in pairs(SWVR.Buttons) do
     for _, tbl in pairs(self.Players or {}) do
       local ply = tbl.ent
@@ -268,8 +270,8 @@ function ENT:Setup(options)
   self.TakeOffVector = options.TakeOffVector
   self.LandAngles = options.LandAngles
 
-  self:SetStartHealth(options.Health or 1000)
-  self:SetStartShieldHealth(options.Shields or 0)
+  self:SetStartHealth((options.Health or 1000) * cvars.Number("swvr_health_multiplier"))
+  self:SetStartShieldHealth(cvars.Bool("swvr_shields_enabled") and ((options.Shields or 0) * cvars.Number("swvr_shields_multiplier")) or 0)
   self:SetShieldHealth(self:GetStartShieldHealth())
   self:SetBack(tobool(options.Back))
   self:SetMaxSpeed(options.Speed or 1500)
@@ -298,6 +300,8 @@ function ENT:AddWeaponGroup(name, weapon, options)
   end
 
   options.Parent = options.Parent or self
+
+  if options.Damage then options.Damage = options.Damage * cvars.Number("swvr_weapons_multiplier") end
 
   local group = SWVR:WeaponGroup(weapon)
   group:SetName(name)
@@ -535,6 +539,8 @@ end
 -- Allow the player to enter the ship.
 -- @param p The player using the ship.
 function ENT:Use(p)
+  if cvars.Bool("swvr_disable_use") then p:ChatPrint("[SWVR] This server has disabled using ships for now.") return end
+
   if not p:KeyDown(IN_WALK) then
     if not self:InFlight() and self.Cooldown.Use < CurTime() then
       self:Enter(p)
@@ -1110,6 +1116,8 @@ end
 
 --- Calculate damage from physics collisions.
 function ENT:PhysicsCollide(colData, collider)
+  if not cvars.Bool("swvr_collisions_enabled") then return end
+
   if (self.LastCollide < CurTime() and not self:IsLanding() and not self:IsTakingOff()) then
     local mass = (colData.HitEntity:GetClass() == "worldspawn") and 1000 or colData.HitObject:GetMass() --if it's worldspawn use 1000 (worldspawns physobj only has mass 1), else normal mass
     local s = colData.TheirOldVelocity:Length()
@@ -1129,7 +1137,7 @@ function ENT:PhysicsCollide(colData, collider)
     end
 
     local d = DamageInfo()
-    d:SetDamage(dmg)
+    d:SetDamage(dmg * cvars.Number("swvr_collisions_multiplier"))
     d:SetDamageType(DMG_CRUSH)
     d:SetInflictor(game.GetWorld())
 

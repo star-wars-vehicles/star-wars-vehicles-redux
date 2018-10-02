@@ -90,7 +90,7 @@ function GROUP:SetOptions(tbl)
 
 	for k, v in pairs(self.Options) do
 		if self["Set" .. k] then
-			print("Setting " .. k .. " in group '" .. self:GetName() .. "' to " .. tostring(v))
+			--print("Setting " .. k .. " in group '" .. self:GetName() .. "' to " .. tostring(v))
 			self["Set" .. k](self, v)
 		end
 	end

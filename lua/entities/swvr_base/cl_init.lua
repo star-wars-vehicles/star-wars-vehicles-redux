@@ -8,17 +8,11 @@ function ENT:Initialize()
   self.FXEmitter = ParticleEmitter(self:GetPos())
 
   self.Sounds   = self.Sounds or {}
-  self.SoundsOn = self.SoundsOn or {}
 
   self.Engines  = self.Engines or {}
   self.Events   = self.Events or {}
 
   self:InitParts()
-
-
-  if self.Sounds and self.Sounds.Engine then
-    self.EngineSound = self.EngineSound or CreateSound(self, self.Sounds.Engine.Path)
-  end
 
   LocalPlayer().SWVRViewDistance = LocalPlayer().SWVRViewDistance or 0
   LocalPlayer().SW_ViewDistance = LocalPlayer().SW_ViewDistance or 0 -- Backwards compatibility for now...
@@ -60,7 +54,7 @@ end
 function ENT:SetupDefaults(options)
   options = options or {}
 
-  if options.OnShieldsDown == nil or tobool(options.OnShieldsDown) then
+  if options.OnShieldsDown ~= false then
     self:AddEvent("OnShieldsDown", function()
       if LocalPlayer():GetNWEntity("Ship") ~= self then
         return
@@ -70,7 +64,7 @@ function ENT:SetupDefaults(options)
     end)
   end
 
-  if options.OnFire == nil or tobool(options.OnFire) then
+  if options.OnFire ~= false then
     self:AddEvent("OnFire", function(group, seat)
       if not group.CanOverheat then return end
       if LocalPlayer():GetNWEntity("Ship") ~= self then return end
@@ -82,7 +76,7 @@ function ENT:SetupDefaults(options)
     end)
   end
 
-  if options.OnOverheat == nil or tobool(options.OnOverheat) then
+  if options.OnOverheat ~= false then
     self:AddEvent("OnOverheat", function(group, seat)
       local ply = LocalPlayer()
 
@@ -98,7 +92,7 @@ function ENT:SetupDefaults(options)
     end)
   end
 
-  if options.OnOverheatReset == nil or tobool(options.OnOverheatReset) then
+  if options.OnOverheatReset ~= false then
     self:AddEvent("OnOverheatReset", function(group, seat)
       local ply = LocalPlayer()
 
@@ -114,7 +108,7 @@ function ENT:SetupDefaults(options)
     end)
   end
 
-  if options.OnCollision == nil or tobool(options.OnCollision) then
+  if options.OnCollision ~= false then
     self:AddEvent("OnCollision", function(damage)
       local ply = LocalPlayer()
       local ship = ply:GetNWEntity("Ship")
@@ -182,7 +176,7 @@ function ENT:Draw()
     end
   end
 
-  if self.Cockpit == nil or not self:GetFirstPerson() or LocalPlayer() ~= self:GetPilot() or self.AlwaysDraw then
+  if not self.Cockpit or not self:GetFirstPerson() or LocalPlayer() ~= self:GetPilot() or self.AlwaysDraw then
     self:DrawModel()
   end
 end
@@ -202,7 +196,7 @@ function ENT:Think()
 end
 
 function ENT:ThinkSounds()
-  for _, snd in pairs(self.Sounds or {}) do
+  for name, snd in pairs(self.Sounds) do
     local patch = istable(snd.Patch) and table.Random(snd.Patch) or snd.Patch
 
     if snd.Is3D then
@@ -212,24 +206,24 @@ function ENT:ThinkSounds()
     if self.SoundDisabled and patch:IsPlaying() then
       patch:Stop()
 
-      return
+      continue
     end
 
     if snd.Callback then
       -- Explicitly return false to stop the sound from playing
       -- Returning true/nil continues normally
-      local result = snd.Callback(self)
+      local result = snd.Callback(self, snd)
 
-      if not result and result ~= nil then
+      if result == false then
         snd.Patch:Stop()
-        return
+        continue
       end
     end
 
     if snd.NextPlay < CurTime() and (snd.Repeat or not snd.Played) then
-      if (snd.Looping and patch:IsPlaying()) then return end
+      if (snd.Looping and patch:IsPlaying()) then continue end
 
-      if not snd.Is3D and LocalPlayer():GetNWEntity("Ship") ~= self then return end
+      if not snd.Is3D and LocalPlayer():GetNWEntity("Ship") ~= self then continue end
 
       self:StopClientsideSound(snd, patch)
       self:StartClientsideSound(snd, patch)
@@ -312,25 +306,22 @@ function ENT:UpdateClientsideSound(snd, patch)
     doppler = velo:Dot(dir) / (150 * dir:Length())
   end
 
-  patch:ChangePitch((snd.ChangePitch and math.Clamp(60 + pitch / 25, 75, 100) or patch:GetPitch()) + doppler, 0)
+  pitch = (snd.ChangePitch and math.Clamp(60 + pitch / 25, 75, 100) or patch:GetPitch()) + doppler
+  patch:ChangePitch(pitch, 0)
 
 
   local veh = LocalPlayer():GetVehicle()
   local isPassenger = IsValid(veh) and IsValid(veh:GetParent()) and veh:GetParent().IsSWVRVehicle
 
-  -- Sound is quieter from the interior
+  -- 3D Sound is quieter from the interior
   if (((self:GetFirstPerson() and self:GetPilot() == LocalPlayer()) or (isPassenger and not veh:GetThirdPersonMode())) and LocalPlayer():GetNWEntity("Ship") == self) then
-    patch:ChangeVolume(0.3)
+    patch:ChangeVolume(snd.Volume / 3)
   else
-    patch:ChangeVolume(0.7)
+    patch:ChangeVolume(snd.Volume)
   end
 end
 
 function ENT:OnRemove()
-  if (self.EngineSound) then
-    self.EngineSound:Stop()
-  end
-
   for k, v in pairs(self.Sounds) do
     if v.Patch then v.Patch:Stop() end
   end
