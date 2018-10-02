@@ -38,7 +38,8 @@ if SERVER then
       Delay = 0.2,
       Damage = 85,
       CanOverheat = true,
-      MaxOverheat = 10
+      MaxOverheat = 10,
+      Tracer = "red_tracer_fx"
     })
 
     self:AddWeapon("Pilot", "MainR", Vector(200, 18, 50))

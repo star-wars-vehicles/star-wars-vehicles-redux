@@ -6,11 +6,15 @@ include("cl_events.lua")
 -- May also call other Initialization functions.
 function ENT:Initialize()
   self.FXEmitter = ParticleEmitter(self:GetPos())
-  self.Sounds = self.Sounds or {}
-  self.SoundsOn = {}
-  self.Engines = self.Engines or {}
+
+  self.Sounds   = self.Sounds or {}
+  self.SoundsOn = self.SoundsOn or {}
+
+  self.Engines  = self.Engines or {}
+  self.Events   = self.Events or {}
+
   self:InitParts()
-  self.Events = self.Events or {}
+
 
   if self.Sounds and self.Sounds.Engine then
     self.EngineSound = self.EngineSound or CreateSound(self, self.Sounds.Engine.Path)
@@ -18,16 +22,17 @@ function ENT:Initialize()
 
   LocalPlayer().SWVRViewDistance = LocalPlayer().SWVRViewDistance or 0
   LocalPlayer().SW_ViewDistance = LocalPlayer().SW_ViewDistance or 0 -- Backwards compatibility for now...
+
   self.Filter = self:GetChildEntities()
 end
 
 function ENT:Setup(options)
   options = options or {}
   self.ViewDistance = options.ViewDistance or 1000
-  self.ViewHeight = options.ViewHeight or 300
+  self.ViewHeight   = options.ViewHeight or 300
 
   self.AlwaysDraw = tobool(options.AlwaysDraw)
-  self.DrawGlass = tobool(options.DrawGlass)
+  self.DrawGlass  = tobool(options.DrawGlass)
 
   if (options.Cockpit) then
     if (istable(options.Cockpit) and util.IsValidModel(options.Cockpit.Path)) then
@@ -207,18 +212,116 @@ end
 function ENT:ThinkSounds()
   for _, snd in pairs(self.Sounds or {}) do
     if snd.Name == "Engine" then continue end
+    if not self:GetFlight() then continue end
 
-    if snd.NextPlay < CurTime() and ((not snd.Played and not snd.Repeat) or snd.Repeat) and (not snd.Callback or (snd.Callback and snd.Callback(self))) then
+    if snd.NextPlay < CurTime() and (snd.Repeat or not snd.Played) and (not snd.Callback or snd.Callback(self)) then
       local ship = LocalPlayer():GetNWEntity("Ship")
-      local path = isstring(snd.Path) and snd.Path or snd.Path[math.random(#snd.Path)]
 
-      if (IsValid(ship) and ship == self) then
-        surface.PlaySound(path)
+      if ship == self then
+        local patch = istable(snd.Patch) and table.Random(snd.Patch) or snd.Patch
+
+        patch:Stop()
+        patch:PlayEx(1, 100)
       end
 
       snd.Played = true
       snd.NextPlay = CurTime() + snd.Cooldown
     end
+  end
+end
+
+function ENT:AddSound(name, path, options)
+  if string.upper(name) == "ENGINE" then
+    error("Cannot add sound with name 'engine'.")
+  end
+
+  options = options or {}
+  self.Sounds = self.Sounds or {}
+
+  local snd = {
+    Name = name,
+    Path = path,
+    Callback = options.Callback or nil,
+    Played = false,
+    Repeat = tobool(options.Repeat),
+    Cooldown = options.Cooldown or 0,
+    NextPlay = options.NextPlay or CurTime()
+  }
+
+  if istable(path) then
+    local patches = {}
+    for _, file in ipairs(path) do
+      table.insert(patches, CreateSound(self, file))
+    end
+
+    snd.Patch = patches
+  else
+    snd.Patch = CreateSound(self, path)
+  end
+
+  self.Sounds[name] = snd
+end
+
+--- Start a sound on the client.
+-- Starts a sound on any clients with a mode
+-- @param mode the mode of the sound
+function ENT:StartClientsideSound(mode)
+  self.SoundsOn = self.SoundsOn or {}
+
+  if self.SoundDisabled or self.SoundsOn[mode] then return end
+
+  if (mode == "Engine" and self.EngineSound) then
+    self.EngineSound:Stop()
+    self.EngineSound:SetSoundLevel(100)
+    self.EngineSound:PlayEx(1, 100)
+  end
+
+  self.SoundsOn[mode] = true
+
+end
+
+--- Stop a sound on the client.
+-- Stops a sound on any clients with a mode
+-- @param mode the mode of the sound
+function ENT:StopClientsideSound(mode)
+  self.SoundsOn = self.SoundsOn or {}
+
+  if not self.SoundsOn[mode] then return end
+
+  if (mode == "Engine" and self.EngineSound) then
+    self.EngineSound:Stop()
+  end
+
+  self.SoundsOn[mode] = nil
+end
+
+--- Doppler effect on sounds.
+-- Currently hard coded for engine only (I know kill me)
+function ENT:UpdateClientsideSound(snd)
+  if self.SoundDisabled then return end
+
+  local velo = self:GetVelocity()
+  local pitch = self:GetVelocity():Length()
+  local doppler = 0
+
+  -- For the Doppler-Effect!
+  if LocalPlayer():GetNWEntity("Ship") ~= self then
+    -- Is the vehicle flying towards the player or away from him?
+    local dir = LocalPlayer():GetPos() - self:GetPos()
+    doppler = velo:Dot(dir) / (150 * dir:Length())
+  end
+
+  if not self.SoundsOn.Engine then return end
+
+  self.EngineSound:ChangePitch(math.Clamp(60 + pitch / 25, 75, 100) + doppler, 0)
+  local veh = LocalPlayer():GetVehicle()
+  local isPassenger = IsValid(veh) and IsValid(veh:GetParent()) and veh:GetParent().IsSWVRVehicle
+
+  -- Sound is quieter from the interior
+  if (((self:GetFirstPerson() and self:GetPilot() == LocalPlayer()) or (isPassenger and not veh:GetThirdPersonMode())) and LocalPlayer():GetNWEntity("Ship") == self) then
+    self.EngineSound:ChangeVolume(0.3)
+  else
+    self.EngineSound:ChangeVolume(0.7)
   end
 end
 
@@ -235,7 +338,7 @@ function ENT:OnRemove()
     SafeRemoveEntity(v.Ent)
   end
 
-  SafeRemoveEntity(istable(self.Cockpit) and self.Cockpit.Ent or NULL)
+  SafeRemoveEntity(istable(self.Cockpit) and self.Cockpit.Ent)
 end
 
 function ENT:EngineEffects()
@@ -341,90 +444,6 @@ function ENT:AddPart(name, path, pos, ang)
   }
 
   return self.Parts[name]
-end
-
-function ENT:AddSound(name, path, options)
-  if string.upper(name) == "ENGINE" then
-    error("Cannot add sound with name 'engine'.")
-    options = options or {}
-    self.Sounds = self.Sounds or {}
-
-    self.Sounds[name] = {
-      Name = name,
-      Path = path,
-      Patch = path,
-      Callback = options.Callback or nil,
-      Played = false,
-      Repeat = tobool(options.Repeat),
-      Cooldown = options.Cooldown or 0,
-      NextPlay = options.NextPlay or CurTime()
-    }
-  end
-end
-
---- Start a sound on the client.
--- Starts a sound on any clients with a mode
--- @param mode the mode of the sound
-function ENT:StartClientsideSound(mode)
-  self.SoundsOn = self.SoundsOn or {}
-
-  if not self.SoundsOn[mode] then
-    if (mode == "Engine" and self.EngineSound) then
-      self.EngineSound:Stop()
-      self.EngineSound:SetSoundLevel(100)
-      self.EngineSound:PlayEx(1, 100)
-    end
-
-    self.SoundsOn[mode] = true
-  end
-end
-
---- Stop a sound on the client.
--- Stops a sound on any clients with a mode
--- @param mode the mode of the sound
-function ENT:StopClientsideSound(mode)
-  self.SoundsOn = self.SoundsOn or {}
-
-  if (self.SoundsOn[mode]) then
-    if (mode == "Engine" and self.EngineSound) then
-      self.EngineSound:Stop()
-    end
-
-    self.SoundsOn[mode] = nil
-  end
-end
-
---- Doppler effect on sounds.
--- Currently hard coded for engine only (I know kill me)
-function ENT:UpdateClientsideSound()
-  local velo = self:GetVelocity()
-  local pitch = self:GetVelocity():Length()
-  local doppler = 0
-
-  -- For the Doppler-Effect!
-  if LocalPlayer():GetNWEntity("Ship") ~= self then
-    -- Is the vehicle flying towards the player or away from him?
-    local dir = LocalPlayer():GetPos() - self:GetPos()
-    doppler = velo:Dot(dir) / (150 * dir:Length())
-  end
-
-  if (self.SoundsOn.Engine) then
-    if self.SoundDisabled then
-      self.EngineSound:ChangeVolume(0)
-
-      return
-    end
-
-    self.EngineSound:ChangePitch(math.Clamp(60 + pitch / 25, 75, 100) + doppler, 0)
-    local veh = LocalPlayer():GetVehicle()
-    local isPassenger = IsValid(veh) and IsValid(veh:GetParent()) and veh:GetParent().IsSWVRVehicle
-
-    if ((self:GetFirstPerson() or (isPassenger and not veh:GetThirdPersonMode())) and LocalPlayer():GetNWEntity("Ship") == self) then
-      self.EngineSound:ChangeVolume(0.3)
-    else
-      self.EngineSound:ChangeVolume(0.7)
-    end
-  end
 end
 
 --- Calculate the view for passengers.
@@ -858,34 +877,29 @@ end)
 
 hook.Add("HUDPaint", "SWVRHUDPaint", function()
   local ply = LocalPlayer()
-  local flying = ply:GetNWBool("Flying", false)
 
-  if not flying then
-    return
-  end
+  if not ply:GetNWBool("Flying") then return end
 
   local ship = ply:GetNWEntity("Ship")
 
-  if not IsValid(ship) then
-    return
-  end
+  if not IsValid(ship) then return end
 
   if (ship:CheckHook(hook.Run("SWVRHUDPaint", ship))) then
     return
   end
 
-  if IsValid(ship) then
-    if ship:GetFirstPerson() and ship:GetPilot() == ply then
-      ship:HUDDrawOverlay()
-    end
+  if not IsValid(ship) then return end
 
-    ship:HUDDrawHull()
-    ship:HUDDrawReticles()
-    ship:HUDDrawSpeedometer()
-    ship:HUDDrawTransponder()
-    ship:HUDDrawCompass(ScrW() / 2, ScrH() / 4 * 2.8)
-    ship:HUDDrawOverheating()
+  if ship:GetFirstPerson() and ship:GetPilot() == ply then
+    ship:HUDDrawOverlay()
   end
+
+  ship:HUDDrawHull()
+  ship:HUDDrawReticles()
+  ship:HUDDrawSpeedometer()
+  ship:HUDDrawTransponder()
+  ship:HUDDrawCompass(ScrW() / 2, ScrH() / 4 * 2.8)
+  ship:HUDDrawOverheating()
 end)
 
 function ENT:DispatchListeners(event, ...)

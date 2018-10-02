@@ -154,7 +154,12 @@ function SWVR.Weapons:Get(name)
 
 	local retval = {}
 	for k, v in pairs(Weapons[name].t) do
-		retval[k] = v
+		-- Copy the damn table or else they'll all share the same weapon base table
+		if istable(v) then
+			retval[k] = table.Copy(v)
+		else
+			retval[k] = v
+		end
 	end
 
 	if name ~= Weapons[name].Base then

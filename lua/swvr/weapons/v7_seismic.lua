@@ -61,7 +61,7 @@ function WEAPON:Fire()
 
 			charge:EmitSound("v7_seismic_charge")
 
-			util.BlastDamage(charge, self:GetOwner(), charge:GetPos(), 500, 400)
+			util.BlastDamage(charge, self:GetOwner(), charge:GetPos(), 800, 600)
 
 			charge:SetColor(Color(255, 255, 255, 0))
 			charge:SetRenderMode(RENDERMODE_TRANSALPHA)
@@ -74,6 +74,10 @@ function WEAPON:Fire()
 end
 
 SWVR.Weapons:Register(WEAPON, "v7_seismic")
+
+util.PrecacheSound("swvr/abilities/swvr_seismic_pre.wav")
+util.PrecacheSound("swvr/abilities/swvr_seismic_pass.wav")
+util.PrecacheSound("swvr/abilities/swvr_seismic_charge.wav")
 
 if SERVER then
 	util.AddNetworkString("SeismicCharge")
@@ -119,7 +123,7 @@ if CLIENT then
 			hook.Remove("Think", "SWVR.SeismicCharge." .. index)
 
 			-- Let's just make sure
-			timer.Simple(1, function()
+			timer.Simple(0.5, function()
 				hook.Remove("EntityEmitSound", "SWVR.SeismicCharge." .. index)
 				hook.Remove("PlayerFootstep", "SWVR.SeismicCharge." .. index)
 
@@ -157,7 +161,15 @@ if CLIENT then
 				if not v.IsSWVRVehicle then continue end
 
 				local disabled = charge:GetPos():DistToSqr(v:GetPos()) <= 700000
-				v:StopClientsideSound("Engine")
+
+				if v.SoundDisabled and disabled then
+					continue
+				end
+
+				if not v.SoundDisabled and disabled then
+					v:StopClientsideSound("Engine")
+				end
+
 				v.SoundDisabled = disabled
 			end
 		end)
