@@ -12,6 +12,8 @@ function ENTITY:IsStarWarsVehicle(swvr)
 	return tobool(self.IsSWVRVehicle) or tobool(self.IsSWVRVehicle)
 end
 
+-- ENTITY HOOKS
+
 hook.Add("OnEntityCreated", "SWVRSetupPlayer", function(ent)
 	if ent:IsPlayer() then
 		ent:SetNWEntity("Ship", nil)
