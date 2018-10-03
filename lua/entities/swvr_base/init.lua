@@ -134,7 +134,7 @@ function ENT:ThinkWeapons()
 
       local group = self.WeaponGroups[self.Seats[seat]["Weapons"][button]]
 
-      if (ply:KeyDown(button) and group.Cooldown < CurTime()) then
+      if (ply:KeyDown(button) and group:GetCooldown() < CurTime()) then
         if (not group:GetOverheated() or not group:GetCanOverheat() and not self:IsCritical()) then
           self:FireWeapons(self.Seats[seat]["Weapons"][button])
           group:SetOverheat(group:GetOverheat() + 1)

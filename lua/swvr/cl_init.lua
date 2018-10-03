@@ -31,7 +31,7 @@ function SWVR:Initialize()
   MsgN("  Initializing Star Wars Vehicles Redux [CL]  ")
   MsgN("----------------------------------------------")
 
-  LoadDirectory("libraries")
+  --LoadDirectory("libraries")
   LoadDirectory("base")
   LoadDirectory("weapons")
 
@@ -41,3 +41,7 @@ function SWVR:Initialize()
 end
 
 SWVR:Initialize()
+
+hook.Add("OnReloaded", "SWVRReload", function()
+  SWVR:Initialize()
+end)
