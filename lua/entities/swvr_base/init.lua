@@ -96,8 +96,6 @@ function ENT:Think()
       --self:ThinkWeapons() -- Can't fire if the engine isn't on...
     end
 
-    self:ThinkControls()
-
     if (not self:IsTakingOff() and not self:IsLanding() and self.Velocity:IsZero()) then
       if self.HoverStart > 0 then
         if CurTime() - self.HoverStart > 3 then
@@ -112,7 +110,10 @@ function ENT:Think()
     end
   end
 
-  self:ThinkWeapons()
+  -- If a control was used this frame, then we should ignore firing inputs
+  if not self:ThinkControls() then
+    self:ThinkWeapons()
+  end
 
   self:ThinkParts()
 
@@ -175,14 +176,16 @@ function ENT:ThinkWeapons()
 end
 
 function ENT:ThinkControls()
-  if not IsValid(self:GetPilot()) then
-    return
-  end
+  if not IsValid(self:GetPilot()) then return end
 
-  if IsValid(self:GetPilot()) and self:GetPilot():KeyDown(IN_WALK) and self:GetCanFPV() and self.Cooldown.View < CurTime() then
+  if self:GetPilot():KeyDown(IN_WALK) and self:GetCanFPV() and self.Cooldown.View < CurTime() then
     self:SetFirstPerson(not self:GetFirstPerson())
     self.Cooldown.View = CurTime() + 1
+
+    return true
   end
+
+  return false
 end
 
 function ENT:ThinkParts()

@@ -84,6 +84,7 @@ function EFFECT:Render()
 
 	render.SetMaterial(MaterialFront)
 	render.DrawSprite(endPos, 52, 24, color_white)
+
 	render.SetMaterial(MaterialMain)
 	render.DrawBeam(startPos, endPos, 30, 0, 1, color_white)
 end

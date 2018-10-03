@@ -162,12 +162,16 @@ end
 
 if CLIENT then
 	function ENT:DrawTranslucent()
-		local vector = self:GetVelocity() / 101.5625
+		local vector = self:GetVelocity() * 0.009846153
 
-		render.SetMaterial( TRACERS[self:GetNWString("Color", "WHITE")][3] )
-		render.DrawSprite( self:GetPos() - vector, 8, 8, self:GetColor() )
+		local tracer = self:GetNWString("Color", "NONE")
 
-		render.SetMaterial( TRACERS[self:GetNWString("Color", "WHITE")][2] )
-		render.DrawBeam( self:GetPos(), self:GetPos() - vector, 10, 0, 1, self:GetColor() )
+		if tracer == "NONE" then return end
+
+		render.SetMaterial( TRACERS[tracer][3] )
+		render.DrawSprite( self:GetPos() - vector, 52, 24, self:GetColor() )
+
+		render.SetMaterial( TRACERS[tracer][2] )
+		render.DrawBeam( self:GetPos(), self:GetPos() - vector, 30, 0, 1, self:GetColor() )
 	end
 end

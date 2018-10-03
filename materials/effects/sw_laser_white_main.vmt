@@ -1,0 +1,6 @@
+"UnlitGeneric"
+{
+	"$basetexture"		"effects\sw_laser_white_main"
+	"$additive"		"1"
+	"$vertexcolor"	"1"
+}

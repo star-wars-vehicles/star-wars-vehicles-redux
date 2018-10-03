@@ -89,6 +89,8 @@ properties.Add("repair", {
   end
 })
 
+cleanup.Register("swvehicles")
+
 if SERVER then
   CreateConVar("swvr_health_enabled", "1", { FCVAR_ARCHIVE, FCVAR_NOTIFY }, "Damage Enabled")
   CreateConVar("swvr_health_multiplier", "1", { FCVAR_ARCHIVE, FCVAR_NOTIFY }, "Health Multiplier")
@@ -104,6 +106,8 @@ end
 if CLIENT then
   CreateClientConVar("swvr_shields_draw", "1", true, false, "Draw shield effects.")
   CreateClientConVar("swvr_engines_draw", "1", true, false, "Draw engine effects.")
+
+  language.Add("Cleanup_swvehicles", "Star Wars Vehicles")
 
   local SERVER_DEFAULTS = {
     swvr_disable_use = "0",

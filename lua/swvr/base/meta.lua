@@ -21,3 +21,9 @@ hook.Add("OnEntityCreated", "SWVRSetupPlayer", function(ent)
 		ent:SetNWVector("ExitPos", Vector(0, 0, 0))
 	end
 end)
+
+hook.Add("PlayerSpawnedSENT", "SWVRPlayerSpawnedSENT", function(ply, ent)
+	if ent.IsSWVRVehicle then
+		cleanup.Add(ply, "swvehicles", ent)
+	end
+end)
