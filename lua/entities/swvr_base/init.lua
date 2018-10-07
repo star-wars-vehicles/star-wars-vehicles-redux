@@ -92,8 +92,6 @@ function ENT:Think()
       else
         self:Exit(false)
       end
-    --else
-      --self:ThinkWeapons() -- Can't fire if the engine isn't on...
     end
 
     if (not self:IsTakingOff() and not self:IsLanding() and self.Velocity:IsZero()) then
@@ -107,6 +105,10 @@ function ENT:Think()
       end
     else
       self.HoverStart = 0
+    end
+
+    if not self:GetPilot():KeyDown(IN_USE) then
+      self:GetPilot():SetPos(self:GetPos() + (self.PilotOffset or Vector()))
     end
   end
 
@@ -613,6 +615,8 @@ function ENT:PassengerEnter(p)
 
   if self:CheckHook(hook.Run("SWVRPassengerEnter", p)) then return end
 
+  self:DispatchEvent("OnPassengerEnter", p)
+
   for k, v in pairs(self.Seats) do
     if v.Ent:GetPassenger(1) == NULL then
       p:EnterVehicle(v.Ent)
@@ -756,9 +760,9 @@ function ENT:LoadPlayer(p, kill)
   p:SetNWBool("Flying", false)
   p:SetNWBool("Pilot", false)
 
-  if not kill then
-    p:SetPos(self:LocalToWorld(p:GetNWVector("ExitPos")))
-  elseif kill and p:Alive() and not p:HasGodMode() then
+  p:SetPos(self:LocalToWorld(p:GetNWVector("ExitPos")))
+
+  if kill and p:Alive() and not p:HasGodMode() then
     p:Kill()
   end
 
@@ -808,10 +812,14 @@ function ENT:Bang()
     return
   end
 
+  self:DispatchEvent("Bang", self)
+
   self:EmitSound(Sound("Explosion.mp3"), 100, math.random(80, 100))
+
   local fx = EffectData()
   fx:SetOrigin(self:GetPos())
   fx:SetMagnitude(math.Round(self.Mass, 10000))
+
   util.Effect("SWExplosion", fx)
 
   if (self:InFlight()) then
@@ -990,7 +998,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
           filter = self:GetChildEntities()
         })
 
-        if (tr.HitWorld or (IsValid(tr.Entity) and tr.Entity:GetClass() == "prop_physics")) then
+        if (tr.HitWorld or (IsValid(tr.Entity) and SWVR.LandingSurfaces[tr.Entity:GetClass()])) then
           self.Land = true
           self.LandPos = tr.HitPos + (self.LandOffset or Vector(0, 0, 0))
           self:IsLanding(self.Land)
@@ -1280,8 +1288,8 @@ function ENT:DispatchEvent(event, ...)
   end
 
   net.Broadcast()
-  local default = true
 
+  local default = true
   for k, v in pairs(self.Events[string.upper(event)] or {}) do
     v.Callback(...)
     default = Either(not v.Default, false, default)

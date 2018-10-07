@@ -54,7 +54,7 @@ if SERVER then
 		self.LightEffect:SetPos( self:GetPos() )
 		self.LightEffect:SetOwner( self )
 		self.LightEffect:SetParent(self)
-		self.LightEffect:SetKeyValue( "_light", tostring(ColorAlpha(TRACERS[self:GetNWString("Color")][1], 255)) )
+		self.LightEffect:SetKeyValue( "_light", tostring(ColorAlpha(TRACERS[self:GetNWString("Color", "WHITE")][1], 255)) )
 		self.LightEffect:SetKeyValue("distance", "96" )
 		self.LightEffect:SetKeyValue( "brightness", "4" )
 		self.LightEffect:Spawn()
@@ -164,7 +164,7 @@ if CLIENT then
 	function ENT:DrawTranslucent()
 		local vector = self:GetVelocity() * 0.009846153
 
-		local tracer = self:GetNWString("Color", "NONE")
+		local tracer = self:GetNWString("Color", "WHITE")
 
 		if tracer == "NONE" then return end
 

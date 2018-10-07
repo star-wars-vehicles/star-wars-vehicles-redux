@@ -22,7 +22,7 @@ end
 
 sound.Add({
 	name = "kx5_cannon",
-	channel = CHAN_WEAPON,
+	channel = CHAN_AUTO,
 	volume = 0.5,
 	level = 80,
 	pitch = { 95, 110 },

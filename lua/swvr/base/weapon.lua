@@ -113,6 +113,10 @@ function GROUP:Fire(cond)
 	end
 
 	if self.Sound then
+		if istable(sound.GetProperties(self.Sound)) then
+			self.Owner:StopSound(self.Sound)
+		end
+
 		self.Owner:EmitSound(self.Sound)
 	end
 

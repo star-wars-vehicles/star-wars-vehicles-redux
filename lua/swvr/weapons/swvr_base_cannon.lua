@@ -7,7 +7,7 @@ CANNON.Bullet = {}
 DEFINE_BASECLASS("swvr_base_weapon")
 
 AccessorFunc(CANNON, "Velocity", "Velocity", FORCE_NUMBER)
-AccessorFunc(CANNON, "Hitscan", "Hitscan", FORCE_BOOL)
+AccessorFunc(CANNON, "Projectile", "Projectile", FORCE_BOOL)
 
 AccessorFunc(CANNON, "Color", "Color")
 
@@ -75,7 +75,7 @@ end
 function CANNON:Fire()
 	if not (IsValid(self.Owner) and IsValid(self.Parent) and IsValid(self.Entity)) then return end
 
-	if self:GetHitscan() then
+	if not self:GetProjectile() then
 		local tr = util.TraceLine({
 			start = self.Parent:GetPos(),
 			endpos = self.Parent:GetPos() + self.Parent:GetForward() * 10000,

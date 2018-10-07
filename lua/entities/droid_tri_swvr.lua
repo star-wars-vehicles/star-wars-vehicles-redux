@@ -37,7 +37,6 @@ if SERVER then
     self:AddWeaponGroup("Pilot", "ls1_cannon", {
       Delay = 0.1,
       Damage = 25,
-      Hitscan = false,
       Color = "red",
       CanOverheat = true,
       MaxOverheat = 20

@@ -400,7 +400,7 @@ function ENT:AddEngine(pos, options)
   self.Engines[table.Count(self.Engines) + 1] = {
     Pos = pos,
     Color = options.Color or Color(0, 0, 255, 255),
-    Sprite = options.Sprite or "sprites/bluecore",
+    Sprite = Material(options.Sprite or "sprites/bluecore"),
     Lifetime = options.Lifetime or 1.25,
     StartSize = options.StartSize or 25,
     EndSize = options.EndSize or 18.75
@@ -678,7 +678,6 @@ function ENT:HUDDrawReticles()
 end
 
 function ENT:HUDDrawCompass(fpvX, fpvY)
-  local p = LocalPlayer()
   local size = ScrW() / 10
   local x, y
 
@@ -711,6 +710,22 @@ function ENT:HUDDrawCompass(fpvX, fpvY)
   surface.SetDrawColor(Color(255, 255, 255, 255))
   surface.SetTexture(surface.GetTextureID("hud/sw_shipcompass_disk"))
   surface.DrawTexturedRectRotated(x, y, size, size, rotate)
+end
+
+function ENT:HUDDrawAltimeter(fpvX, fpvY)
+  local p = LocalPlayer()
+  local size = ScrW() / 10
+
+  local x, y
+
+  if (self:GetFirstPerson()) then
+    x = fpvX or ScrW() / 2
+    y = fpvY or ScrH() / 4 * 3.1
+  else
+    x = size * 0.65
+    y = x
+  end
+
   -- Altimeter
   local max_ld = 20000
   local ld = 300
@@ -895,6 +910,7 @@ hook.Add("HUDPaint", "SWVRHUDPaint", function()
   ship:HUDDrawSpeedometer()
   ship:HUDDrawTransponder()
   ship:HUDDrawCompass(ScrW() / 2, ScrH() / 4 * 2.8)
+  ship:HUDDrawAltimeter(ScrW() / 2, ScrH() / 4 * 2.8)
   ship:HUDDrawOverheating()
 end)
 

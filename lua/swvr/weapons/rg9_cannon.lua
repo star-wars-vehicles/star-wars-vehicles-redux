@@ -22,7 +22,7 @@ end
 
 sound.Add({
 	name = "rg9_cannon",
-	channel = CHAN_WEAPON,
+	channel = CHAN_AUTO,
 	volume = 1.0,
 	level = 80,
 	pitch = {90, 110},

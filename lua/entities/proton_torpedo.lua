@@ -133,16 +133,18 @@ if CLIENT then
 		self.FXEmitter:Finish()
 	end
 
+	local WHITE_BLAST = Material("sprites/white_blast")
+	local BLUECORE 		= Material("sprites/bluecore")
+
 	function ENT:Draw()
 		self:DrawModel()
 
 		if self.FXEmitter:GetNumActiveParticles() > 300 then return end
 
 		local isWhite = self:GetNWBool("IsWhite")
-		local sprite = isWhite and "sprites/white_blast" or "sprites/bluecore"
+		local sprite = isWhite and WHITE_BLAST or BLUECORE
 
 		local fx = self.FXEmitter:Add(sprite, self:GetPos())
-		if not fx then print("LIGMA") return end
 		fx:SetVelocity((self:GetForward() * -1):GetNormalized())
 		fx:SetDieTime(0.2)
 		fx:SetStartAlpha(255)

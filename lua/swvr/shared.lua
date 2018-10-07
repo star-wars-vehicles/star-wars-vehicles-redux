@@ -29,6 +29,18 @@ SWVR.InputMap = {
   [MOUSE_MIDDLE] = IN_ZOOM
 }
 
+SWVR.LandingSurfaces = {
+  ["prop_physics"] = true,
+  ["func_rotating"] = true,
+  ["func_movelinear"] = true,
+  ["func_tracktrain"] = true,
+  ["func_door_rotating"] = true,
+  ["func_door"] = true,
+  ["func_brush"] = true,
+  ["func_conveyor"] = true,
+  ["func_reflective_glass"] = true
+}
+
 ----------------------
 -- HELPER FUNCTIONS --
 ----------------------
