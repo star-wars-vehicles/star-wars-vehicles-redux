@@ -338,6 +338,8 @@ function ENT:OnRemove()
 end
 
 function ENT:EngineEffects()
+  if not cvars.Bool("swvr_engines_draw") then return end
+
   local normal = (self:GetForward() * -1):GetNormalized()
   local roll = math.Rand(-90, 90)
   local id = self:EntIndex()
@@ -496,28 +498,29 @@ function ENT:HUDDrawHull()
   surface.SetFont("HUD_Health")
   local w, h = ScrW() / 100 * 20, ScrW() / 100 * 20 / 4
   local x, y = ScrW() - w - w / 8, ScrH() / 4 * 3.4
-  local per = self:GetCurHealth() / self:GetStartHealth()
+  local per = self:Health() / self:GetMaxHealth()
+  local barW, barH = w * 0.90625, h * 0.4
+  local barX, barY = x + w * 0.02832, y + h * 0.27343
 
   surface.SetDrawColor(Color(255, 255, 255, 255))
   surface.SetMaterial(Material("hud/hull/hp_frame_under.png", "noclamp"))
   surface.DrawTexturedRectUV(x, y, w, h, 0, 0, 1, 1)
 
   if (self:GetCritical()) then
-    if (self:GetCurHealth() >= self:GetStartHealth() * 0.1) then
+    if (self:Health() >= self:GetMaxHealth() * 0.1) then
       surface.SetDrawColor(Color(50, 120, 255, 255))
     else
       surface.SetDrawColor(Color(255, 35, 35, 255))
     end
   end
 
-  local barW, barH = w * 0.90625, h * 0.4
-  local barX, barY = x + w * 0.02832, y + h * 0.27343
-
   surface.SetMaterial(Material("hud/hull/hp_bar.png", "noclamp"))
-  surface.DrawTexturedRectUV(barX, barY, barW * (self:GetCurHealth() / self:GetStartHealth()), barH, 0, 0, per, 1)
+  surface.DrawTexturedRectUV(barX, barY, barW * (self:Health() / self:GetMaxHealth()), barH, 0, 0, per, 1)
+
   surface.SetMaterial(Material("hud/hull/hp_bar.png", "noclamp"))
   surface.SetDrawColor(Color(50, 120, 255, 255))
   surface.DrawTexturedRectUV(barX, barY, barW * self:GetShieldHealth() / self:GetStartShieldHealth(), barH, 0, 0, per, 1)
+
   surface.SetMaterial(Material("hud/hull/hp_frame_over.png", "noclamp"))
   surface.SetDrawColor(Color(255, 255, 255, 255))
   surface.DrawTexturedRectUV(x, y, w, h, 0, 0, 1, 1)

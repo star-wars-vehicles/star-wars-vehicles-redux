@@ -98,14 +98,63 @@ if SERVER then
   CreateConVar("swvr_shields_multiplier", "1", { FCVAR_ARCHIVE, FCVAR_NOTIFY }, "Shield Multiplier")
   CreateConVar("swvr_weapons_enabled", "1", { FCVAR_ARCHIVE, FCVAR_NOTIFY }, "Weapons Enabled")
   CreateConVar("swvr_weapons_multiplier", "1", { FCVAR_ARCHIVE, FCVAR_NOTIFY }, "Weapon Multiplier")
-  CreateConVar("swvr_collsions_enabled", "1", { FCVAR_ARCHIVE, FCVAR_NOTIFY }, "Collisions Enabled")
+  CreateConVar("swvr_collisions_enabled", "1", { FCVAR_ARCHIVE, FCVAR_NOTIFY }, "Collisions Enabled")
   CreateConVar("swvr_collisions_multiplier", "1", { FCVAR_ARCHIVE, FCVAR_NOTIFY }, "Collision Multiplier")
   CreateConVar("swvr_disable_use", "0", { FCVAR_ARCHIVE, FCVAR_NOTIFY }, "Disable players from entering ships.")
+  CreateConVar("swvr_autocorrect", "0", { FCVAR_ARCHIVE, FCVAR_NOTIFY }, "Enable collision protection (autocorrect).")
 end
 
 if CLIENT then
+  local CLIENT_CONTROLS = {
+    swvr_key_forward = KEY_W,
+    swvr_key_backward = KEY_S,
+    swvr_key_left = KEY_A,
+    swvr_key_right = KEY_D,
+    swvr_key_up = KEY_SPACE,
+    swvr_key_down = KEY_LCONTROL,
+    swvr_key_primary = MOUSE_LEFT,
+    swvr_key_secondary = MOUSE_RIGHT,
+    swvr_key_alternate = KEY_F,
+    swvr_key_modifier = KEY_LSHIFT,
+    swvr_key_wings = KEY_G,
+    swvr_key_hyperdrive = KEY_Q,
+    swvr_key_assist = KEY_F,
+    swvr_key_targeting = KEY_T,
+    swvr_key_eject = KEY_E,
+    swvr_key_handbrake = KEY_R,
+    swvr_key_exit = KEY_E,
+    swvr_key_freelook = KEY_TAB,
+    swvr_key_view = KEY_LALT
+  }
+
+  local CONTROL_MAP = {
+    swvr_key_forward = "Throttle +",
+    swvr_key_backward = "Throttle -",
+    swvr_key_left = "Roll/Strafe -",
+    swvr_key_right = "Roll/Strafe +",
+    swvr_key_up = "Thrust +",
+    swvr_key_down = "Thrust -",
+    swvr_key_primary = "Primary Fire",
+    swvr_key_secondary = "Secondary Fire",
+    swvr_key_alternate = "Alternate Fire",
+    swvr_key_modifier = "Modifier",
+    swvr_key_wings = "Toggle Wings",
+    swvr_key_hyperdrive = "Activate Hyperdrive",
+    swvr_key_assist = "Toggle Flight Assist",
+    swvr_key_targeting = "Toggle Targeting",
+    swvr_key_eject = "Eject",
+    swvr_key_handbrake = "Handbrake",
+    swvr_key_exit = "Exit",
+    swvr_key_freelook = "Freelook",
+    swvr_key_view = "Toggle View Mode"
+  }
+
   CreateClientConVar("swvr_shields_draw", "1", true, false, "Draw shield effects.")
   CreateClientConVar("swvr_engines_draw", "1", true, false, "Draw engine effects.")
+
+  for cvar, value in pairs(CLIENT_CONTROLS) do
+    CreateClientConVar(cvar, tostring(value), true, false, "SWVR key bind.")
+  end
 
   language.Add("Cleanup_swvehicles", "Star Wars Vehicles")
 
@@ -117,11 +166,14 @@ if CLIENT then
     swvr_shields_multiplier = "1.00",
     swvr_weapons_enabled = "1",
     swvr_weapons_multiplier = "1.00",
-    swvr_collsion_enabled = "1",
-    swvr_collision_multiplier = "1.00"
+    swvr_collisions_enabled = "1",
+    swvr_collisions_multiplier = "1.00",
+    swvr_autocorrect = "1"
   }
 
   local function BuildServerSettings(pnl)
+    pnl:Help("Server Settings")
+
     pnl:AddControl("ComboBox", {
       MenuButton = 1,
       Folder = "util_swvr_sv",
@@ -131,15 +183,25 @@ if CLIENT then
       CVars = table.GetKeys(SERVER_DEFAULTS)
     })
 
+    pnl:Help("Global Overrides")
+
     pnl:CheckBox("Damage Enabled", "swvr_health_enabled")
-    pnl:NumSlider("Health Multiplier", "swvr_health_multiplier", "0.0", "10.0", 2)
     pnl:CheckBox("Shields Enabled", "swvr_shields_enabled")
-    pnl:NumSlider("Shield Multiplier", "swvr_shields_multiplier", "0.0", "10.0", 2)
     pnl:CheckBox("Weapons Enabled", "swvr_weapons_enabled")
-    pnl:NumSlider("Weapon Damage Multiplier", "swvr_weapons_multiplier", "0.0", "10.0", 2)
     pnl:CheckBox("Collisions Enabled", "swvr_collisions_enabled")
+
+    pnl:Help("Global Multiplier Settings")
+
+
+    pnl:NumSlider("Health Multiplier", "swvr_health_multiplier", "0.1", "10.0", 2)
+    pnl:NumSlider("Shield Multiplier", "swvr_shields_multiplier", "0.0", "10.0", 2)
+    pnl:NumSlider("Weapon Damage Multiplier", "swvr_weapons_multiplier", "0.0", "10.0", 2)
     pnl:NumSlider("Collision Multiplier", "swvr_collisions_multiplier", "0.0", "2.0", 2)
+
+    pnl:Help("Extra Settings")
+
     pnl:CheckBox("Disable Entering Ships", "swvr_disable_use")
+    pnl:CheckBox("Enable Collision Protection (Autocorrect)", "swvr_autocorrect")
 
     return pnl
   end
@@ -149,7 +211,11 @@ if CLIENT then
     swvr_engines_draw = "1"
   }
 
+  table.Add(CLIENT_DEFAULTS, CLIENT_CONTROLS)
+
   local function BuildClientSettings(pnl)
+    pnl:Help("Client Settings")
+
     pnl:AddControl("ComboBox", {
       MenuButton = 1,
       Folder = "util_swvr_cl",
@@ -159,8 +225,153 @@ if CLIENT then
       CVars = table.GetKeys(CLIENT_DEFAULTS)
     })
 
+    pnl:Help("Draw Settings")
+
+    pnl:CheckBox("Draw Shields", "swvr_shields_draw")
+    pnl:CheckBox("Draw Engines", "swvr_engines_draw")
+
+    pnl:Help("Control Settings")
+
+    for cvar, key in pairs(CLIENT_CONTROLS) do
+      local panel = vgui.Create("swvr::key")
+      panel:SetLabel(CONTROL_MAP[cvar])
+      panel:SetKey(key)
+      panel.RunCommand = cvar
+      pnl:AddPanel(panel)
+    end
+
     return pnl
   end
+
+  surface.CreateFont("swvr_keypanel", {
+    font = "Tahoma",
+    size = 13,
+    weight = 1000
+  })
+
+  local PANEL = {}
+
+  function PANEL:Init()
+    self:SetKeyboardInputEnabled(false)
+    self:SetMouseInputEnabled(false)
+
+    local w, h = self:GetParent():GetWide(), 20
+    self:SetSize(w, h)
+
+    self.Label = vgui.Create("DLabel", self)
+    self.Label:SetPos(5, 0)
+    self.Label:SetFont("swvr_keypanel")
+    self.Label:SetText("")
+    self.Label:SetSize(w / 2, h)
+    self.Label:SetColor(Color(255, 255, 255))
+
+    self.Key = vgui.Create("DLabel", self)
+    self.Key:SetFont("swvr_keypanel")
+    self.Key:SetPos(w / 2, 0)
+    self.Key:SetSize(w / 2, h)
+    self.Key:SetText("")
+    self.Key:SetColor(Color(0, 0, 0))
+    self.Key.__IsVisible = true
+  end
+
+  function PANEL:SetLabel(text)
+    self.Label:SetText(text)
+  end
+
+  function PANEL:SetKey(key)
+    print("SET KEY", key, SWVR.Button:Name(key))
+    self.Key:SetText(SWVR.Button:Name(key))
+    self.KeyCode = key
+    self.LastKey = key
+  end
+
+  local current = nil
+  local time = 0
+
+  function PANEL:UpdateKey(key)
+    current = nil
+
+    if isfunction(self.Function) then self.Function(key, self.KeyCode) end
+
+    if self.RunCommand then RunConsoleCommand(self.RunCommand, key) end
+
+    self.LastKey = self.KeyCode
+    self.KeyCode = key
+    self:SetEdit(false)
+  end
+
+  function PANEL:SetEdit(edit)
+    if edit then
+      self.Key:SetText("Enter key..")
+    else
+      self.Key:SetText(SWVR.Button:Name(self.KeyCode))
+      current = nil
+    end
+
+    self.Editing = edit
+  end
+
+  function PANEL:OnMousePressed(keyCode)
+    if current == self and self.Editing then return end
+
+    if keyCode == MOUSE_LEFT then
+      time = CurTime()
+
+      if current and IsValid(current) then
+        current:SetEdit(false)
+        current = nil
+      else
+        current = self
+        self:SetEdit(true)
+      end
+    elseif keyCode == MOUSE_RIGHT then
+      time = CurTime()
+
+      if IsValid(current) and current ~= self and current.Editing then
+        current:SetEdit(false)
+      end
+
+      self:UpdateKey(0)
+    end
+  end
+
+  PANEL.Palette = {
+    Key = Color(242, 242, 242, 255),
+    Background = Color(124, 190, 255, 255),
+    Editing = Color(150, 150, 150, 255)
+  }
+
+  function PANEL:Paint()
+    local w, h = self:GetSize()
+    draw.RoundedBox(1, 0, 0, w, h, self.Palette.Background)
+    draw.RoundedBox(1, w * 0.5, 1, w * 0.5 - 2, h - 2, self.Palette.Key)
+
+    if (self.Editing) then
+      draw.RoundedBox(1, w * 0.5, 1, w * 0.5 - 2, h - 2, self.Palette.Editing)
+    end
+  end
+
+  function PANEL:Think()
+    if self.RunCommand then
+      local key = GetConVar(self.RunCommand):GetInt()
+
+      if key ~= self.KeyCode then
+        self:UpdateKey(key)
+      end
+    end
+  end
+
+  hook.Add("PlayerButtonDown", "SWVR.Key.PlayerButtonDown", function(ply, button)
+    if pressed and IsValid(current) and current.Editing and time + 0.1 < CurTime() then
+      current:UpdateKey(key)
+    end
+  end)
+
+  hook.Add("SpawnMenuOpen", "SWVR.SpawnMenuOpen", function()
+    if IsValid(current) and current.Editing then return false end
+  end)
+
+  vgui.Register("swvr::key", PANEL, "Panel")
 
   hook.Add("PopulateToolMenu", "SWVR.PopulateToolMenu", function()
     spawnmenu.AddToolMenuOption("Utilities", "Star Wars Vehicles", "SWVRSVSettings", "Server Settings", "", "", BuildServerSettings)

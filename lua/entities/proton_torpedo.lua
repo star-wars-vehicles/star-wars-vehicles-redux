@@ -97,6 +97,9 @@ if SERVER then
 
 		util.Effect("HelicopterMegaBomb", fx, true, true)
 
+		util.BlastDamage(self, self.Shooter, self:GetPos(), 400, 200)
+		util.ScreenShake(self:GetPos(), 50, 10, 2, 2000)
+
 		self:EmitSound("swvr/weapons/swvr_proton_torpedo.wav", 511, 100, 1)
 
 		SafeRemoveEntityDelayed(self, 0.01)

@@ -88,7 +88,7 @@ function CANNON:Fire()
 			dir = self.Player:GetAimVector():Angle():Forward()
 		end
 
-		if self:GetCanLock() and IsValid(self.Target) then
+		if (self:GetCanLock() or true) and IsValid(self.Target) then
 			local lock = util.TraceLine({
 				start = self.Entity:GetPos(),
 				endpos = self.Target:GetPos(),
@@ -96,7 +96,7 @@ function CANNON:Fire()
 			})
 
 			if not lock.HitWorld then
-				dir = (self.Target:GetPos() + self.Target:GetUp() * (self.Target:GetModelRadius() / 3)) - self.Entity:GetPos()
+				dir = (self.Target:GetPos() + self.Target:GetUp() * (self.Target:GetModelRadius() / 10)) - self.Entity:GetPos()
 			end
 		end
 

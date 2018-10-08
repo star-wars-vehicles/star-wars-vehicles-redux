@@ -75,9 +75,9 @@ function ENT:Initialize()
   self:SetLandHeight(self.LandHeight or 0)
   self:IsLanding(false)
   self:IsTakingOff(true)
-  self:SetStartHealth(self.StartHP or 800)
-  self:SetCurHealth(self:GetStartHealth())
-  self:ShouldAutoCorrect(true)
+  self:SetMaxHealth(self:GetMaxHealth() or 800)
+  self:SetHealth(self:GetMaxHealth())
+  self:ShouldAutoCorrect(cvars.Bool("swvr_autocorrect"))
 
   self:InitPhysics()
 
@@ -86,14 +86,6 @@ end
 
 function ENT:Think()
   if self:InFlight() and IsValid(self:GetPilot()) then
-    if self:GetPilot():KeyDown(IN_USE) and self.Cooldown.Use < CurTime() then
-      if self:GetPilot():KeyDown(IN_JUMP) then
-        self:Eject()
-      else
-        self:Exit(false)
-      end
-    end
-
     if (not self:IsTakingOff() and not self:IsLanding() and self.Velocity:IsZero()) then
       if self.HoverStart > 0 then
         if CurTime() - self.HoverStart > 3 then
@@ -107,7 +99,7 @@ function ENT:Think()
       self.HoverStart = 0
     end
 
-    if not self:GetPilot():KeyDown(IN_USE) then
+    if IsValid(self:GetPilot()) and not self:GetPilot():KeyDown(IN_USE) then
       self:GetPilot():SetPos(self:GetPos() + (self.PilotOffset or Vector()))
     end
   end
@@ -180,11 +172,41 @@ end
 function ENT:ThinkControls()
   if not IsValid(self:GetPilot()) then return end
 
-  if self:GetPilot():KeyDown(IN_WALK) and self:GetCanFPV() and self.Cooldown.View < CurTime() then
+  local ply = self:GetPilot()
+
+  self:SetHandbrake(false)
+  if ply:ButtonDown(KEY_LSHIFT) then
+    if ply:ButtonDown(KEY_R) then
+      self:Handbrake()
+
+      return true
+    end
+
+    if ply:ButtonDown(KEY_E) then
+      self:Eject()
+    end
+  end
+
+  if ply:ButtonDown(KEY_E) and self.Cooldown.Use < CurTime() then
+
+    self:Exit(false)
+
+    return true
+  end
+
+  if ply:ButtonDown(KEY_LALT) and self:GetCanFPV() and self.Cooldown.View < CurTime() then
     self:SetFirstPerson(not self:GetFirstPerson())
     self.Cooldown.View = CurTime() + 1
 
     return true
+  end
+
+  if not self:GetHandbrake() then
+    if ply:ButtonDown(KEY_W) then
+      self.Throttle.x = self.Throttle.x + self.Acceleration * 0.7
+    elseif ply:ButtonDown(KEY_S) then
+      self.Throttle.x = self.Throttle.x - self.Acceleration * 0.85
+    end
   end
 
   return false
@@ -275,7 +297,7 @@ function ENT:Setup(options)
   self.TakeOffVector = options.TakeOffVector
   self.LandAngles = options.LandAngles
 
-  self:SetStartHealth((options.Health or 1000) * cvars.Number("swvr_health_multiplier"))
+  self:SetMaxHealth((options.Health or 1000) * cvars.Number("swvr_health_multiplier"))
   self:SetStartShieldHealth(cvars.Bool("swvr_shields_enabled") and ((options.Shields or 0) * cvars.Number("swvr_shields_multiplier")) or 0)
   self:SetShieldHealth(self:GetStartShieldHealth())
   self:SetBack(tobool(options.Back))
@@ -676,19 +698,12 @@ function ENT:Exit(kill)
   end
 
   self.Cooldown.Use = CurTime() + 1
-end
 
-function ENT:Eject()
-  local pilot = self:GetPilot()
-  self:Exit(false)
-
-  if IsValid(pilot) then
-    pilot:SetVelocity(self:GetUp() * 1500)
-  end
+  return p
 end
 
 function ENT:PassengerExit(p, kill)
-  self:LoadPlayer(p, kill)
+  return self:LoadPlayer(p, kill)
 end
 
 --- Save a player's state.
@@ -716,6 +731,8 @@ function ENT:SavePlayer(p)
   if (p:FlashlightIsOn()) then
     p:Flashlight(false)
   end
+
+  p:AllowFlashlight(false)
 end
 
 --- Load a player's state.
@@ -750,6 +767,7 @@ function ENT:LoadPlayer(p, kill)
     end
 
     p:SetCanZoom(true)
+    p:AllowFlashlight(true)
     table.Empty(self.Players[p:EntIndex()])
     table.remove(self.Players, p:EntIndex())
   end
@@ -767,6 +785,8 @@ function ENT:LoadPlayer(p, kill)
   end
 
   p:SetNWVector("ExitPos", nil)
+
+  return p
 end
 
 function ENT:GetPlayers()
@@ -849,6 +869,29 @@ function ENT:Bang()
   end)
 end
 
+function ENT:Eject()
+  local pilot = self:GetPilot()
+  self:Exit(false)
+
+  if IsValid(pilot) then
+    print("WEEEEE")
+    pilot:SetVelocity(self:GetUp() * 1500)
+  end
+end
+
+function ENT:Heal()
+  local inc = self:GetMaxHealth() * 0.0005
+
+  if self:Health() >= self:GetMaxHealth() then return end
+
+  if self:GetMaxHealth() - self:Health() < inc then
+    self:SetHealth(self:GetMaxHealth())
+  else
+    self:SetHealth(self:Health() + inc)
+  end
+
+end
+
 --- Generate a transponder code.
 -- Generates the vehicle's unique transponder code.
 -- @usage Can override the code with your own using the SWVRGenerateTransponder hook
@@ -910,18 +953,6 @@ function ENT:PhysicsSimulate(phys, deltatime)
     local pos = self:GetPos()
 
     if not (self:IsTakingOff() or self:IsLanding()) then
-      self:SetHandbrake(false)
-
-        if (self:GetPilot():KeyDown(IN_RELOAD) and self:GetPilot():KeyDown(IN_JUMP)) then
-          self:Handbrake()
-        else
-          if (self:GetPilot():KeyDown(IN_FORWARD)) then
-            self.Throttle.x = self.Throttle.x + self.Acceleration * 0.7
-          elseif (self:GetPilot():KeyDown(IN_BACK)) then
-            self.Throttle.x = self.Throttle.x - self.Acceleration * 0.85
-          end
-        end
-
         local min, max
 
         if (self:GetBack()) then
@@ -982,8 +1013,8 @@ function ENT:PhysicsSimulate(phys, deltatime)
       local aim = self:GetPilot():GetAimVector()
       local ang = aim:Angle()
       local weight_roll = (phys:GetMass() / 100) / 1.5
-      local ExtraRoll = math.Clamp(math.deg(math.asin(self:WorldToLocal(pos + aim).y)), -25 - weight_roll, 25 + weight_roll) -- Extra-roll - When you move into curves, make the shuttle do little curves too according to aerodynamic effects
-      local mul = math.Clamp(velocity:Length() / 1700, 0, 1) -- More roll, if faster.
+      local ExtraRoll = math.Clamp(math.deg(math.asin(self:WorldToLocal(pos + aim).y)), -25 - weight_roll, 25 + weight_roll)
+      local mul = math.Clamp(velocity:Length() / 1700, 0, 1)
       local oldRoll = ang.Roll
       ang.Roll = (ang.Roll + self.Roll - ExtraRoll * mul) % 360
 
@@ -1158,7 +1189,8 @@ function ENT:PhysicsCollide(colData, collider)
 end
 
 function ENT:OnTakeDamage(dmg)
-  if not IsValid(dmg:GetInflictor()) or (dmg:GetInflictor():GetParent() == self) then
+  local inf = dmg:GetInflictor()
+  if (not IsValid(inf) and not (isentity(inf) and inf:IsWorld())) or (inf:GetParent() == self) then
     return
   end
 
@@ -1177,19 +1209,19 @@ function ENT:OnTakeDamage(dmg)
       self:DispatchEvent("OnShieldsDown")
     end
   else
-    self:SetCurHealth(math.max(0, self:GetCurHealth() - realDamage))
+    self:SetHealth(math.max(0, self:Health() - realDamage))
 
     if (dmg:GetDamageType() == DMG_CRUSH) then
       self:DispatchEvent("OnCollision", realDamage)
     end
   end
 
-  if (self:GetCurHealth() <= self:GetStartHealth() * 0.1) then
+  if (self:Health() <= self:GetMaxHealth() * 0.1) then
     self:IsCritical(true)
     self:DispatchEvent("OnCritical")
   end
 
-  if (self:GetCurHealth() <= 0) then
+  if (self:Health() <= 0) then
     self:Bang()
   end
 end

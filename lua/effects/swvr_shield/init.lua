@@ -45,6 +45,8 @@ end
    Draw the effect
 ---------------------------------------------------------]]
 function EFFECT:Render()
+  if not cvars.Bool("swvr_shields_draw") then return end
+
   local ship = LocalPlayer():GetNWEntity("Ship", NULL)
   if IsValid(ship) and ship.IsSWVRVehicle and ship:GetFirstPerson() and ship == self:GetParent() then return end
 

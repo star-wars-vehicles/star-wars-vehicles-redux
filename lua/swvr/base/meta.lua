@@ -12,6 +12,42 @@ function ENTITY:IsStarWarsVehicle(swvr)
 	return tobool(self.IsSWVRVehicle) or tobool(self.IsSWVRVehicle)
 end
 
+local PLAYER = FindMetaTable("Player")
+
+function PLAYER:ButtonDown(button)
+	return self.Inputs[button]
+end
+
+function PLAYER:ButtonUp(button)
+	return not self.Inputs[button]
+end
+
+-- GM HOOKS
+
+hook.Add("PlayerButtonDown", "SWVRPlayerButtonDown", function(ply, button)
+	ply.Inputs = ply.Inputs or {}
+
+	ply.Inputs[button] = true
+end)
+
+hook.Add("PlayerButtonUp", "SWVRPlayerButtonUp", function(ply, button)
+	ply.Inputs = ply.Inputs or {}
+
+	ply.Inputs[button] = false
+end)
+
+hook.Add("PlayerInitialSpawn", "SWVRPlayerInitialSpawn", function(ply)
+	ply.Inputs = ply.Inputs or {}
+end)
+
+hook.Add("OnSpawnMenuOpen", "SWVROnSpawnMenuOpen", function()
+	if LocalPlayer():GetNWBool("Flying") then return false end
+end)
+
+hook.Add("ContextMenuOpen", "SWVRContextMenuOpen", function()
+	if LocalPlayer():GetNWBool("Flying") then return false end
+end)
+
 -- ENTITY HOOKS
 
 hook.Add("OnEntityCreated", "SWVRSetupPlayer", function(ent)
