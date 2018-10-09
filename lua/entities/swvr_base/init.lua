@@ -99,7 +99,7 @@ function ENT:Think()
       self.HoverStart = 0
     end
 
-    if IsValid(self:GetPilot()) and not self:GetPilot():KeyDown(IN_USE) then
+    if IsValid(self:GetPilot()) and self:GetPilot():ControlUp("swvr_key_exit") then
       self:GetPilot():SetPos(self:GetPos() + (self.PilotOffset or Vector()))
     end
   end
@@ -175,26 +175,26 @@ function ENT:ThinkControls()
   local ply = self:GetPilot()
 
   self:SetHandbrake(false)
-  if ply:ButtonDown(KEY_LSHIFT) then
-    if ply:ButtonDown(KEY_R) then
+  if ply:ControlDown("swvr_key_modifier") then
+    if ply:ControlDown("swvr_key_handbrake") then
       self:Handbrake()
 
       return true
     end
 
-    if ply:ButtonDown(KEY_E) then
+    if ply:ControlDown("swvr_key_eject") then
       self:Eject()
     end
   end
 
-  if ply:ButtonDown(KEY_E) and self.Cooldown.Use < CurTime() then
+  if ply:ControlDown("swvr_key_exit") and self.Cooldown.Use < CurTime() then
 
     self:Exit(false)
 
     return true
   end
 
-  if ply:ButtonDown(KEY_LALT) and self:GetCanFPV() and self.Cooldown.View < CurTime() then
+  if ply:ControlDown("swvr_key_view") and self:GetCanFPV() and self.Cooldown.View < CurTime() then
     self:SetFirstPerson(not self:GetFirstPerson())
     self.Cooldown.View = CurTime() + 1
 
@@ -202,9 +202,9 @@ function ENT:ThinkControls()
   end
 
   if not self:GetHandbrake() then
-    if ply:ButtonDown(KEY_W) then
+    if ply:ControlDown("swvr_key_forward") then
       self.Throttle.x = self.Throttle.x + self.Acceleration * 0.7
-    elseif ply:ButtonDown(KEY_S) then
+    elseif ply:ControlDown("swvr_key_backward") then
       self.Throttle.x = self.Throttle.x - self.Acceleration * 0.85
     end
   end
@@ -950,6 +950,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
   end
 
   if (self:InFlight() and IsValid(self:GetPilot())) then
+    local ply = self:GetPilot()
     local pos = self:GetPos()
 
     if not (self:IsTakingOff() or self:IsLanding()) then
@@ -973,22 +974,22 @@ function ENT:PhysicsSimulate(phys, deltatime)
         end
 
         if (self:GetRoll()) then
-          if (self:GetPilot():KeyDown(IN_MOVERIGHT)) then
+          if ply:ControlDown("swvr_key_right") then
             self.Roll = self.Roll + 3
             self.Throttle.y = self:GetVerticalSpeed() / 1.5
-          elseif (self:GetPilot():KeyDown(IN_MOVELEFT)) then
+          elseif ply:ControlDown("swvr_key_left") then
             self.Roll = self.Roll - 3
             self.Throttle.y = (self:GetVerticalSpeed() / 1.5) * -1
-          elseif (self:GetPilot():KeyDown(IN_RELOAD)) then
+          elseif ply:ControlDown("swvr_key_handbrake") then
             self.Roll = 0
           else
             self.Throttle.y = 0
           end
         else
-          if (self:GetPilot():KeyDown(IN_MOVERIGHT)) then
+          if ply:ControlDown("swvr_key_right") then
             self.Throttle.y = self:GetVerticalSpeed() / 1.2
             self.Roll = 20
-          elseif (self:GetPilot():KeyDown(IN_MOVELEFT)) then
+          elseif ply:ControlDown("swvr_key_left") then
             self.Throttle.y = (self:GetVerticalSpeed() / 1.2) * -1
             self.Roll = -20
           else
@@ -999,9 +1000,9 @@ function ENT:PhysicsSimulate(phys, deltatime)
           self.Velocity.y = math.Approach(self.Velocity.y, self.Throttle.y, self.Acceleration)
         end
 
-        if (self:GetPilot():KeyDown(IN_JUMP) and not self:GetPilot():KeyDown(IN_RELOAD)) then
+        if ply:ControlDown("swvr_key_up") and ply:ControlUp("swvr_key_handbrake") then
           self.Throttle.z = self:GetVerticalSpeed()
-        elseif (self:GetPilot():KeyDown(IN_DUCK) and not self:GetPilot():KeyDown(IN_RELOAD)) then
+        elseif ply:ControlDown("swvr_key_down") and ply:ControlUp("swvr_key_handbrake") then
           self.Throttle.z = -self:GetVerticalSpeed()
         else
           self.Throttle.z = 0
@@ -1010,7 +1011,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
         self.Velocity.z = math.Approach(self.Velocity.z, self.Throttle.z, self.Acceleration * 0.9)
 
       local velocity = self:GetVelocity()
-      local aim = self:GetPilot():GetAimVector()
+      local aim = ply:GetAimVector()
       local ang = aim:Angle()
       local weight_roll = (phys:GetMass() / 100) / 1.5
       local ExtraRoll = math.Clamp(math.deg(math.asin(self:WorldToLocal(pos + aim).y)), -25 - weight_roll, 25 + weight_roll)
@@ -1022,7 +1023,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
         ang.Roll = oldRoll
       end
 
-      if (self:GetPilot():KeyDown(IN_JUMP) and self:GetPilot():KeyDown(IN_DUCK) and not self.PreventLand) then
+      if (ply:ControlDown("swvr_key_up") and ply:ControlDown("swvr_key_down") and not self.PreventLand) then
         local tr = util.TraceLine({
           start = self.LandTracePos or self:GetPos(),
           endpos = self:GetPos() + self:GetUp() * -(self.LandDistance or 300),
@@ -1038,11 +1039,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
       end
 
       if (self:CanFreeLook()) then
-        if (self:GetPilot():KeyPressed(IN_SCORE) or self:GetPilot():KeyReleased(IN_SCORE)) then
-          self:GetPilot():SetEyeAngles(self:GetAngles())
-        end
-
-        if (not self:GetPilot():KeyDown(IN_SCORE)) then
+        if ply:ControlUp("swvr_key_freelook") then
           self.Phys.angle = ang
         end
       else
@@ -1095,7 +1092,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
         phys:ComputeShadowControl(self.Phys)
       end
     elseif (self:IsTakingOff()) then
-      if (self:GetPilot():KeyDown(IN_JUMP)) then
+      if (ply:ControlDown("swvr_key_up")) then
         self.NewPos = self.StartPos + (self.TakeOffVector or Vector(0, 0, 100))
         self.TakingOff = true
       end

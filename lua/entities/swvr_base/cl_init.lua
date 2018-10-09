@@ -842,7 +842,7 @@ hook.Add("ScoreboardShow", "SWVRScoreboardShow", function()
   local p = LocalPlayer()
   local Piloting = p:GetViewEntity() ~= p and p:GetViewEntity().IsSWVRVehicle
 
-  if (Piloting and p:GetViewEntity():CanFreeLook()) then
+  if (Piloting and p:GetViewEntity():CanFreeLook() and p:GetInfoNum("swvr_key_freelook", KEY_TAB) == KEY_TAB) then
     return false
   end
 end)

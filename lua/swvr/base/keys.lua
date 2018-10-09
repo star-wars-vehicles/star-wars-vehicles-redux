@@ -1,6 +1,6 @@
 if CLIENT then
 	SWVR.Button = SWVR.Button or {
-		Name = function(self, key) return SWVR.Button.Map[key] and SWVR.Button.Map[key].n or "invalid" end,
+		Name = function(self, key) return SWVR.Button.Map[key] and SWVR.Button.Map[key].n or "NONE" end,
 		Down = function(self, key) return SWVR.Button.Map[key] and SWVR.Button.Map[key].b or false end,
 		Map = {
 			[0] = {

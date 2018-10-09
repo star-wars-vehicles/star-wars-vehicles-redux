@@ -105,29 +105,51 @@ if SERVER then
 end
 
 if CLIENT then
-  local CLIENT_CONTROLS = {
-    swvr_key_forward = KEY_W,
-    swvr_key_backward = KEY_S,
-    swvr_key_left = KEY_A,
-    swvr_key_right = KEY_D,
-    swvr_key_up = KEY_SPACE,
-    swvr_key_down = KEY_LCONTROL,
-    swvr_key_primary = MOUSE_LEFT,
-    swvr_key_secondary = MOUSE_RIGHT,
-    swvr_key_alternate = KEY_F,
-    swvr_key_modifier = KEY_LSHIFT,
-    swvr_key_wings = KEY_G,
-    swvr_key_hyperdrive = KEY_Q,
-    swvr_key_assist = KEY_F,
-    swvr_key_targeting = KEY_T,
-    swvr_key_eject = KEY_E,
-    swvr_key_handbrake = KEY_R,
-    swvr_key_exit = KEY_E,
-    swvr_key_freelook = KEY_TAB,
-    swvr_key_view = KEY_LALT
+  local CONTROL_CVARS = {
+    "swvr_key_forward",
+    "swvr_key_backward",
+    "swvr_key_right",
+    "swvr_key_left",
+    "swvr_key_up",
+    "swvr_key_down",
+    "swvr_key_primary",
+    "swvr_key_secondary",
+    "swvr_key_alternate",
+    "swvr_key_modifier",
+    "swvr_key_wings",
+    "swvr_key_hyperdrive",
+    "swvr_key_assist",
+    "swvr_key_targeting",
+    "swvr_key_eject",
+    "swvr_key_handbrake",
+    "swvr_key_exit",
+    "swvr_key_freelook",
+    "swvr_key_view"
   }
 
-  local CONTROL_MAP = {
+  local CONTROL_KEYS = {
+    KEY_W,
+    KEY_S,
+    KEY_D,
+    KEY_A,
+    KEY_SPACE,
+    KEY_LCONTROL,
+    MOUSE_LEFT,
+    MOUSE_RIGHT,
+    KEY_F,
+    KEY_LSHIFT,
+    KEY_G,
+    KEY_Q,
+    KEY_F,
+    KEY_T,
+    KEY_E,
+    KEY_R,
+    KEY_E,
+    KEY_TAB,
+    KEY_LALT
+  }
+
+  local CONTROL_NAMES = {
     swvr_key_forward = "Throttle +",
     swvr_key_backward = "Throttle -",
     swvr_key_left = "Roll/Strafe -",
@@ -152,8 +174,11 @@ if CLIENT then
   CreateClientConVar("swvr_shields_draw", "1", true, false, "Draw shield effects.")
   CreateClientConVar("swvr_engines_draw", "1", true, false, "Draw engine effects.")
 
-  for cvar, value in pairs(CLIENT_CONTROLS) do
-    CreateClientConVar(cvar, tostring(value), true, false, "SWVR key bind.")
+  local CONTROL_DEFAULTS = {}
+
+  for i = 1, #CONTROL_CVARS do
+    CreateClientConVar(CONTROL_CVARS[i], tostring(CONTROL_KEYS[i]), true, true, CONTROL_NAMES[CONTROL_CVARS[i]])
+    CONTROL_DEFAULTS[CONTROL_CVARS[i]] = CONTROL_KEYS[i]
   end
 
   language.Add("Cleanup_swvehicles", "Star Wars Vehicles")
@@ -211,7 +236,7 @@ if CLIENT then
     swvr_engines_draw = "1"
   }
 
-  table.Add(CLIENT_DEFAULTS, CLIENT_CONTROLS)
+  table.Add(CLIENT_DEFAULTS, CONTROL_DEFAULTS)
 
   local function BuildClientSettings(pnl)
     pnl:Help("Client Settings")
@@ -232,144 +257,61 @@ if CLIENT then
 
     pnl:Help("Control Settings")
 
-    for cvar, key in pairs(CLIENT_CONTROLS) do
+    for i, cvar in ipairs(CONTROL_CVARS) do
       local panel = vgui.Create("swvr::key")
-      panel:SetLabel(CONTROL_MAP[cvar])
-      panel:SetKey(key)
-      panel.RunCommand = cvar
-      pnl:AddPanel(panel)
+      panel:SetLabel(CONTROL_NAMES[cvar])
+      panel:SetConVar(cvar)
+      pnl:AddItem(panel)
+
+      if i == 9 then
+        pnl:Help("Modifier Key")
+      elseif i == 10 then
+        pnl:Help("Modifier Controls")
+      end
     end
+
+    pnl:Help("Thanks to the community for all the help!")
 
     return pnl
   end
 
-  surface.CreateFont("swvr_keypanel", {
-    font = "Tahoma",
-    size = 13,
-    weight = 1000
-  })
-
   local PANEL = {}
 
   function PANEL:Init()
-    self:SetKeyboardInputEnabled(false)
-    self:SetMouseInputEnabled(false)
-
-    local w, h = self:GetParent():GetWide(), 20
-    self:SetSize(w, h)
-
     self.Label = vgui.Create("DLabel", self)
-    self.Label:SetPos(5, 0)
-    self.Label:SetFont("swvr_keypanel")
-    self.Label:SetText("")
-    self.Label:SetSize(w / 2, h)
-    self.Label:SetColor(Color(255, 255, 255))
+    self.Label:SetTextColor(Color(0, 0, 0))
+    self.Key = vgui.Create("DBinder", self)
 
-    self.Key = vgui.Create("DLabel", self)
-    self.Key:SetFont("swvr_keypanel")
-    self.Key:SetPos(w / 2, 0)
-    self.Key:SetSize(w / 2, h)
-    self.Key:SetText("")
-    self.Key:SetColor(Color(0, 0, 0))
-    self.Key.__IsVisible = true
+    self.Key.UpdateText = function(panel)
+      local str = input.GetKeyName( panel:GetSelectedNumber() )
+      if not str then str = "NONE" end
+
+      str = string.upper(language.GetPhrase( str ))
+
+      panel:SetText( str )
+     end
   end
 
   function PANEL:SetLabel(text)
     self.Label:SetText(text)
   end
 
-  function PANEL:SetKey(key)
-    print("SET KEY", key, SWVR.Button:Name(key))
-    self.Key:SetText(SWVR.Button:Name(key))
-    self.KeyCode = key
-    self.LastKey = key
+  function PANEL:SetConVar(cvar)
+    self.Key:SetConVar(cvar)
   end
 
-  local current = nil
-  local time = 0
+  function PANEL:PerformLayout()
+    local w, h = self:GetParent():GetWide() * .9, 20
 
-  function PANEL:UpdateKey(key)
-    current = nil
+    self:SetSize(w, h)
 
-    if isfunction(self.Function) then self.Function(key, self.KeyCode) end
+    self.Key:InvalidateLayout(true)
+    self.Key:SetSize(w / 2, h)
+    self.Key:SetPos(w / 2, 0)
 
-    if self.RunCommand then RunConsoleCommand(self.RunCommand, key) end
-
-    self.LastKey = self.KeyCode
-    self.KeyCode = key
-    self:SetEdit(false)
+    self.Label:SetPos(5, 0)
+    self.Label:SetSize(w / 2, h)
   end
-
-  function PANEL:SetEdit(edit)
-    if edit then
-      self.Key:SetText("Enter key..")
-    else
-      self.Key:SetText(SWVR.Button:Name(self.KeyCode))
-      current = nil
-    end
-
-    self.Editing = edit
-  end
-
-  function PANEL:OnMousePressed(keyCode)
-    if current == self and self.Editing then return end
-
-    if keyCode == MOUSE_LEFT then
-      time = CurTime()
-
-      if current and IsValid(current) then
-        current:SetEdit(false)
-        current = nil
-      else
-        current = self
-        self:SetEdit(true)
-      end
-    elseif keyCode == MOUSE_RIGHT then
-      time = CurTime()
-
-      if IsValid(current) and current ~= self and current.Editing then
-        current:SetEdit(false)
-      end
-
-      self:UpdateKey(0)
-    end
-  end
-
-  PANEL.Palette = {
-    Key = Color(242, 242, 242, 255),
-    Background = Color(124, 190, 255, 255),
-    Editing = Color(150, 150, 150, 255)
-  }
-
-  function PANEL:Paint()
-    local w, h = self:GetSize()
-    draw.RoundedBox(1, 0, 0, w, h, self.Palette.Background)
-    draw.RoundedBox(1, w * 0.5, 1, w * 0.5 - 2, h - 2, self.Palette.Key)
-
-    if (self.Editing) then
-      draw.RoundedBox(1, w * 0.5, 1, w * 0.5 - 2, h - 2, self.Palette.Editing)
-    end
-  end
-
-  function PANEL:Think()
-    if self.RunCommand then
-      local key = GetConVar(self.RunCommand):GetInt()
-
-      if key ~= self.KeyCode then
-        self:UpdateKey(key)
-      end
-    end
-  end
-
-  hook.Add("PlayerButtonDown", "SWVR.Key.PlayerButtonDown", function(ply, button)
-    if pressed and IsValid(current) and current.Editing and time + 0.1 < CurTime() then
-      current:UpdateKey(key)
-    end
-  end)
-
-  hook.Add("SpawnMenuOpen", "SWVR.SpawnMenuOpen", function()
-    if IsValid(current) and current.Editing then return false end
-  end)
 
   vgui.Register("swvr::key", PANEL, "Panel")
 

@@ -22,6 +22,16 @@ function PLAYER:ButtonUp(button)
 	return not self.Inputs[button]
 end
 
+function PLAYER:ControlDown(control)
+	local key = self:GetInfoNum(control, KEY_NONE)
+	return key == 0 and true or self:ButtonDown(key)
+end
+
+function PLAYER:ControlUp(control)
+	local key = self:GetInfoNum(control, KEY_NONE)
+	return key == 0 and false or self:ButtonUp(key)
+end
+
 -- GM HOOKS
 
 hook.Add("PlayerButtonDown", "SWVRPlayerButtonDown", function(ply, button)
@@ -41,7 +51,7 @@ hook.Add("PlayerInitialSpawn", "SWVRPlayerInitialSpawn", function(ply)
 end)
 
 hook.Add("OnSpawnMenuOpen", "SWVROnSpawnMenuOpen", function()
-	if LocalPlayer():GetNWBool("Flying") then return false end
+	if LocalPlayer():GetNWBool("Flying") and LocalPlayer():GetInfoNum("swvr_key_modifier", KEY_Q) == KEY_Q then return false end
 end)
 
 hook.Add("ContextMenuOpen", "SWVRContextMenuOpen", function()
