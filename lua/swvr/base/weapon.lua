@@ -109,7 +109,6 @@ function GROUP:Fire(cond)
 	if self:GetCooldown() > CurTime() or self:GetOverheated() then return end
 
 	if self:GetCanLock() or true then
-		print("TARGET", self:GetOwner():FindTarget())
 		self:SetTarget(self:GetOwner():FindTarget())
 	end
 
@@ -144,7 +143,8 @@ function GROUP:Serialize()
 		Overheat = self:GetOverheat(),
 		OverheatCooldown = self:GetOverheatCooldown(),
 		Overheated = self:GetOverheated(),
-		IsTracking = self:GetIsTracking()
+		IsTracking = self:GetIsTracking(),
+		CanLock = self:GetCanLock()
 	}
 end
 

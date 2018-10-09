@@ -589,16 +589,16 @@ function ENT:GetReticleLock()
 end
 
 function ENT:HUDDrawOverheating()
-  local seat = "Weapon" .. LocalPlayer():GetNWString("SeatName")
+  local group = self.WeaponGroups[LocalPlayer():GetNWString("SeatName")]
 
-  if not self:GetNWBool(seat .. "CanOverheat") then return end
+  if not (group and group.CanOverheat) then return end
 
-  if (self:GetNWBool(seat .. "IsOverheated")) then
+  if group.Overheated then
     surface.SetDrawColor(Color(255, 0, 0, 255))
   else
-    if (self:GetNWInt(seat .. "Overheat") > 0 and self:GetNWInt(seat .. "Overheat") <= 16) then
+    if group.Overheat > 0 and group.Overheat <= 16 then
       surface.SetDrawColor(Color(128, 255, 0, 255))
-    elseif (self:GetNWInt(seat .. "Overheat") > 16 and self:GetNWInt(seat .. "Overheat") <= 32) then
+    elseif group.Overheat > 16 and group.Overheat <= 32 then
       surface.SetDrawColor(Color(255, 255, 0, 255))
     else
       surface.SetDrawColor(Color(255, 128, 0, 255))
@@ -608,7 +608,7 @@ function ENT:HUDDrawOverheating()
   local w, h = ScrW() / 100 * 3.5, ScrH() / 100 * 0.5
   local tr
 
-  if (self:GetNWBool(seat .. "Track")) then
+  if group.IsTracking then
     tr = util.TraceLine({
       start = LocalPlayer():EyePos(),
       endpos = LocalPlayer():EyePos() + LocalPlayer():GetAimVector():Angle():Forward() * 10000,
@@ -624,7 +624,7 @@ function ENT:HUDDrawOverheating()
 
   local vpos = tr.HitPos
 
-  if (self:CanLock()) then
+  if (group.CanLock) then
     local lock = self:GetReticleLock()
 
     if (lock) then
@@ -634,17 +634,17 @@ function ENT:HUDDrawOverheating()
 
   local screenpos = vpos:ToScreen()
   local x, y = screenpos.x, screenpos.y
-  local o = self:GetNWInt(seat .. "Overheat") / self:GetNWInt(seat .. "OverheatMax") * 100
+  local o = group.Overheat / group.MaxOverheat * 100
   local per = o / 100
   w = w * per
   surface.DrawRect(x - w / 2, y + ScrW() / 100 * 1.5, w, h)
 end
 
 function ENT:HUDDrawReticles()
-  local seat = LocalPlayer():GetNWString("SeatName")
-  local tr
+  local group = self.WeaponGroups[LocalPlayer():GetNWString("SeatName")]
 
-  if (self:GetNWBool("Weapon" .. seat .. "Track")) then
+  local tr
+  if group and group.IsTracking then
     tr = util.TraceLine({
       start = LocalPlayer():EyePos(),
       endpos = LocalPlayer():EyePos() + LocalPlayer():GetAimVector():Angle():Forward() * 10000,
@@ -663,7 +663,8 @@ function ENT:HUDDrawReticles()
   local material = "hud/reticle.png"
   surface.SetMaterial(Material(material, "noclamp"))
 
-  if (self:CanLock()) then
+  if (group and group.CanLock) then
+    print("LOCING")
     local lock = self:GetReticleLock()
 
     if (lock) then
@@ -945,7 +946,7 @@ end)
 
 net.Receive("SWVR.NetworkWeapons", function()
   local ship = net.ReadEntity()
-  local group = net.ReadTable()
+  local groups = net.ReadTable()
 
-  ship.WeaponGroups[group.Name] = group
+  ship.WeaponGroups = groups
 end)

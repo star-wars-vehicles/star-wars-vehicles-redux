@@ -113,11 +113,6 @@ if CLIENT then
 
     self:SetupDefaults()
 
-    self:AddSound("Chatter", { "vehicles/starviper/chatter/attack1.wav", "vehicles/starviper/chatter/formation2.wav", "vehicles/starviper/chatter/moving5.wav", "vehicles/starviper/chatter/rightaway.wav" }, {
-      Repeat = true,
-      Cooldown = 5
-    })
-
     local engineOptions = {
       StartSize = 65,
       EndSize = 40,

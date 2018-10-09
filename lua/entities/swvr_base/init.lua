@@ -295,6 +295,7 @@ end
 function ENT:Setup(options)
   self.WorldModel = options.Model
   self.TakeOffVector = options.TakeOffVector
+  self.LandVector = options.LandVector
   self.LandAngles = options.LandAngles
 
   self:SetMaxHealth((options.Health or 1000) * cvars.Number("swvr_health_multiplier"))
@@ -874,7 +875,6 @@ function ENT:Eject()
   self:Exit(false)
 
   if IsValid(pilot) then
-    print("WEEEEE")
     pilot:SetVelocity(self:GetUp() * 1500)
   end
 end
@@ -1032,7 +1032,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
 
         if (tr.HitWorld or (IsValid(tr.Entity) and SWVR.LandingSurfaces[tr.Entity:GetClass()])) then
           self.Land = true
-          self.LandPos = tr.HitPos + (self.LandOffset or Vector(0, 0, 0))
+          self.LandPos = tr.HitPos + (self.LandVector or Vector(0, 0, 0))
           self:IsLanding(self.Land)
           self:ResetThrottle()
         end
@@ -1258,22 +1258,22 @@ function ENT:ShieldEffect()
   self:EmitSound("swvr/shields/swvr_shield_absorb_" .. tostring(math.Round(math.random(1, 4))) .. ".wav", 500, 100, 1, CHAN_BODY)
 end
 
-function ENT:NetworkWeapons()
-  local weaponGroups = ""
+-- function ENT:NetworkWeapons()
+--   local weaponGroups = ""
 
-  for name, group in pairs(self.WeaponGroups) do
-    weaponGroups = weaponGroups .. "|" .. name
-    local n = "Weapon" .. name
-    self:SetNWBool(n .. "CanOverheat", group:GetCanOverheat())
-    self:SetNWBool(n .. "IsOverheated", group:GetOverheated())
-    self:SetNWBool(n .. "Track", group:GetIsTracking())
-    self:SetNWInt(n .. "Overheat", group:GetOverheat())
-    self:SetNWInt(n .. "OverheatMax", group:GetMaxOverheat())
-    self:SetNWInt(n .. "OverheatCooldown", group:GetOverheatCooldown())
-  end
+--   for name, group in pairs(self.WeaponGroups) do
+--     weaponGroups = weaponGroups .. "|" .. name
+--     local n = "Weapon" .. name
+--     self:SetNWBool(n .. "CanOverheat", group:GetCanOverheat())
+--     self:SetNWBool(n .. "IsOverheated", group:GetOverheated())
+--     self:SetNWBool(n .. "Track", group:GetIsTracking())
+--     self:SetNWInt(n .. "Overheat", group:GetOverheat())
+--     self:SetNWInt(n .. "OverheatMax", group:GetMaxOverheat())
+--     self:SetNWInt(n .. "OverheatCooldown", group:GetOverheatCooldown())
+--   end
 
-  self:SetNWString("WeaponGroups", string.sub(weaponGroups, 2))
-end
+--   self:SetNWString("WeaponGroups", string.sub(weaponGroups, 2))
+-- end
 
 function ENT:TestLoc(pos)
   local e = ents.Create("prop_physics")
@@ -1284,14 +1284,17 @@ function ENT:TestLoc(pos)
   e:SetParent(self)
 end
 
--- function ENT:NetworkWeapons()
---   for name, group in pairs(self.WeaponGroups) do
---     net.Start("SWVR.NetworkWeapons")
---       net.WriteEntity(self)
---       net.WriteTable(group:Serialize())
---     net.Send(self:GetPlayers())
---   end
--- end
+function ENT:NetworkWeapons()
+  local serialized = {}
+  for name, group in pairs(self.WeaponGroups) do
+    serialized[name] = group:Serialize()
+  end
+
+  net.Start("SWVR.NetworkWeapons")
+    net.WriteEntity(self)
+    net.WriteTable(serialized)
+  net.Send(self:GetPlayers())
+end
 
 function ENT:AddEvent(name, callback, default)
   self.Events = self.Events or {}
