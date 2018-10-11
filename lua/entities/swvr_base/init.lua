@@ -4,6 +4,7 @@ AddCSLuaFile("cl_init.lua")
 
 include("shared.lua")
 include("events.lua")
+include("weapons.lua")
 
 --- Spawns the entity.
 -- This is required for the entity to spawn.
@@ -77,7 +78,7 @@ function ENT:Initialize()
   self:IsTakingOff(true)
   self:SetMaxHealth(self:GetMaxHealth() or 800)
   self:SetHealth(self:GetMaxHealth())
-  self:ShouldAutoCorrect(cvars.Bool("swvr_autocorrect"))
+  self:ShouldAutoCorrect(false)
 
   self:InitPhysics()
 
@@ -193,6 +194,14 @@ function ENT:ThinkControls()
 
       self.Cooldown.Wings = CurTime() + 1
     end
+
+    if ply:ControlDown("swvr_key_assist") and self.Cooldown.Correct < CurTime() then
+      self:ShouldAutoCorrect(not self:ShouldAutoCorrect())
+
+      print("AUTOCORRECT: ", self:ShouldAutoCorrect() and "ON" or "OFF")
+
+      self.Cooldown.Correct = CurTime() + 1
+    end
   end
 
   if ply:ControlDown("swvr_key_exit") and self.Cooldown.Use < CurTime() then
@@ -245,14 +254,6 @@ end
 function ENT:OnRemove()
   if self:InFlight() then
     self:Exit()
-  end
-
-  for k, v in pairs(self.Parts or {}) do
-    SafeRemoveEntity(v.Entity)
-  end
-
-  for name, group in pairs(self.WeaponGroups) do
-    group:Remove()
   end
 end
 
@@ -326,74 +327,6 @@ function ENT:Setup(options)
   self:SetAccelSpeed(options.Acceleration or 7)
   self:SetRoll(tobool(options.Roll))
   self:SetFreeLook(options.Freelook or true)
-end
-
---- Add a new weapon group.
--- Create a weapon group for weapons to parent to.
--- @param name The name of the weapon group.
--- @param bullet The type of bullet the group will use.
-function ENT:AddWeaponGroup(name, weapon, options)
-  self.WeaponGroups = self.WeaponGroups or {}
-
-  if self.WeaponGroups[name] then
-    error("Tried to create weapon group '" .. name .. "' that already exists!")
-  end
-
-  options = options or {}
-  if isstring(options.Parent) then
-    options.Parent = self.Parts[options.Parent].Entity
-  end
-
-  options.Parent = options.Parent or self
-
-  if options.Damage then options.Damage = options.Damage * cvars.Number("swvr_weapons_multiplier") end
-
-  local group = SWVR:WeaponGroup(weapon)
-  group:SetName(name)
-  group:SetOwner(self)
-
-  if not options.Parent then group:SetParent(self) end
-  group:SetOptions(options)
-
-  self.WeaponGroups[name] = group
-
-  return group
-end
-
--- Add a new weapon.
--- Creates a new weapon on the ship.
--- @param group The weapon group the new weapon is part of.
--- @param name The name of weapon.
--- @param pos The position of the weapon.
-function ENT:AddWeapon(group, name, pos, options)
-  self.Weapons = self.Weapons or {}
-
-  if not self.WeaponGroups[group] then
-    return error("Tried to add weapon '" .. name .. "' to group '" .. group .. "' which doesn't exist! (Make sure to add the group first)")
-  end
-
-  for k, v in pairs(self.Weapons) do
-    if v:GetName() == name then
-      return error("Tried to add weapon '" .. name .. "' which already exists! (Weapons cannot have duplicate names)")
-    end
-  end
-
-  local WeaponGroup = self.WeaponGroups[group]
-
-  options = options or {}
-  if isstring(options.Parent) then
-    options.Parent = self.Parts[options.Parent].Entity
-  end
-
-  options.Parent = options.Parent or WeaponGroup:GetParent() or self
-  options.Name = name
-
-  local weapon = WeaponGroup:AddWeapon(options)
-  weapon:SetPos(self:LocalToWorld(pos * self:GetModelScale()))
-
-  self.Weapons[name] = weapon
-
-  return weapon
 end
 
 --- Add a new seat.
@@ -522,6 +455,8 @@ function ENT:AddPart(name, path, pos, ang, options)
   part.Entity = e
 
   self.Parts[name] = part
+
+  self:DeleteOnRemove(e)
 
   return e
 end
@@ -818,26 +753,6 @@ function ENT:GetPlayers()
   return players
 end
 
---- Fire a specific weapon group.
--- @param g The weapon group to fire
-function ENT:FireWeapons(g)
-  local group = self.WeaponGroups[g]
-  group:Fire()
-end
-
-function ENT:FindTarget()
-  local c1, c2 = self:GetModelBounds()
-  c1, c2 = self:LocalToWorld(c1), self:LocalToWorld(c2) + self:GetForward() * 10000
-
-  for _, ent in pairs(ents.FindInBox(c1, c2)) do
-    if (IsValid(ent) and ent:IsStarWarsVehicle() and ent ~= self and not IsValid(ent:GetParent()) and ent:GetAllegiance() ~= self:GetAllegiance()) then
-      return ent
-    end
-  end
-
-  return NULL
-end
-
 --- Destroy the vehicle.
 -- Kills all occupants inside.
 -- @usage Can override with the SWVRBang hook
@@ -1107,7 +1022,7 @@ function ENT:PhysicsSimulate(phys, deltatime)
       self.Phys.deltatime = deltatime
       local newZ
 
-      if (self:ShouldAutoCorrect()) then
+      if (cvars.Bool("swvr_autocorrect") and self:ShouldAutoCorrect()) then
         local heightTrace = util.TraceLine({
           start = self:GetPos(),
           endpos = self:GetPos() + Vector(0, 0, -100),
@@ -1316,23 +1231,6 @@ function ENT:ShieldEffect()
   self:EmitSound("swvr/shields/swvr_shield_absorb_" .. tostring(math.Round(math.random(1, 4))) .. ".wav", 500, 100, 1, CHAN_BODY)
 end
 
--- function ENT:NetworkWeapons()
---   local weaponGroups = ""
-
---   for name, group in pairs(self.WeaponGroups) do
---     weaponGroups = weaponGroups .. "|" .. name
---     local n = "Weapon" .. name
---     self:SetNWBool(n .. "CanOverheat", group:GetCanOverheat())
---     self:SetNWBool(n .. "IsOverheated", group:GetOverheated())
---     self:SetNWBool(n .. "Track", group:GetIsTracking())
---     self:SetNWInt(n .. "Overheat", group:GetOverheat())
---     self:SetNWInt(n .. "OverheatMax", group:GetMaxOverheat())
---     self:SetNWInt(n .. "OverheatCooldown", group:GetOverheatCooldown())
---   end
-
---   self:SetNWString("WeaponGroups", string.sub(weaponGroups, 2))
--- end
-
 function ENT:TestLoc(pos)
   local e = ents.Create("prop_physics")
   e:SetPos(self:LocalToWorld(pos * self:GetModelScale()))
@@ -1340,18 +1238,6 @@ function ENT:TestLoc(pos)
   e:Spawn()
   e:Activate()
   e:SetParent(self)
-end
-
-function ENT:NetworkWeapons()
-  local serialized = {}
-  for name, group in pairs(self.WeaponGroups) do
-    serialized[name] = group:Serialize()
-  end
-
-  net.Start("SWVR.NetworkWeapons")
-    net.WriteEntity(self)
-    net.WriteTable(serialized)
-  net.Send(self:GetPlayers())
 end
 
 function ENT:AddEvent(name, callback, default)

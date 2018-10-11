@@ -1,5 +1,5 @@
 include("shared.lua")
-include("cl_events.lua")
+include("events.lua")
 
 --- Initialize the base client-side.
 -- Initializes all needed variables client-side.
