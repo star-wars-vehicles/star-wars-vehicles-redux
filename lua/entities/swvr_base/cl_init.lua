@@ -31,16 +31,15 @@ function ENT:Setup(options)
   self.DrawGlass  = tobool(options.DrawGlass)
 
   if (options.Cockpit) then
-    local path = Model(options.Cockpit.Path)
-    print(util.IsValidModel(path))
-    if (istable(options.Cockpit) and util.IsValidModel(path)) then
-      self.Cockpit = {
-        Path = path,
-        Pos = self:LocalToWorld((options.Cockpit.Pos or Vector()) * self:GetModelScale()),
-        Ang = options.Cockpit.Ang or nil
-      }
-
-      print(self.Cockpit.Path)
+    if istable(options.Cockpit) and options.Cockpit.Path then
+      local path = Model(options.Cockpit.Path)
+      if util.IsValidModel(path) then
+        self.Cockpit = {
+          Path = path,
+          Pos = self:LocalToWorld((options.Cockpit.Pos or Vector()) * self:GetModelScale()),
+          Ang = options.Cockpit.Ang or nil
+        }
+      end
     elseif (isstring(options.Cockpit)) then
       local mat = Material(options.Cockpit)
 
@@ -206,7 +205,7 @@ function ENT:Think()
 end
 
 function ENT:ThinkSounds()
-  for name, snd in pairs(self.Sounds) do
+  for name, snd in pairs(self.Sounds or {}) do
     local patch = istable(snd.Patch) and table.Random(snd.Patch) or snd.Patch
 
     if snd.Is3D then
