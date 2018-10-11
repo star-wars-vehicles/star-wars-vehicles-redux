@@ -12,6 +12,8 @@ function ENT:Initialize()
   self.Engines  = self.Engines or {}
   self.Events   = self.Events or {}
 
+  self.WeaponGroups = {}
+
   self:InitParts()
 
   LocalPlayer().SWVRViewDistance = LocalPlayer().SWVRViewDistance or 0
@@ -29,12 +31,16 @@ function ENT:Setup(options)
   self.DrawGlass  = tobool(options.DrawGlass)
 
   if (options.Cockpit) then
-    if (istable(options.Cockpit) and util.IsValidModel(options.Cockpit.Path)) then
+    local path = Model(options.Cockpit.Path)
+    print(util.IsValidModel(path))
+    if (istable(options.Cockpit) and util.IsValidModel(path)) then
       self.Cockpit = {
-        Path = options.Cockpit.Path,
-        Pos = options.Cockpit.Pos and self:LocalToWorld(options.Cockpit.Pos) or nil,
+        Path = path,
+        Pos = self:LocalToWorld((options.Cockpit.Pos or Vector()) * self:GetModelScale()),
         Ang = options.Cockpit.Ang or nil
       }
+
+      print(self.Cockpit.Path)
     elseif (isstring(options.Cockpit)) then
       local mat = Material(options.Cockpit)
 
@@ -134,10 +140,13 @@ function ENT:InitParts()
     e:SetParent(self)
     e:SetNoDraw(true)
     e:Spawn()
+    e:SetModelScale(self:GetModelScale())
     v.Ent = e
   end
 
   local cockpit = self.Cockpit
+
+  print("INIT PARTS", self.Cockpit)
 
   if istable(cockpit) then
     local e = ents.CreateClientProp(cockpit.Path, RENDERGROUP_OPAQUE)
@@ -146,6 +155,7 @@ function ENT:InitParts()
     e:SetParent(self)
     e:SetNoDraw(true)
     e:Spawn()
+    e:SetModelScale(self:GetModelScale())
     cockpit.Ent = e
   end
 end
@@ -345,7 +355,7 @@ function ENT:EngineEffects()
   local id = self:EntIndex()
 
   for k, v in pairs(self.Engines) do
-    local pos = self:LocalToWorld(v.Pos)
+    local pos = self:LocalToWorld(v.Pos * self:GetModelScale())
     local sprite = self.FXEmitter:Add(v.Sprite, pos)
     sprite:SetVelocity(normal)
     sprite:SetDieTime(FrameTime() * v.Lifetime)
@@ -566,7 +576,7 @@ function ENT:GetReticleLock()
     return false
   end
 
-  local b1, b2 = self:GetModelBounds()
+  local b1, b2 = self:OBBMins(), self:OBBMaxs()
 
   for l, w in pairs(ents.FindInBox(self:LocalToWorld(b1), self:LocalToWorld(b2) + self:GetForward() * 10000)) do
     if (IsValid(w) and w.IsSWVRVehicle and w ~= self and not IsValid(w:GetParent()) and SWVR:LightOrDark(w:GetAllegiance()) ~= SWVR:LightOrDark(self:GetAllegiance())) then
@@ -664,7 +674,6 @@ function ENT:HUDDrawReticles()
   surface.SetMaterial(Material(material, "noclamp"))
 
   if (group and group.CanLock) then
-    print("LOCING")
     local lock = self:GetReticleLock()
 
     if (lock) then
@@ -866,9 +875,10 @@ hook.Add("CalcView", "SWVRVehicleView", function(p)
     end
 
     if IsValid(ship) and not ship.HasCustomCalcView then
+      local scale = ship:GetModelScale()
       local fpvpos = ship:GetFPVPos() or Vector(0, 0, 0)
-      pos = ship:LocalToWorld(fpvpos)
-      View = ship:VehicleView(ship.ViewDistance or 800, ship.ViewHeight or 800, pos)
+      pos = ship:LocalToWorld(fpvpos * scale)
+      View = ship:VehicleView((ship.ViewDistance or 800), (ship.ViewHeight or 800), pos)
 
       return View
     end

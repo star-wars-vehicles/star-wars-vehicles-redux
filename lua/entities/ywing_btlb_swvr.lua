@@ -21,6 +21,8 @@ if SERVER then
   end
 
   function ENT:Initialize()
+    -- self:SetModelScale(0.1)
+
     -- MUST call setup to initialize ship limitations
     self:Setup({
       Model = "models/ywing/ywing_btlb_test.mdl",

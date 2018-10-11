@@ -19,8 +19,6 @@ function WEAPON:Initialize()
 		if not IsValid(tr.Entity) or not tr.Entity.IsSWVRVehicle then return end
 
 		local ent = tr.Entity
-
-		print("Ye")
 	end)
 end
 

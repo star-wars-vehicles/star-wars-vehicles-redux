@@ -82,6 +82,8 @@ function ENT:Initialize()
   self:InitPhysics()
 
   self:SpawnSeats()
+
+  self:SetWingState(false)
 end
 
 function ENT:Think()
@@ -100,14 +102,14 @@ function ENT:Think()
     end
 
     if IsValid(self:GetPilot()) and self:GetPilot():ControlUp("swvr_key_exit") then
-      self:GetPilot():SetPos(self:GetPos() + (self.PilotOffset or Vector()))
+      self:GetPilot():SetPos(self:GetPos() + (self.PilotOffset or Vector()) * self:GetModelScale())
     end
   end
 
   -- If a control was used this frame, then we should ignore firing inputs
-  if not self:ThinkControls() then
-    self:ThinkWeapons()
-  end
+  self:ThinkControls()
+
+  self:ThinkWeapons()
 
   self:ThinkParts()
 
@@ -175,7 +177,7 @@ function ENT:ThinkControls()
   local ply = self:GetPilot()
 
   self:SetHandbrake(false)
-  if ply:ControlDown("swvr_key_modifier") then
+  if not ply:ControlSet("swvr_key_modifier") or ply:ControlDown("swvr_key_modifier") then
     if ply:ControlDown("swvr_key_handbrake") then
       self:Handbrake()
 
@@ -184,6 +186,12 @@ function ENT:ThinkControls()
 
     if ply:ControlDown("swvr_key_eject") then
       self:Eject()
+    end
+
+    if ply:ControlDown("swvr_key_wings") and self.Cooldown.Wings < CurTime() then
+      self:ToggleWings()
+
+      self.Cooldown.Wings = CurTime() + 1
     end
   end
 
@@ -242,6 +250,10 @@ function ENT:OnRemove()
   for k, v in pairs(self.Parts or {}) do
     SafeRemoveEntity(v.Entity)
   end
+
+  for name, group in pairs(self.WeaponGroups) do
+    group:Remove()
+  end
 end
 
 --- Setup the ship model.
@@ -297,6 +309,11 @@ function ENT:Setup(options)
   self.TakeOffVector = options.TakeOffVector
   self.LandVector = options.LandVector
   self.LandAngles = options.LandAngles
+
+  if options.Wings ~= nil then
+    self.Wings = options.Wings
+    self:HasWings(true)
+  end
 
   self:SetMaxHealth((options.Health or 1000) * cvars.Number("swvr_health_multiplier"))
   self:SetStartShieldHealth(cvars.Bool("swvr_shields_enabled") and ((options.Shields or 0) * cvars.Number("swvr_shields_multiplier")) or 0)
@@ -372,7 +389,7 @@ function ENT:AddWeapon(group, name, pos, options)
   options.Name = name
 
   local weapon = WeaponGroup:AddWeapon(options)
-  weapon:SetPos(self:LocalToWorld(pos))
+  weapon:SetPos(self:LocalToWorld(pos * self:GetModelScale()))
 
   self.Weapons[name] = weapon
 
@@ -426,9 +443,9 @@ function ENT:AddSeat(name, pos, ang, options)
     Name = name,
     Visible = Either(isbool(options.Visible), options.Visible, true),
     Weapons = buttonMap,
-    Pos = self:LocalToWorld(pos),
+    Pos = self:LocalToWorld(pos * self:GetModelScale()),
     Ang = ang,
-    ExitPos = options.ExitPos
+    ExitPos = (options.ExitPos  or Vector()) * self:GetModelScale()
   }
 end
 
@@ -483,7 +500,7 @@ function ENT:AddPart(name, path, pos, ang, options)
 
   local part = {
     Path = path,
-    Pos = pos and self:LocalToWorld(pos) or self:LocalToWorld(Vector(0, 0, 0)),
+    Pos = pos and self:LocalToWorld((pos or Vector()) * self:GetModelScale()),
     Ang = ang or nil,
     Parent = isstring(options.Parent) and self.Parts[options.Parent].Entity or self,
     Callback = options.Callback or nil,
@@ -517,7 +534,7 @@ function ENT:SpawnSeats()
     if string.upper(k) == "PILOT" then continue end
 
     local e = ents.Create(self.SeatClass or "prop_vehicle_prisoner_pod")
-    e:SetPos(v.Pos or self:GetPos())
+    e:SetPos(v.Pos and v.Pos * self:GetModelScale() or self:GetPos())
     e:SetAngles(v.Ang or self:GetAngles())
     e:SetParent(self)
     e:SetModel("models/nova/airboat_seat.mdl")
@@ -545,7 +562,7 @@ function ENT:SpawnPilot()
   if IsValid(self:GetPilot()) and self.Seats["Pilot"].PilotPos then
     local e = ents.Create("prop_physics")
     e:SetModel(self:GetPilot():GetModel())
-    e:SetPos(self:LocalToWorld(self.Seats["Pilot"].PilotPos))
+    e:SetPos(self:LocalToWorld(self.Seats["Pilot"].PilotPos * self:GetModelScale()))
     local ang = self:GetAngles()
 
     if self.Seats["Pilot"].PilotAng then
@@ -779,7 +796,7 @@ function ENT:LoadPlayer(p, kill)
   p:SetNWBool("Flying", false)
   p:SetNWBool("Pilot", false)
 
-  p:SetPos(self:LocalToWorld(p:GetNWVector("ExitPos")))
+  p:SetPos(self:LocalToWorld(p:GetNWVector("ExitPos", Vector())))
 
   if kill and p:Alive() and not p:HasGodMode() then
     p:Kill()
@@ -890,6 +907,47 @@ function ENT:Heal()
     self:SetHealth(self:Health() + inc)
   end
 
+end
+
+function ENT:ToggleWings()
+  if not self:HasWings() then return end
+
+  local wings = self.Wings
+
+  if isstring(wings) then
+    local deployed = self:GetModel() == wings
+    self:SetModel(deployed and self.WorldModel or wings)
+
+    self:SetWingState(not deployed)
+  elseif isfunction(wings) then
+    local deployed = wings(self, self:GetWingState())
+
+    if deployed == nil then return end
+
+    self:SetWingState(deployed)
+  elseif istable(wings) then
+    if self:GetWingState() then
+      self.Sequence = self:LookupSequence(wings[1])
+      self:SetWingState(false)
+    else
+      self.Sequence = self:LookupSequence(wings[2])
+      self:SetWingState(true)
+    end
+
+    self:ResetSequence(self.Sequence)
+  else -- Assume legacy
+    if self:GetWingState() then
+      self.Sequence = self:LookupSequence("idle")
+      self:SetWingState(false)
+    else
+      self.Sequence = self:LookupSequence("attack")
+      self:SetWingState(true)
+    end
+
+    self:ResetSequence(self.Sequence)
+  end
+
+  return self:GetWingState()
 end
 
 --- Generate a transponder code.
@@ -1277,7 +1335,7 @@ end
 
 function ENT:TestLoc(pos)
   local e = ents.Create("prop_physics")
-  e:SetPos(self:LocalToWorld(pos))
+  e:SetPos(self:LocalToWorld(pos * self:GetModelScale()))
   e:SetModel("models/props_junk/PopCan01a.mdl")
   e:Spawn()
   e:Activate()

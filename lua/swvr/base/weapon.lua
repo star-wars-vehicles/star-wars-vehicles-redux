@@ -144,7 +144,7 @@ function GROUP:Serialize()
 		OverheatCooldown = self:GetOverheatCooldown(),
 		Overheated = self:GetOverheated(),
 		IsTracking = self:GetIsTracking(),
-		CanLock = self:GetCanLock()
+		CanLock = self:GetCanLock() or true
 	}
 end
 
@@ -164,11 +164,11 @@ function GROUP:AddWeapon(options)
 end
 
 function GROUP:RemoveWeapon(weapon)
+	local index = 0
 	if istable(weapon) then
-		weapon = weapon:GetIndex()
+		index = weapon:GetIndex()
+		weapon:Remove()
 	end
-
-	weapon:Remove()
 
 	return table.remove(self.Weapons, index)
 end

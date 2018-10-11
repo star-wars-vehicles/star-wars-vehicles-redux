@@ -24,12 +24,16 @@ end
 
 function PLAYER:ControlDown(control)
 	local key = self:GetInfoNum(control, KEY_NONE)
-	return key == 0 and true or self:ButtonDown(key)
+	return self:ButtonDown(key)
 end
 
 function PLAYER:ControlUp(control)
 	local key = self:GetInfoNum(control, KEY_NONE)
-	return key == 0 and false or self:ButtonUp(key)
+	return self:ButtonUp(key)
+end
+
+function PLAYER:ControlSet(control)
+	return self:GetInfoNum(control, KEY_NONE) ~= 0
 end
 
 -- GM HOOKS

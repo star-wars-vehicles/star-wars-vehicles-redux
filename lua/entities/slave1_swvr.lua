@@ -34,7 +34,8 @@ if SERVER then
       Acceleration = 10,
       Roll = true,
       TakeOffVector = Vector(0, 0, 300),
-      LandAngles = Angle(-90, 0, 0)
+      LandAngles = Angle(-90, 0, 0),
+      Wings = true
     })
 
     self:AddWeaponGroup("Pilot", "gn40_cannon", {
