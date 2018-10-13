@@ -77,19 +77,6 @@ function ENT:FireWeapons(g)
   group:Fire()
 end
 
-function ENT:FindTarget()
-  local c1, c2 = self:GetModelBounds()
-  c1, c2 = self:LocalToWorld(c1), self:LocalToWorld(c2) + self:GetForward() * 10000
-
-  for _, ent in pairs(ents.FindInBox(c1, c2)) do
-    if (IsValid(ent) and ent:IsStarWarsVehicle() and ent ~= self and not IsValid(ent:GetParent()) and ent:GetAllegiance() ~= self:GetAllegiance()) then
-      return ent
-    end
-  end
-
-  return NULL
-end
-
 function ENT:NetworkWeapons()
   local serialized = {}
   for name, group in pairs(self.WeaponGroups) do

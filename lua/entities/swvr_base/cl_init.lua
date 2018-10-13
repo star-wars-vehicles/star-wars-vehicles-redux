@@ -575,26 +575,11 @@ function ENT:GetReticleLock()
     return false
   end
 
-  local b1, b2 = self:OBBMins(), self:OBBMaxs()
+  local ent = self:FindTarget()
 
-  for l, w in pairs(ents.FindInBox(self:LocalToWorld(b1), self:LocalToWorld(b2) + self:GetForward() * 10000)) do
-    if (IsValid(w) and w.IsSWVRVehicle and w ~= self and not IsValid(w:GetParent()) and SWVR:LightOrDark(w:GetAllegiance()) ~= SWVR:LightOrDark(self:GetAllegiance())) then
-      local tr = util.TraceLine({
-        start = self:GetPos(),
-        endpos = w:GetPos(),
-        filter = self
-      })
+  if not ent or not IsValid(ent) then return false end
 
-      if (not tr.HitWorld) then
-        local vpos = w:GetPos() + w:GetUp() * (w:GetModelRadius() / 3)
-
-        return vpos
-      end
-    end
-    -- TODO Check for ships that can't be locked on to (cloak/jammer/etc.)
-  end
-
-  return false
+  return ent:GetPos() + ent:GetUp() * (ent:GetModelRadius() / 3)  
 end
 
 function ENT:HUDDrawOverheating()

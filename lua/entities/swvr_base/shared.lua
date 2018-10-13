@@ -105,3 +105,29 @@ end
 function ENT:CheckHook(value)
   return not value and value ~= nil
 end
+
+-- Find a target
+-- Finds a target in a Cone in front of the ship.
+function ENT:FindTarget()
+  local targets = ents.FindInCone(self:GetPos(), self:GetForward(), 100000, math.cos(0.1))
+
+  for _, ent in pairs(targets) do
+    -- TODO Check for ships that can't be locked on to (cloak/jammer/etc.)
+    if (IsValid(ent) and ent:IsStarWarsVehicle() and ent ~= self and not IsValid(ent:GetParent()) and ent:GetAllegiance() ~= self:GetAllegiance()) then
+        local origin = (ent:GetPos() - self:GetPos())
+        origin:Normalize()
+        origin = self:GetPos() + origin * 100
+
+        local tr = util.TraceLine({
+          start = origin,
+          endpos = ent:GetPos()
+        })
+
+        if (not tr.HitWorld) then
+          return ent
+        end
+    end
+  end
+
+  return NULL
+end
