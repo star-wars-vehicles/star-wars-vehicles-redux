@@ -1,0 +1,15 @@
+"VertexLitGeneric"
+{
+	"$basetexture"		"vulture/vulture_texture"
+	"$bumpmap"		"vulture/vulture_texture_n"
+
+	"$Phong"		"1"
+	"$PhongBoost"		"2"
+	"$phongexponent"	"29.8"
+	"$PhongFresnelRanges"	"[.05 .5 1]"
+
+	"$detail"		"detail\metal_detail_01"
+	"$detailscale"		"6.1"
+	"$detailblendfactor"	"1.55"
+	"$detailblendmode"	"0"
+}
