@@ -1,3 +1,6 @@
+
+-- ENTITY META
+
 local ENTITY = FindMetaTable("Entity")
 
 function ENTITY:Side()
@@ -11,6 +14,8 @@ function ENTITY:IsStarWarsVehicle(swvr)
 
 	return tobool(self.IsSWVRVehicle) or tobool(self.IsSWVRVehicle)
 end
+
+-- PLAYER META
 
 local PLAYER = FindMetaTable("Player")
 

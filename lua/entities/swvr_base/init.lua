@@ -1,5 +1,5 @@
 AddCSLuaFile("shared.lua")
-AddCSLuaFile("cl_events.lua")
+AddCSLuaFile("events.lua")
 AddCSLuaFile("cl_init.lua")
 
 include("shared.lua")
@@ -87,6 +87,82 @@ function ENT:Initialize()
   self:SetWingState(false)
 end
 
+-- INITIALIZATION LOGIC
+
+--- Setup the ship model.
+-- Sets proper model, render, and physics modes.
+function ENT:InitModel()
+  util.PrecacheModel(self.WorldModel)
+
+  self:SetModel(self.WorldModel)
+  self:PhysicsInit(SOLID_VPHYSICS)
+  self:SetMoveType(MOVETYPE_VPHYSICS)
+  self:SetSolid(SOLID_VPHYSICS)
+  self:StartMotionController()
+  self:SetUseType(SIMPLE_USE)
+  self:SetRenderMode(RENDERMODE_TRANSALPHA)
+  --self:Activate()
+end
+
+--- Setup the hyperdrive system.
+-- Checks if user/server has WireMod installed and uses it.
+function ENT:InitDrive()
+  if not self.Hyperdrive then
+    return
+  end
+
+  self.WarpDestination = nil
+
+  if WireLib then
+    Wire_CreateInputs(self, {"Destination [VECTOR]"})
+  else
+    self.DistanceMode = true
+  end
+end
+
+--- Initialize physics.
+-- Sets up the physical properties of the ship.
+function ENT:InitPhysics()
+  local mb, mb2 = self:GetModelBounds()
+  self.Mass = (mb - mb2):Length() * 10
+  self.ShipLength = (mb2.x - mb.x) / 2
+  local phys = self:GetPhysicsObject()
+  self.MaxAcceleration = math.floor((100 - math.ceil((mb - mb2):Length() / 100)) / 10) * 2
+
+  if (phys:IsValid()) then
+    phys:Wake()
+    phys:SetMass(self.Mass or 10000)
+  end
+end
+
+--- Setup the necessary flight model for the ship
+-- @param health
+function ENT:Setup(options)
+  self.WorldModel = options.Model
+  self.TakeOffVector = options.TakeOffVector
+  self.LandVector = options.LandVector
+  self.LandAngles = options.LandAngles
+
+  if options.Wings ~= nil then
+    self.Wings = options.Wings
+    self:HasWings(true)
+  end
+
+  self:SetMaxHealth((options.Health or 1000) * cvars.Number("swvr_health_multiplier"))
+  self:SetStartShieldHealth(cvars.Bool("swvr_shields_enabled") and ((options.Shields or 0) * cvars.Number("swvr_shields_multiplier")) or 0)
+  self:SetShieldHealth(self:GetStartShieldHealth())
+  self:SetBack(tobool(options.Back))
+  self:SetMaxSpeed(options.Speed or 1500)
+  self:SetMinSpeed(self:GetBack() and (self:GetMaxSpeed() * 0.66) * -1 or 0)
+  self:SetVerticalSpeed(options.VerticalSpeed or self:GetMaxSpeed() * 1 / 3)
+  self:SetBoostSpeed(options.BoostSpeed or self:GetMaxSpeed())
+  self:SetAccelSpeed(options.Acceleration or 7)
+  self:SetRoll(tobool(options.Roll))
+  self:SetFreeLook(options.Freelook or true)
+end
+
+-- THINK LOGIC
+
 function ENT:Think()
   if self:InFlight() and IsValid(self:GetPilot()) then
     if (not self:IsTakingOff() and not self:IsLanding() and self.Velocity:IsZero()) then
@@ -107,7 +183,6 @@ function ENT:Think()
     end
   end
 
-  -- If a control was used this frame, then we should ignore firing inputs
   self:ThinkControls()
 
   self:ThinkWeapons()
@@ -117,59 +192,6 @@ function ENT:Think()
   self:NextThink(CurTime())
 
   return true
-end
-
-function ENT:ThinkWeapons()
-  if not cvars.Bool("swvr_weapons_enabled") then return end
-
-  for _, button in pairs(SWVR.Buttons) do
-    for _, tbl in pairs(self.Players or {}) do
-      local ply = tbl.ent
-      if not IsValid(ply) then continue end
-
-      local seat = ply:GetNWString("SeatName")
-      if not self.Seats[seat]["Weapons"][button] then continue end
-
-      local group = self.WeaponGroups[self.Seats[seat]["Weapons"][button]]
-
-      if (ply:KeyDown(button) and group:GetCooldown() < CurTime()) then
-        if (not group:GetOverheated() or not group:GetCanOverheat() and not self:IsCritical()) then
-          self:FireWeapons(self.Seats[seat]["Weapons"][button])
-          group:SetOverheat(group:GetOverheat() + 1)
-          group:SetOverheatCooldown(2)
-          self:DispatchEvent("OnFire", group:Serialize(), seat)
-
-          if (group:GetCanOverheat() and group:GetOverheat() >= group:GetMaxOverheat()) then
-            self:DispatchEvent("OnOverheat", group:Serialize(), seat)
-          end
-        elseif (group:GetOverheated()) then
-          group:SetOverheat(group:GetOverheat() - group:GetOverheatCooldown() * 2.5 * FrameTime())
-          group.OverheatCooldown = math.Approach(group.OverheatCooldown, 4, 1)
-
-          if (group:GetCanOverheat() and group:GetOverheat() <= 0 and group:GetOverheatCooldown() >= 4) then
-            self:DispatchEvent("OnOverheatReset", group:Serialize(), seat)
-          end
-        end
-      else
-        if (group:GetCooldown() < CurTime() and group:GetOverheat() > 0) then
-          group:SetOverheat(group:GetOverheat() - group:GetOverheatCooldown() * 2.5 * FrameTime())
-          group:SetOverheatCooldown(math.Approach(group:GetOverheatCooldown(), 4, 1))
-
-          if (group:GetOverheated() and group:GetOverheat() <= 0) then
-            self:DispatchEvent("OnOverheatReset", group:Serialize(), seat)
-          end
-        end
-      end
-
-      if (group:GetCanOverheat() and group:GetOverheat() >= group:GetMaxOverheat()) then
-        group:SetOverheated(true)
-      elseif (group:GetCanOverheat() and group:GetOverheat() <= 0) then
-        group:SetOverheated(false)
-      end
-    end
-  end
-
-  self:NetworkWeapons()
 end
 
 function ENT:ThinkControls()
@@ -251,84 +273,6 @@ function ENT:ThinkParts()
   end
 end
 
-function ENT:OnRemove()
-  if self:InFlight() then
-    self:Exit()
-  end
-end
-
---- Setup the ship model.
--- Sets proper model, render, and physics modes.
-function ENT:InitModel()
-  util.PrecacheModel(self.WorldModel)
-
-  self:SetModel(self.WorldModel)
-  self:PhysicsInit(SOLID_VPHYSICS)
-  self:SetMoveType(MOVETYPE_VPHYSICS)
-  self:SetSolid(SOLID_VPHYSICS)
-  self:StartMotionController()
-  self:SetUseType(SIMPLE_USE)
-  self:SetRenderMode(RENDERMODE_TRANSALPHA)
-  --self:Activate()
-end
-
---- Setup the hyperdrive system.
--- Checks if user/server has WireMod installed and uses it.
-function ENT:InitDrive()
-  if not self.Hyperdrive then
-    return
-  end
-
-  self.WarpDestination = nil
-
-  if WireLib then
-    Wire_CreateInputs(self, {"Destination [VECTOR]"})
-  else
-    self.DistanceMode = true
-  end
-end
-
---- Initialize physics.
--- Sets up the physical properties of the ship.
-function ENT:InitPhysics()
-  local mb, mb2 = self:GetModelBounds()
-  self.Mass = (mb - mb2):Length() * 10
-  self.ShipLength = (mb2.x - mb.x) / 2
-  local phys = self:GetPhysicsObject()
-  self.MaxAcceleration = math.floor((100 - math.ceil((mb - mb2):Length() / 100)) / 10) * 2
-
-  if (phys:IsValid()) then
-    phys:Wake()
-    phys:SetMass(self.Mass or 10000)
-  end
-end
-
---- Setup the necessary flight model for the ship
--- @param health
-function ENT:Setup(options)
-  self.WorldModel = options.Model
-  self.TakeOffVector = options.TakeOffVector
-  self.LandVector = options.LandVector
-  self.LandAngles = options.LandAngles
-
-  if options.Wings ~= nil then
-    self.Wings = options.Wings
-    self:HasWings(true)
-  end
-
-  self:SetMaxHealth((options.Health or 1000) * cvars.Number("swvr_health_multiplier"))
-  self:SetStartShieldHealth(cvars.Bool("swvr_shields_enabled") and ((options.Shields or 0) * cvars.Number("swvr_shields_multiplier")) or 0)
-  self:SetShieldHealth(self:GetStartShieldHealth())
-  self:SetBack(tobool(options.Back))
-  self:SetMaxSpeed(options.Speed or 1500)
-  self:SetMinSpeed(self:GetBack() and (self:GetMaxSpeed() * 0.66) * -1 or 0)
-  self:SetVerticalSpeed(options.VerticalSpeed or self:GetMaxSpeed() * 1 / 3)
-  self:SetBoostSpeed(options.BoostSpeed or self:GetMaxSpeed())
-  self:SetAccelSpeed(options.Acceleration or 7)
-  self:SetRoll(tobool(options.Roll))
-  self:SetFreeLook(options.Freelook or true)
-end
-
 --- Add a new seat.
 -- Creates a new seat for passengers/gunners.
 -- @param name The name of the seat.
@@ -404,6 +348,7 @@ function ENT:AddPilot(pilotpos, pilotang, options)
 
       if group[i] and string.upper(group[i]) ~= "NONE" then
         buttonMap[SWVR.Buttons[i]] = group[i]
+        self.WeaponGroups[group[i]].Seat = "Pilot"
       end
     end
   end
@@ -460,7 +405,6 @@ function ENT:AddPart(name, path, pos, ang, options)
 
   return e
 end
-
 
 function ENT:SpawnSeats()
   self.Seats = self.Seats or {}
@@ -534,6 +478,12 @@ function ENT:Use(p)
   end
 end
 
+function ENT:OnRemove()
+  if self:InFlight() then
+    self:Exit()
+  end
+end
+
 function ENT:Enter(p)
   if not (self:InFlight() and self.Done) then
     if self:CheckHook(hook.Run("SWVREnter", p)) then
@@ -578,7 +528,7 @@ function ENT:Enter(p)
 
     for k, v in pairs(self.WeaponGroups) do
       if "Pilot" == v.Seat then
-        v:SetPlayer(p)
+        v:SetOwner(p)
       end
     end
   end
@@ -601,12 +551,6 @@ function ENT:PassengerEnter(p)
       p:SetNWBool("Flying", true)
       p:SetNWVector("ExitPos", v.ExitPos)
       self:SavePlayer(p)
-
-      for g, t in pairs(self.WeaponGroups) do
-        if v.Name == t.Seat then
-          t:SetPlayer(p)
-        end
-      end
 
       return
     end
@@ -674,6 +618,12 @@ function ENT:SavePlayer(p)
     ent = p
   }
 
+  for k, v in pairs(self.WeaponGroups) do
+    if v.Seat == p:GetNWString("SeatName", "") then
+      v:SetOwner(p)
+    end
+  end
+
   for k, v in pairs(p:GetWeapons()) do
     table.insert(self.Players[p:EntIndex()].weaponTable, v:GetClass())
     self.Players[p:EntIndex()].ammoTable[k] = {v:GetPrimaryAmmoType(), p:GetAmmoCount(v:GetPrimaryAmmoType())}
@@ -692,12 +642,6 @@ end
 -- This loads a player's weapons, health, and armor.
 -- @param p The player to load.
 function ENT:LoadPlayer(p, kill)
-  for k, v in pairs(self.WeaponGroups) do
-    if v.Seat == p:GetNWString("SeatName") then
-      v:SetPlayer(NULL)
-    end
-  end
-
   local data = self.Players[p:EntIndex()]
   if istable(data) then
     p:SetHealth(data.health)
@@ -723,6 +667,12 @@ function ENT:LoadPlayer(p, kill)
     p:AllowFlashlight(true)
     table.Empty(self.Players[p:EntIndex()])
     table.remove(self.Players, p:EntIndex())
+  end
+
+  for k, v in pairs(self.WeaponGroups) do
+    if v.Seat == p:GetNWString("SeatName", "") then
+      v:SetOwner(self)
+    end
   end
 
   p:SetNWEntity("Ship", NULL)

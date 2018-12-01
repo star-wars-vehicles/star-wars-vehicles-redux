@@ -38,7 +38,7 @@ if SERVER then
         })
 
         -- Adding a weapon group. Must be done BEFORE weapons are added to it.
-        self:AddWeaponGroup("Pilot", "weapons/rz2_shoot.wav", self:InitBullet{
+        self:AddWeaponGroup("Pilot", "weapons/rz2_shoot.wav", {
             Damage = 50,
             Color = "red",
             Delay = 0.12,

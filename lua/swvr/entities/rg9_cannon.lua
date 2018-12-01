@@ -1,23 +1,18 @@
 local ENT = {}
 
-DEFINE_BASECLASS("swvr_base_cannon")
+DEFINE_BASECLASS("swvr_cannon")
 
-ENT.Base = "swvr_base_cannon"
+ENT.Base = "swvr_cannon"
 
 ENT.PrintName = "RG-9 Laser Cannon"
 ENT.Author = "Borstel"
 
 ENT.Sound = "rg9_cannon"
 
-
 function ENT:Initialize()
 	BaseClass.Initialize(self)
 
-	self:GetBullet():SetTracer("red_tracer_fx")
-end
-
-function ENT:Fire()
-	BaseClass.Fire(self)
+	self.Bullet:SetTracer("red_tracer_fx")
 end
 
 sound.Add({

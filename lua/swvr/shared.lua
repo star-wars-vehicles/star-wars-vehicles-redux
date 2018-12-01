@@ -103,3 +103,13 @@ end
 function SWVR:LightOrDark(allegiance)
   return table.HasValue(self.Sides.Light, allegiance) and "Light" or table.HasValue(self.Sides.Dark, allegiance) and "Dark" or "Neutral"
 end
+
+function AccessorBool(tbl, name, prefix)
+  tbl[prefix .. name] = function(self, value)
+    if value == nil then
+      return tobool(self["Get" .. name](self))
+    end
+
+    self["Set" .. name](self, value)
+  end
+end

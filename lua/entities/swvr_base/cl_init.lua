@@ -605,9 +605,11 @@ function ENT:HUDDrawOverheating()
   if group.Overheated then
     surface.SetDrawColor(Color(255, 0, 0, 255))
   else
-    if group.Overheat > 0 and group.Overheat <= 16 then
+    local ratio = group.Overheat / group.MaxOverheat
+
+    if ratio >= 0 and ratio <= 0.4 then
       surface.SetDrawColor(Color(128, 255, 0, 255))
-    elseif group.Overheat > 16 and group.Overheat <= 32 then
+    elseif ratio > 0.4 and ratio <= 0.8 then
       surface.SetDrawColor(Color(255, 255, 0, 255))
     else
       surface.SetDrawColor(Color(255, 128, 0, 255))
@@ -957,5 +959,5 @@ net.Receive("SWVR.NetworkWeapons", function()
   local ship = net.ReadEntity()
   local groups = net.ReadTable()
 
-  ship.WeaponGroups = groups
+  ship.WeaponGroups[groups.Name] = groups
 end)

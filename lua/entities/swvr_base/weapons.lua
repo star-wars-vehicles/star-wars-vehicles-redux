@@ -18,18 +18,24 @@ function ENT:AddWeaponGroup(name, weapon, options)
 
   if options.Damage then options.Damage = options.Damage * cvars.Number("swvr_weapons_multiplier") end
 
-  local group = SWVR:WeaponGroup(weapon)
+  local group = ents.Create("swvr_weapon_group")
+  group:Spawn()
+  group:SetWeaponClass(weapon)
   group:SetName(name)
   group:SetOwner(self)
 
   if not options.Parent then group:SetParent(self) end
   group:SetOptions(options)
 
+  group:SetAngles(group:GetParent():GetAngles())
+
   self.WeaponGroups[name] = group
 
-  self:CallOnRemove("RemoveGroup" .. name, function(ent, g)
-    ent.WeaponGroups[g]:Remove()
-  end, name)
+  self:CallOnRemove("RemoveGroup" .. name, function(ent)
+    ent.WeaponGroups[name] = nil
+  end)
+
+  self:DeleteOnRemove(group)
 
   return group
 end
@@ -64,6 +70,7 @@ function ENT:AddWeapon(group, name, pos, options)
 
   local weapon = WeaponGroup:AddWeapon(options)
   weapon:SetPos(self:LocalToWorld(pos * self:GetModelScale()))
+  weapon:SetAngles(weapon:GetParent():GetAngles())
 
   self.Weapons[name] = weapon
 
@@ -74,7 +81,7 @@ end
 -- @param g The weapon group to fire
 function ENT:FireWeapons(g)
   local group = self.WeaponGroups[g]
-  group:Fire()
+  group:FireWeapon()
 end
 
 function ENT:FindTarget()
@@ -90,14 +97,32 @@ function ENT:FindTarget()
   return NULL
 end
 
-function ENT:NetworkWeapons()
-  local serialized = {}
-  for name, group in pairs(self.WeaponGroups) do
-    serialized[name] = group:Serialize()
-  end
+function ENT:ThinkWeapons()
+  if not cvars.Bool("swvr_weapons_enabled") then return end
 
-  net.Start("SWVR.NetworkWeapons")
-    net.WriteEntity(self)
-    net.WriteTable(serialized)
-  net.Send(self:GetPlayers())
+  for _, button in pairs(SWVR.Buttons) do
+    for _, tbl in pairs(self.Players or {}) do
+      local ply = tbl.ent
+      if not IsValid(ply) then continue end
+
+      local seat = ply:GetNWString("SeatName")
+      if not self.Seats[seat]["Weapons"][button] then continue end
+
+      if ply:KeyDown(button) then
+        self:FireWeapons(self.Seats[seat]["Weapons"][button])
+      end
+    end
+  end
+  self:NetworkWeapons()
+end
+
+function ENT:NetworkWeapons()
+  for name, group in pairs(self.WeaponGroups) do
+    if not group:GetOwner():IsPlayer() then continue end
+
+    net.Start("SWVR.NetworkWeapons")
+      net.WriteEntity(self)
+      net.WriteTable(group:Serialize())
+    net.Send(group:GetOwner())
+  end
 end
