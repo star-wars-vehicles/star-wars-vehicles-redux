@@ -567,6 +567,7 @@ function ENT:Exit(kill)
   local p = self:GetPilot()
 
   if IsValid(p) then
+    self:DispatchEvent("OnExit", p)
     p:UnSpectate()
     p:DrawViewModel(true)
     p:DrawWorldModel(true)
