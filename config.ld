@@ -1,9 +1,16 @@
-title = "Star Wars Vehicles Redux"
 project = "SWVR"
+title = "Star Wars Vehicles Redux"
+description = "The rewrite of the popular Star Wars Vehicles Episode 1 base"
+
 merge = true
-format = "markdown"
 not_luadoc = true
+
+format = "discount"
 dir = "docs"
+file = "lua"
+
+readme = "./docs/doc.md"
+kind_names = { topic = "Manual", script = "Modules" }
 
 custom_tags = {
   { "shared", hidden = true },
@@ -13,8 +20,6 @@ custom_tags = {
 
 custom_display_name_handler = function(item, default_handler)
   local name = item.name
-
-  print(item.tags.shared)
 
   for _, tag in ipairs({"shared", "client", "server"}) do
     if item.tags[tag] then
