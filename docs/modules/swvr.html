@@ -1,0 +1,416 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<head>
+    <title>Star Wars Vehicles Redux</title>
+    <link rel="stylesheet" href="../ldoc.css" type="text/css" />
+</head>
+<body>
+
+<div id="container">
+
+<div id="product">
+	<div id="product_logo"></div>
+	<div id="product_name"><big><b></b></big></div>
+	<div id="product_description"></div>
+</div> <!-- id="product" -->
+
+
+<div id="main">
+
+
+<!-- Menu -->
+
+<div id="navigation">
+<br/>
+<h1>SWVR</h1>
+
+<ul>
+  <li><a href="../index.html">Index</a></li>
+</ul>
+
+<h2>Contents</h2>
+<ul>
+<li><a href="#Functions">Functions</a></li>
+<li><a href="#Tables">Tables</a></li>
+<li><a href="#Fields">Fields</a></li>
+</ul>
+
+
+<h2>Modules</h2>
+<ul class="nowrap">
+  <li><strong>swvr</strong></li>
+  <li><a href="../modules/ENT.html">ENT</a></li>
+</ul>
+
+</div>
+
+<div id="content">
+
+<h1>Module <code>swvr</code></h1>
+<p>SWVR Base Module</p>
+<p>
+
+</p>
+    <h3>Info:</h3>
+    <ul>
+        <li><strong>Author</strong>: Doctor Jew</li>
+    </ul>
+
+
+<h2><a href="#Functions">Functions</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#GetVehicles">GetVehicles ()</a></td>
+	<td class="summary">Retrieve all existing SWVR vehicles</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GetPlayers">GetPlayers ()</a></td>
+	<td class="summary">Retrieve all players current in a SWVR vehicle</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Config">Config (key, default)</a></td>
+	<td class="summary">Retrieve the cached config value for better performance</td>
+	</tr>
+</table>
+<h2><a href="#Tables">Tables</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#enum.Allegiances">enum.Allegiances</a></td>
+	<td class="summary">Contains shorthand to full allegiance name mapping</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#enum.Sides">enum.Sides</a></td>
+	<td class="summary">Maps allegiances to side numerical constants</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#enum.LandingSurfaces">enum.LandingSurfaces</a></td>
+	<td class="summary">Landing surfaces that vehicles can land on</td>
+	</tr>
+</table>
+<h2><a href="#Fields">Fields</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#Version">Version</a></td>
+	<td class="summary">Current SWVR version</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Author">Author</a></td>
+	<td class="summary">Author of SWVR</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#config">config</a></td>
+	<td class="summary">Configuration cache</td>
+	</tr>
+</table>
+
+<br/>
+<br/>
+
+
+    <h2 class="section-header "><a name="Functions"></a>Functions</h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "GetVehicles"></a>
+    <strong>GetVehicles ()</strong>
+    </dt>
+    <dd>
+    Retrieve all existing SWVR vehicles
+
+    </ul>
+    </ul>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+        Table of entities
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "GetPlayers"></a>
+    <strong>GetPlayers ()</strong>
+    </dt>
+    <dd>
+    Retrieve all players current in a SWVR vehicle
+
+    </ul>
+    </ul>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+        Table of Players
+    </ol>
+
+
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example"><span class="keyword">for</span> _, ply <span class="keyword">in</span> <span class="global">ipairs</span>(swvr.GetPlayers()) <span class="keyword">do</span>
+	<span class="global">print</span>(ply:SteamID64())
+<span class="keyword">end</span></pre>
+    </ul>
+
+</dd>
+    <dt>
+    <a name = "Config"></a>
+    <strong>Config (key, default)</strong>
+    </dt>
+    <dd>
+    Retrieve the cached config value for better performance
+
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">key</span>
+         The category or sub-category to retrieve
+        </li>
+        <li><span class="parameter">default</span>
+         Default value returned in case key is not found
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        The retrieved value if found or the default
+    </ol>
+
+
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example"><span class="keyword">local</span> value = swvr.Config(<span class="string">"volume.engine"</span>, <span class="number">100</span>)</pre>
+    </ul>
+
+</dd>
+</dl>
+    <h2 class="section-header "><a name="Tables"></a>Tables</h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "enum.Allegiances"></a>
+    <strong>enum.Allegiances</strong>
+    </dt>
+    <dd>
+    Contains shorthand to full allegiance name mapping
+
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Fields:</h3>
+    <ul>
+        <li><span class="parameter">REP</span>
+        Galactic Republic
+        </li>
+        <li><span class="parameter">EMP</span>
+        Galactic Empire
+        </li>
+        <li><span class="parameter">CIS</span>
+        Confederacy of Independent Systems
+        </li>
+        <li><span class="parameter">FO</span>
+        First Order
+        </li>
+        <li><span class="parameter">REB</span>
+        Rebel Alliance
+        </li>
+        <li><span class="parameter">NEU</span>
+        Neutral
+        </li>
+        <li><span class="parameter">IND</span>
+        Independent
+        </li>
+        <li><span class="parameter">DEV</span>
+        In Development
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "enum.Sides"></a>
+    <strong>enum.Sides</strong>
+    </dt>
+    <dd>
+    Maps allegiances to side numerical constants
+
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Fields:</h3>
+    <ul>
+        <li><span class="parameter">1</span>
+         Neutral allegiances
+        </li>
+        <li><span class="parameter">2</span>
+         Light allegiances
+        </li>
+        <li><span class="parameter">3</span>
+         Dark allegiances
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "enum.LandingSurfaces"></a>
+    <strong>enum.LandingSurfaces</strong>
+    </dt>
+    <dd>
+    Landing surfaces that vehicles can land on
+
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Fields:</h3>
+    <ul>
+        <li><span class="parameter">[prop_physics]</span>
+
+
+
+        </li>
+        <li><span class="parameter">[func_rotating]</span>
+
+
+
+        </li>
+        <li><span class="parameter">[func_movelinear]</span>
+
+
+
+        </li>
+        <li><span class="parameter">[func_tracktrain]</span>
+
+
+
+        </li>
+        <li><span class="parameter">[func_door_rotating]</span>
+
+
+
+        </li>
+        <li><span class="parameter">[func_door]</span>
+
+
+
+        </li>
+        <li><span class="parameter">[func_brush]</span>
+
+
+
+        </li>
+        <li><span class="parameter">[func_conveyor]</span>
+
+
+
+        </li>
+        <li><span class="parameter">[func_reflective_glass]</span>
+
+
+
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+</dl>
+    <h2 class="section-header "><a name="Fields"></a>Fields</h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "Version"></a>
+    <strong>Version</strong>
+    </dt>
+    <dd>
+    Current SWVR version
+
+    </ul>
+    </ul>
+    </ul>
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Author"></a>
+    <strong>Author</strong>
+    </dt>
+    <dd>
+    Author of SWVR
+
+    </ul>
+    </ul>
+    </ul>
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "config"></a>
+    <strong>config</strong>
+    </dt>
+    <dd>
+    Configuration cache
+
+    </ul>
+    </ul>
+    </ul>
+
+    <ul>
+        <li><span class="parameter">volume</span>
+         Volume levels for sounds
+        </li>
+        <li><span class="parameter">hud</span>
+         HUD settings, such as color or components
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+</dl>
+
+
+</div> <!-- id="content" -->
+</div> <!-- id="main" -->
+<div id="about">
+<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.4.6</a></i>
+<i style="float:right;">Last updated 2018-12-15 13:29:52 </i>
+</div> <!-- id="about" -->
+</div> <!-- id="container" -->
+</body>
+</html>

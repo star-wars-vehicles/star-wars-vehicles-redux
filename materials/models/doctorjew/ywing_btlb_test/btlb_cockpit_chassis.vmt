@@ -1,6 +1,0 @@
-"VertexlitGeneric"
-{
-	"$basetexture" "models/doctorjew/ywing_btlb_test/btlb_cockpit_chassis"
-	"$bumpmap" "models/doctorjew/ywing_btlb_test/btlb_cockpit_chassis_n"
-	"$nocull" 1
-}
