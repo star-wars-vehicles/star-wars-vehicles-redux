@@ -1,0 +1,565 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<head>
+    <title>Star Wars Vehicles Redux</title>
+    <link rel="stylesheet" href="../ldoc.css" type="text/css" />
+</head>
+<body>
+
+<div id="container">
+
+<div id="product">
+	<div id="product_logo"></div>
+	<div id="product_name"><big><b></b></big></div>
+	<div id="product_description"></div>
+</div> <!-- id="product" -->
+
+
+<div id="main">
+
+
+<!-- Menu -->
+
+<div id="navigation">
+<br/>
+<h1>SWVR</h1>
+
+<ul>
+  <li><a href="../index.html">Index</a></li>
+</ul>
+
+<h2>Contents</h2>
+<ul>
+<li><a href="#Functions">Functions</a></li>
+<li><a href="#Fields">Fields</a></li>
+</ul>
+
+
+<h2>Modules</h2>
+<ul class="nowrap">
+  <li><a href="../modules/swvr.html">swvr</a></li>
+  <li><strong>ENT</strong></li>
+</ul>
+
+</div>
+
+<div id="content">
+
+<h1>Module <code>ENT</code></h1>
+<p>Star Wars Vehicles Flight Base</p>
+<p>
+
+</p>
+    <h3>Info:</h3>
+    <ul>
+        <li><strong>Author</strong>: Doctor Jew</li>
+    </ul>
+
+
+<h2><a href="#Functions">Functions</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#Think">Think ()</a></td>
+	<td class="summary">Called every frame by the engine</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#OnRemove">OnRemove ()</a></td>
+	<td class="summary">Called by the engine when removed</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#CalcFirstPersonView">CalcFirstPersonView (view)</a></td>
+	<td class="summary">Override first person view calculations</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#CalcThirdPersonView">CalcThirdPersonView (view)</a></td>
+	<td class="summary">Override third person view calculations</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#OnThink">OnThink ()</a></td>
+	<td class="summary">Custom think function
+ Override this to run custom logic.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#PrimaryAttack">PrimaryAttack ()</a></td>
+	<td class="summary">Primary attack function
+ This can be overriden for custom actions.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#SecondaryAttack">SecondaryAttack ()</a></td>
+	<td class="summary">Secondary attack function
+ This can be overriden for custom actions.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Enter">Enter (ply)</a></td>
+	<td class="summary">Makes a <code>Player</code> enter the vehicle</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Exit">Exit (ply)</a></td>
+	<td class="summary">Called when a <code>Player</code> exits the vehicle</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Destroy">Destroy ([attacker[, inflictor]])</a></td>
+	<td class="summary">Destroys the vehicle physically</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Explode">Explode ()</a></td>
+	<td class="summary">Blows up the vehicle visually</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#OnTakeDamage">OnTakeDamage (dmg)</a></td>
+	<td class="summary">Called by the engine when the entity takes damage</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#ShieldDamage">ShieldDamage ()</a></td>
+	<td class="summary">Shield damage visuals</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GetPilot">GetPilot ()</a></td>
+	<td class="summary">Convenience function</td>
+	</tr>
+</table>
+<h2><a href="#Fields">Fields</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#PrintName">PrintName</a></td>
+	<td class="summary">Nice display name</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Author">Author</a></td>
+	<td class="summary">Author of the <code>Entity</code></td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Category">Category</a></td>
+	<td class="summary"><code>Entity</code> category, used to assign to a faction</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Class">Class</a></td>
+	<td class="summary">Vehicle class (fighter, bomber, etc.)</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#MaxHealth">MaxHealth</a></td>
+	<td class="summary">Maximum starting health of the vehicle</td>
+	</tr>
+</table>
+
+<br/>
+<br/>
+
+
+    <h2 class="section-header "><a name="Functions"></a>Functions</h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "Think"></a>
+    <strong>Think ()</strong>
+    </dt>
+    <dd>
+    Called every frame by the engine
+
+    </ul>
+    </ul>
+    </ul>
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "OnRemove"></a>
+    <strong>OnRemove ()</strong>
+    </dt>
+    <dd>
+    Called by the engine when removed
+
+    </ul>
+    </ul>
+    </ul>
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "CalcFirstPersonView"></a>
+    <strong>CalcFirstPersonView (view)</strong>
+    </dt>
+    <dd>
+    Override first person view calculations
+
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">view</span>
+
+
+
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "CalcThirdPersonView"></a>
+    <strong>CalcThirdPersonView (view)</strong>
+    </dt>
+    <dd>
+    Override third person view calculations
+
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">view</span>
+
+
+
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "OnThink"></a>
+    <strong>OnThink ()</strong>
+    </dt>
+    <dd>
+    Custom think function
+ Override this to run custom logic.
+
+    </ul>
+    </ul>
+    </ul>
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "PrimaryAttack"></a>
+    <strong>PrimaryAttack ()</strong>
+    </dt>
+    <dd>
+    Primary attack function
+ This can be overriden for custom actions.
+
+    </ul>
+    </ul>
+    </ul>
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "SecondaryAttack"></a>
+    <strong>SecondaryAttack ()</strong>
+    </dt>
+    <dd>
+    Secondary attack function
+ This can be overriden for custom actions.
+
+    </ul>
+    </ul>
+    </ul>
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Enter"></a>
+    <strong>Enter (ply)</strong>
+    </dt>
+    <dd>
+    Makes a <code>Player</code> enter the vehicle
+
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">ply</span>
+         The <code>Player</code> to enter the vehicle
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="../modules/ENT.html#Exit">ENT.Exit</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Exit"></a>
+    <strong>Exit (ply)</strong>
+    </dt>
+    <dd>
+    Called when a <code>Player</code> exits the vehicle
+
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">ply</span>
+         The <code>Player</code> that exited
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="../modules/ENT.html#Enter">ENT.Enter</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Destroy"></a>
+    <strong>Destroy ([attacker[, inflictor]])</strong>
+    </dt>
+    <dd>
+    Destroys the vehicle physically
+
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">attacker</span>
+         The attacker that destroyed the vehicle
+         (<em>optional</em>)
+        </li>
+        <li><span class="parameter">inflictor</span>
+         The inflictor that destroyed the vehicle
+         (<em>optional</em>)
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="../modules/ENT.html#Explode">ENT.Explode</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Explode"></a>
+    <strong>Explode ()</strong>
+    </dt>
+    <dd>
+    Blows up the vehicle visually
+
+    </ul>
+    </ul>
+    </ul>
+
+
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="../modules/ENT.html#Destroy">ENT.Destroy</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "OnTakeDamage"></a>
+    <strong>OnTakeDamage (dmg)</strong>
+    </dt>
+    <dd>
+    Called by the engine when the entity takes damage
+
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">dmg</span>
+         <code>DamageInfo</code> structure containing damage information
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "ShieldDamage"></a>
+    <strong>ShieldDamage ()</strong>
+    </dt>
+    <dd>
+    Shield damage visuals
+
+    </ul>
+    </ul>
+    </ul>
+
+
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="../modules/ENT.html#OnTakeDamage">ENT.OnTakeDamage</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "GetPilot"></a>
+    <strong>GetPilot ()</strong>
+    </dt>
+    <dd>
+    Convenience function
+
+    </ul>
+    </ul>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+        Entity The pilot of the ship
+    </ol>
+
+
+
+
+</dd>
+</dl>
+    <h2 class="section-header "><a name="Fields"></a>Fields</h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "PrintName"></a>
+    <strong>PrintName</strong>
+    </dt>
+    <dd>
+    Nice display name
+
+    </ul>
+    </ul>
+    </ul>
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Author"></a>
+    <strong>Author</strong>
+    </dt>
+    <dd>
+    Author of the <code>Entity</code>
+
+    </ul>
+    </ul>
+    </ul>
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Category"></a>
+    <strong>Category</strong>
+    </dt>
+    <dd>
+    <code>Entity</code> category, used to assign to a faction
+
+    </ul>
+    </ul>
+    </ul>
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Class"></a>
+    <strong>Class</strong>
+    </dt>
+    <dd>
+    Vehicle class (fighter, bomber, etc.)
+
+    </ul>
+    </ul>
+    </ul>
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "MaxHealth"></a>
+    <strong>MaxHealth</strong>
+    </dt>
+    <dd>
+    Maximum starting health of the vehicle
+
+    </ul>
+    </ul>
+    </ul>
+
+
+
+
+
+
+</dd>
+</dl>
+
+
+</div> <!-- id="content" -->
+</div> <!-- id="main" -->
+<div id="about">
+<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.4.6</a></i>
+<i style="float:right;">Last updated 2018-12-15 13:29:52 </i>
+</div> <!-- id="about" -->
+</div> <!-- id="container" -->
+</body>
+</html>

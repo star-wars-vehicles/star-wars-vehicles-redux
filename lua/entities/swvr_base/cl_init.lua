@@ -1,510 +1,256 @@
+--- Star Wars Vehicles Flight Base
+-- @module ENT
+-- @author Doctor Jew
+
 include("shared.lua")
-include("events.lua")
 
---- Initialize the base client-side.
--- Initializes all needed variables client-side.
--- May also call other Initialization functions.
 function ENT:Initialize()
-  self.FXEmitter = ParticleEmitter(self:GetPos())
+  self.FXEmitter = ParticleEmitter(self:GetPos(), false)
 
-  self.Sounds   = self.Sounds or {}
+  self.Seats = {}
 
-  self.Engines  = self.Engines or {}
-  self.Events   = self.Events or {}
+  self:AddEvent("OnEngineStart", function()
+    self.SoundPatches = {}
 
-  self.WeaponGroups = {}
-
-  self:InitParts()
-
-  LocalPlayer().SWVRViewDistance = LocalPlayer().SWVRViewDistance or 0
-  LocalPlayer().SW_ViewDistance = LocalPlayer().SW_ViewDistance or 0 -- Backwards compatibility for now...
-
-  self.Filter = self:GetChildEntities()
-end
-
-function ENT:Setup(options)
-  options = options or {}
-  self.ViewDistance = options.ViewDistance or 1000
-  self.ViewHeight   = options.ViewHeight or 300
-
-  self.AlwaysDraw = tobool(options.AlwaysDraw)
-  self.DrawGlass  = tobool(options.DrawGlass)
-
-  if (options.Cockpit) then
-    if istable(options.Cockpit) and options.Cockpit.Path then
-      local path = Model(options.Cockpit.Path)
-      if util.IsValidModel(path) then
-        self.Cockpit = {
-          Path = path,
-          Pos = self:LocalToWorld((options.Cockpit.Pos or Vector()) * self:GetModelScale()),
-          Ang = options.Cockpit.Ang or nil
-        }
-      end
-    elseif (isstring(options.Cockpit)) then
-      local mat = Material(options.Cockpit)
-
-      if (mat:IsError()) then
-        error("Invalid cockpit texture specified!")
-      end
-
-      self.Cockpit = surface.GetTextureID(options.Cockpit)
+    for name, path in pairs(self.Sounds) do
+      self.SoundPatches[name] = CreateSound(self, path)
+      self.SoundPatches[name]:PlayEx(0, 0)
     end
-  end
+  end)
 
-  if options.EngineSound then
-    self:AddSound("Engine", options.EngineSound, { Is3D = true, Looping = true, Callback = function(ship) return ship:GetFlight() end, ChangePitch = true, Repeat = true })
-  end
-end
-
-function ENT:SetupDefaults(options)
-  options = options or {}
-
-  if options.OnShieldsDown ~= false then
-    self:AddEvent("OnShieldsDown", function()
-      if LocalPlayer():GetNWEntity("Ship") ~= self then
-        return
-      end
-
-      surface.PlaySound("swvr/shields/swvr_shields_down.wav")
-    end)
-  end
-
-  if options.OnFire ~= false then
-    self:AddEvent("OnFire", function(group, seat)
-      if not group.CanOverheat then return end
-      if LocalPlayer():GetNWEntity("Ship") ~= self then return end
-      if LocalPlayer():GetNWString("SeatName") ~= seat then return end
-
-      if (group.Overheat >= group.MaxOverheat - 10) then
-        self:EmitSound("swvr/weapons/swvr_overheat_ping.wav", 75, 100, math.Clamp(math.exp(math.pow(group.Overheat / group.MaxOverheat * 0.98, 7)) - 1, 0, 1))
-      end
-    end)
-  end
-
-  if options.OnOverheat ~= false then
-    self:AddEvent("OnOverheat", function(group, seat)
-      local ply = LocalPlayer()
-
-      if ply:GetNWEntity("Ship") ~= self then
-        return
-      end
-
-      if ply:GetNWString("SeatName") ~= seat then
-        return
-      end
-
-      surface.PlaySound("swvr/weapons/swvr_overheat_cooldown.wav")
-    end)
-  end
-
-  if options.OnOverheatReset ~= false then
-    self:AddEvent("OnOverheatReset", function(group, seat)
-      local ply = LocalPlayer()
-
-      if ply:GetNWEntity("Ship") ~= self then
-        return
-      end
-
-      if ply:GetNWString("SeatName") ~= seat then
-        return
-      end
-
-      surface.PlaySound("swvr/weapons/swvr_overheat_reset.wav")
-    end)
-  end
-
-  if options.OnCollision ~= false then
-    self:AddEvent("OnCollision", function(damage)
-      local ply = LocalPlayer()
-      local ship = ply:GetNWEntity("Ship")
-
-      if (IsValid(ship) and ship == self and ship:GetFirstPerson()) then
-        self:EmitSound("swvr/impact/swvr_impact_fp_" .. math.random(1, 5) .. ".wav", 75, 100, 1)
-      else
-        self:EmitSound("swvr/impact/swvr_impact_" .. math.random(1, 6) .. ".wav", 60, 100, 0.25)
-      end
-    end)
-  end
-end
-
---- Initialize any clientside parts.
--- Spawns client props for each prop added clientside.
-function ENT:InitParts()
-  self.Parts = self.Parts or {}
-
-  for k, v in pairs(self.Parts or {}) do
-    local e = ents.CreateClientProp(v.Path, RENDERGROUP_OPAQUE)
-    e:SetPos(v.Pos or self:GetPos())
-    e:SetAngles(v.Ang or self:GetAngles())
-    e:SetParent(self)
-    e:SetNoDraw(true)
-    e:Spawn()
-    e:SetModelScale(self:GetModelScale())
-    v.Ent = e
-  end
-
-  local cockpit = self.Cockpit
-
-  print("INIT PARTS", self.Cockpit)
-
-  if istable(cockpit) then
-    local e = ents.CreateClientProp(cockpit.Path, RENDERGROUP_OPAQUE)
-    e:SetPos(cockpit.Pos or self:GetPos())
-    e:SetAngles(cockpit.Ang or self:GetAngles())
-    e:SetParent(self)
-    e:SetNoDraw(true)
-    e:Spawn()
-    e:SetModelScale(self:GetModelScale())
-    cockpit.Ent = e
-  end
-end
-
-function ENT:Draw()
-  if self:GetFlight() then
-    local avatar = self:GetAvatar()
-
-    if IsValid(avatar) then
-      if self:GetFirstPerson() and LocalPlayer() == self:GetPilot() then
-        avatar:SetNoDraw(true)
-
-        for k, v in pairs(self.Parts or {}) do
-          v.Ent:DrawModel()
-        end
-
-        if istable(self.Cockpit) and IsValid(self.Cockpit.Ent) then
-          self.Cockpit.Ent:DrawModel()
-        end
-      else
-        avatar:SetNoDraw(false)
-        avatar:DrawModel()
-      end
-
-      if (not table.HasValue(self.Filter, avatar)) then
-        table.insert(self.Filter, avatar)
-      end
+  self:AddEvent("OnEngineStop", function()
+    for name, patch in pairs(self.SoundPatches or {}) do
+      patch:Stop()
     end
-  end
+  end)
 
-  if not self.Cockpit or not self:GetFirstPerson() or LocalPlayer() ~= self:GetPilot() or self.AlwaysDraw then
-    self:DrawModel()
-  end
+  self:AddEvent("OnShieldDamage", function()
+    self:EmitSound("swvr/shields/swvr_shield_absorb_" .. math.Round(math.random(1, 4)) .. ".wav", 500, 100,  cvars.Number("swvr_effect_volume", 100) / 100, CHAN_BODY)
+  end)
+
+  self:OnInitialize()
+
+  self.Initialized = true
 end
 
+--- Called every frame by the engine
 function ENT:Think()
-  if self:GetFlight() then
-    if not (self:IsTakingOff() and self:IsLanding()) then
-      self:EngineEffects()
-    end
+  self:UpdateSounds()
+
+  self.NextAlarm = self.NextAlarm or 0
+
+  if self.NextAlarm < CurTime() and self:Health() < self:GetMaxHealth() * 0.1 and LocalPlayer():GetSWVehicle() == self then
+    self.NextAlarm = CurTime() + 0.5
+
+    self:EmitSound("swvr/shared/swvr_alarm.wav", 75, 100, cvars.Number("swvr_effect_volume", 1) / 100)
   end
 
-  self:LightEffects()
-  self:ThinkSounds()
+  self:OnThink()
+
   self:SetNextClientThink(CurTime())
 
   return true
 end
 
-function ENT:ThinkSounds()
-  for name, snd in pairs(self.Sounds or {}) do
-    local patch = istable(snd.Patch) and table.Random(snd.Patch) or snd.Patch
+function ENT:UpdateSounds()
+  if not self:EngineActive() then return end
 
-    if snd.Is3D then
-      self:UpdateClientsideSound(snd, patch)
-    end
+  local dist = (LocalPlayer():GetViewEntity():GetPos() - self:GetPos()):Length()
 
-    if self.SoundDisabled and patch:IsPlaying() then
-      patch:Stop()
+  self.PitchOffset = self.PitchOffset and self.PitchOffset + (math.Clamp((dist - self.LastDist) * FrameTime() * 300,-40,40) - self.PitchOffset) * FrameTime() * 5 or 0
+  self.LastDist = dist
 
-      continue
-    end
+  local pitch = self:GetThrust() / self:GetBoostThrust()
 
-    if snd.Callback then
-      -- Explicitly return false to stop the sound from playing
-      -- Returning true/nil continues normally
-      local result = snd.Callback(self, snd)
-
-      if result == false then
-        snd.Patch:Stop()
-        continue
-      end
-    end
-
-    if snd.NextPlay < CurTime() and (snd.Repeat or not snd.Played) then
-      if (snd.Looping and patch:IsPlaying()) then continue end
-
-      if not snd.Is3D and LocalPlayer():GetNWEntity("Ship") ~= self then continue end
-
-      self:StopClientsideSound(snd, patch)
-      self:StartClientsideSound(snd, patch)
-
-      snd.Played = true
-      snd.NextPlay = CurTime() + snd.Cooldown
-    end
+  for name, patch in pairs(self.SoundPatches or {}) do
+    patch:ChangePitch(math.Clamp(math.Clamp(60 + pitch * 50, 80, 255) - self.PitchOffset, 0, 255))
+    patch:ChangeVolume(math.Clamp(-1 + pitch * 6, 0.5, 1) * (cvars.Number("swvr_engine_volume", 100) / 100))
   end
 end
 
-local DEFAULT_SOUND_OPTIONS = {
-  Is3D = false,
-  Callback = nil,
-  Played = false,
-  Repeat = false,
-  Looping = false,
-  ChangePitch = false,
-  Cooldown = 0,
-  NextPlay = CurTime(),
-  Volume = 1
-}
-
-function ENT:AddSound(name, path, options)
-  options = options or {}
-  self.Sounds = self.Sounds or {}
-
-  local snd = table.Inherit(options or {}, DEFAULT_SOUND_OPTIONS)
-  snd.Name = name
-  snd.Path = path
-
-  if istable(path) then
-    local patches = {}
-    for _, file in ipairs(path) do
-      table.insert(patches, CreateSound(self, file))
-    end
-
-    snd.Patch = patches
-  else
-    snd.Patch = CreateSound(self, path)
-  end
-
-  self.Sounds[name] = snd
-end
-
---- Start a sound on the client.
--- Starts a sound on any clients with a mode
--- @param mode the mode of the sound
-function ENT:StartClientsideSound(snd, patch)
-  if self.SoundDisabled or patch:IsPlaying() then return end
-
-  patch:Stop()
-  patch:SetSoundLevel(100)
-  patch:PlayEx(snd.Volume, 100)
-end
-
---- Stop a sound on the client.
--- Stops a sound on any clients with a mode
--- @param mode the mode of the sound
-function ENT:StopClientsideSound(snd, patch)
-  if not patch:IsPlaying() then return end
-
-  patch:Stop()
-end
-
---- Doppler effect on sounds.
--- Currently hard coded for engine only (I know kill me)
-function ENT:UpdateClientsideSound(snd, patch)
-  if self.SoundDisabled then return end
-  if not patch:IsPlaying() then return end
-
-
-  local velo = self:GetVelocity()
-  local pitch = self:GetVelocity():Length()
-  local doppler = 0
-
-  -- For the Doppler-Effect!
-  if LocalPlayer():GetNWEntity("Ship") ~= self then
-    -- Is the vehicle flying towards the player or away from him?
-    local dir = LocalPlayer():GetPos() - self:GetPos()
-    doppler = velo:Dot(dir) / (150 * dir:Length())
-  end
-
-  pitch = (snd.ChangePitch and math.Clamp(60 + pitch / 25, 75, 100) or patch:GetPitch()) + doppler
-  patch:ChangePitch(pitch, 0)
-
-
-  local veh = LocalPlayer():GetVehicle()
-  local isPassenger = IsValid(veh) and IsValid(veh:GetParent()) and veh:GetParent().IsSWVRVehicle
-
-  -- 3D Sound is quieter from the interior
-  if (((self:GetFirstPerson() and self:GetPilot() == LocalPlayer()) or (isPassenger and not veh:GetThirdPersonMode())) and LocalPlayer():GetNWEntity("Ship") == self) then
-    patch:ChangeVolume(snd.Volume / 3)
-  else
-    patch:ChangeVolume(snd.Volume)
-  end
-end
-
+--- Called by the engine when removed
 function ENT:OnRemove()
-  for k, v in pairs(self.Sounds) do
-    if v.Patch then v.Patch:Stop() end
+  for name, patch in pairs(self.SoundPatches or {}) do
+    patch:Stop()
   end
 
-  if (IsValid(self.FXEmitter)) then
+  if IsValid(self.FXEmitter) then
     self.FXEmitter:Finish()
   end
-
-  for k, v in pairs(self.Parts or {}) do
-    SafeRemoveEntity(v.Ent)
-  end
-
-  SafeRemoveEntity(istable(self.Cockpit) and self.Cockpit.Ent)
 end
 
-function ENT:EngineEffects()
-  if not cvars.Bool("swvr_engines_draw") then return end
+function ENT:OnThink()
 
-  local normal = (self:GetForward() * -1):GetNormalized()
-  local roll = math.Rand(-90, 90)
-  local id = self:EntIndex()
+end
 
-  for k, v in pairs(self.Engines) do
-    local pos = self:LocalToWorld(v.Pos * self:GetModelScale())
-    local sprite = self.FXEmitter:Add(v.Sprite, pos)
-    sprite:SetVelocity(normal)
-    sprite:SetDieTime(FrameTime() * v.Lifetime)
-    sprite:SetStartAlpha(v.Color.a)
-    sprite:SetEndAlpha(v.Color.a)
-    sprite:SetStartSize(v.StartSize * self:GetModelScale())
-    sprite:SetEndSize(v.EndSize * self:GetModelScale())
-    sprite:SetRoll(roll)
-    sprite:SetColor(v.Color.r, v.Color.g, v.Color.b)
+-- DRAWING FUNCTION
 
-    if v.Light then
-      local dynlight = DynamicLight((id + 4096) * id)
-      dynlight.Pos = pos
-      dynlight.Brightness = 5
-      dynlight.Size = 200
-      dynlight.Decay = 1024
-      dynlight.R = v.Color.r
-      dynlight.G = v.Color.g
-      dynlight.B = v.Color.b
-      dynlight.DieTime = CurTime() + 1
+function ENT:Draw()
+  self:DrawModel()
+
+  -- Damage Effects
+
+  self:DrawDamageEffects()
+
+  -- Engine Effects
+
+  self:DrawExhaust()
+  self:DrawGlow()
+end
+
+function ENT:DrawExhaust()
+  if not self:EngineActive() then return end
+
+  self.NextFX = self.NextFX or 0
+
+  local pilot = self:GetPilot()
+  if IsValid(pilot) then
+    local throttle = pilot:ControlDown("forward")
+
+    if throttle ~= self.oldThrottle then
+      self.oldThrottle = throttle
+
+      if throttle then
+        self.BoostAdd = 80
+      end
+    end
+  end
+
+  self.BoostAdd = self.BoostAdd and (self.BoostAdd - self.BoostAdd * FrameTime()) or 0
+
+  local color = self.Settings.Engine.Color
+
+  if self.Settings.Engine.Type == 1 then
+    for _, v in ipairs(self.Engines) do
+      local normal = (self:GetForward() * -1):GetNormalized()
+      local roll = math.Rand(-90, 90)
+      local pos = self:LocalToWorld(v * self:GetModelScale())
+      local sprite = self.FXEmitter:Add(self.Settings.Engine.Sprite, pos)
+
+      sprite:SetVelocity(normal)
+      sprite:SetDieTime(0.02)
+      sprite:SetStartAlpha(color.a)
+      sprite:SetEndAlpha(0)
+      sprite:SetStartSize(25 * self:GetModelScale())
+      sprite:SetEndSize(15 * self:GetModelScale())
+      sprite:SetRoll(roll)
+      sprite:SetColor(color.r, color.g, color.b)
+    end
+  else
+    if self.NextFX < CurTime() then
+      self.NextFX = CurTime() + 0.01
+
+      if self.FXEmitter then
+        for _, v in ipairs(self.Engines) do
+          local vOffset = self:LocalToWorld(v)
+          local vNormal = -self:GetForward()
+
+          vOffset = vOffset + vNormal * 5
+
+          local particle = self.FXEmitter:Add(self.Settings.Engine.Sprite, vOffset)
+
+          if not particle then return end
+
+          particle:SetVelocity(vNormal * math.Rand(500, 1000) + self:GetVelocity())
+          particle:SetLifeTime(0)
+          particle:SetDieTime(0.1)
+          particle:SetStartAlpha(255)
+          particle:SetEndAlpha(0)
+          particle:SetStartSize(math.Rand(15, 25))
+          particle:SetEndSize(math.Rand(0, 10))
+          particle:SetRoll(math.Rand(-1, 1) * 100)
+          particle:SetColor(color.r, color.g, color.b)
+        end
+      end
+    end
+  end
+end
+
+function ENT:DrawDamageEffects()
+  local health = self:Health()
+
+  if health ~= 0 and health < self:GetMaxHealth() * 0.5 then
+    self.NextDFX = self.NextDFX or 0
+
+    if self.NextDFX < CurTime() then
+      self.NextDFX = CurTime() + 0.05
+
+      local fx = EffectData()
+      fx:SetOrigin(self:LocalToWorld(self.Controls.Thrust) - self:GetForward() * 50)
+      util.Effect("lfs_blacksmoke", fx)
     end
   end
 end
 
-function ENT:LightEffects()
-  for i, light in ipairs(self.Lights or {}) do
-    if (not light.Callback or (light.Callback and light.Callback(self))) then
-      local id = self:EntIndex()
-      local dynlight = DynamicLight(id * 2 + 4096 * (i * 10))
-      dynlight.Pos = light.Pos
-      dynlight.Brightness = light.Brightness
-      dynlight.Size = isnumber(light.Size) and light.Size or math.random(light.Size[1], light.Size[2])
-      dynlight.Decay = light.Decay
-      dynlight.r = light.Color.r
-      dynlight.g = light.Color.g
-      dynlight.b = light.Color.b
-      dynlight.DieTime = CurTime() + light.DieTime
-    end
+local mat = Material("sprites/light_glow02_add")
+
+function ENT:DrawGlow()
+  if not self:EngineActive() then return end
+  if not self.Settings.Engine.Glow then return end
+
+  local boost = self.BoostAdd or 0
+  local size = 100 + (self:GetThrust() / self:GetBoostThrust()) * 40 + boost
+  local color = self.Settings.Engine.Color
+
+  render.SetMaterial(mat)
+
+  for _, pos in ipairs(self.Engines) do
+    render.DrawSprite(self:LocalToWorld(pos), size, size, color)
   end
 end
 
---- Add an engine to the ship.
--- Adds a visual engine to the ship
--- @param pos The position of the engine
--- @param startsize The start size of the engine
--- @param endsize The end size of the engine (often smaller)
--- @param lifetime The lifetime of the effect, this affects length of "plasma"
--- @param color The color of the engine sprite
--- @param sprite A custom sprite to use for the engine effect (optional)
-function ENT:AddEngine(pos, options)
-  options = options or {}
-  self.Engines = self.Engines or {}
+-- HUD FUNCTIONS
 
-  self.Engines[table.Count(self.Engines) + 1] = {
-    Pos = pos,
-    Color = options.Color or Color(0, 0, 255, 255),
-    Sprite = Material(options.Sprite or "sprites/bluecore"),
-    Lifetime = options.Lifetime or 1.25,
-    StartSize = options.StartSize or 25,
-    EndSize = options.EndSize or 18.75
-  }
+local function HUDColor()
+  return Color(cvars.Number("swvr_hud_color_r"), cvars.Number("swvr_hud_color_g"), cvars.Number("swvr_hud_color_b"), cvars.Number("swvr_hud_color_a"))
 end
 
-function ENT:AddLight(pos, options)
-  options = options or {}
-  self.Lights = self.Lights or {}
+function ENT:HUDDrawCrosshair(isPilot)
+  local ply = LocalPlayer()
 
-  self.Lights[table.Count(self.Lights) + 1] = {
-    Pos = self:LocalToWorld(pos),
-    Brightness or options.Brightness or 8,
-    Size = options.Size or {1, 100},
-    Decay = options.Decay or 1024,
-    Color = options.Color or Color(255, 255, 255),
-    DieTime = options.Lifetime or 1,
-    Callback = options.Callback or nil
-  }
-end
+  local startpos =  self.Controls.Thrust
 
---- Add a part to the ship.
--- Add a clientside part to the ship, only rendered in first person.
--- @param name Name of the part
--- @param path Path to the model of the part
--- @param pos The position of the part
--- @param ang The angle of the part
-function ENT:AddPart(name, path, pos, ang)
-  self.Parts = self.Parts or {}
+  local find_vehicle = util.TraceLine({
+    start = startpos,
+    endpos = startpos + self:GetForward() * 50000,
+    filter = { self }
+  })
 
-  util.PrecacheModel(path)
+  local find_pilot = util.TraceLine({
+    start = startpos,
+    endpos = startpos + ply:EyeAngles():Forward() * 50000,
+    filter = function() return false end
+  })
 
-  self.Parts[name] = {
-    Path = path,
-    Pos = pos and self:LocalToWorld(pos) or nil,
-    Ang = ang or nil
-  }
+  local vehicle = find_vehicle.HitPos:ToScreen()
+  local pilot = find_pilot.HitPos:ToScreen()
 
-  return self.Parts[name]
-end
+  local diff = Vector(pilot.x, pilot.y, 0) - Vector(vehicle.x, vehicle.y, 0)
+  local len = diff:Length()
+  local dir = diff:GetNormalized()
 
---- Calculate the view for passengers.
--- Fallback CalcView if no custom hook is found.
--- @param dist The distance from the ship
-function ENT:VehicleView(dist, udist, fpv_pos)
-  local p = LocalPlayer()
-  local pos, face
-  local View = {}
+  surface.SetDrawColor(255, 255, 255, 100)
 
-  if IsValid(self) then
-    if self:GetFirstPerson() then
-      pos = fpv_pos
-      face = self:GetAngles()
-
-      if self:GetFreeLook() and p:KeyPressed(IN_SCORE) then
-        p:SetEyeAngles(Angle(0, 0, 0))
-      end
-
-      if self:GetFreeLook() and p:KeyDown(IN_SCORE) and not p:KeyPressed(IN_SCORE) then
-        local eAngles = p:EyeAngles()
-        local newAng = self:GetAngles() + eAngles
-        face = Angle(newAng.p, math.Clamp(newAng.y, self:GetAngles().y - 90, self:GetAngles().y + 90), newAng.r)
-      end
-    else
-      if self:GetHyperdrive() ~= 2 then
-        local aim = LocalPlayer():GetAimVector()
-        local tpos = self:GetPos() + self:GetUp() * udist + aim:GetNormal() * -(dist + p.SWVRViewDistance)
-
-        local tr = util.TraceLine({
-          start = self:GetPos(),
-          endpos = tpos,
-          filter = self.Filter
-        })
-
-        pos = tr.HitPos or tpos
-        face = ((self:GetPos() + Vector(0, 0, 100)) - pos):Angle()
-        self._LastViewPos = pos
-        self._LastViewAng = face
-      else
-        pos = self._LastViewPos
-        face = self._LastViewAng
-      end
-    end
-
-    View.origin = pos
-    View.angles = face
-
-    return View
+  if len > 34 and not ply:KeyDown(IN_WALK) then
+    surface.DrawLine(vehicle.x + dir.x * 10, vehicle.y + dir.y * 10, pilot.x - dir.x * 34, pilot.y - dir.y * 34)
   end
+
+  -- DrawCircle(vehicle.x, vehicle.y, 10)
+
+  surface.DrawCircle(vehicle.x, vehicle.y, 10, Color(255, 255, 255, 100))
+
+  surface.DrawLine(vehicle.x + 10, vehicle.y, vehicle.x + 20, vehicle.y)
+  surface.DrawLine(vehicle.x - 10, vehicle.y, vehicle.x - 20, vehicle.y)
+  surface.DrawLine(vehicle.x, vehicle.y + 10, vehicle.x, vehicle.y + 20)
+  surface.DrawLine(vehicle.x, vehicle.y - 10, vehicle.x, vehicle.y - 20)
+
+  -- DrawCircle(pilot.x, pilot.y, 34)
+
+  surface.DrawCircle(pilot.x, pilot.y, 34, Color(255, 255, 255, 100))
 end
 
 function ENT:HUDDrawHull()
-  surface.SetFont("HUD_Health")
+  surface.SetFont("SWVR_Health")
   local w, h = ScrW() / 100 * 20, ScrW() / 100 * 20 / 4
   local x, y = ScrW() - w - w / 8, ScrH() / 4 * 3.4
   local per = self:Health() / self:GetMaxHealth()
@@ -515,12 +261,8 @@ function ENT:HUDDrawHull()
   surface.SetMaterial(Material("hud/hull/hp_frame_under.png", "noclamp"))
   surface.DrawTexturedRectUV(x, y, w, h, 0, 0, 1, 1)
 
-  if (self:GetCritical()) then
-    if (self:Health() >= self:GetMaxHealth() * 0.1) then
-      surface.SetDrawColor(Color(50, 120, 255, 255))
-    else
-      surface.SetDrawColor(Color(255, 35, 35, 255))
-    end
+  if (self:Health() < self:GetMaxHealth() * 0.1) then
+    surface.SetDrawColor(Color(255, 35, 35, 255))
   end
 
   surface.SetMaterial(Material("hud/hull/hp_bar.png", "noclamp"))
@@ -528,7 +270,7 @@ function ENT:HUDDrawHull()
 
   surface.SetMaterial(Material("hud/hull/hp_bar.png", "noclamp"))
   surface.SetDrawColor(Color(50, 120, 255, 255))
-  surface.DrawTexturedRectUV(barX, barY, barW * self:GetShieldHealth() / self:GetStartShieldHealth(), barH, 0, 0, per, 1)
+  surface.DrawTexturedRectUV(barX, barY, barW * self:GetShield() / self:GetMaxShield(), barH / 2, 0, 0, per, 1)
 
   surface.SetMaterial(Material("hud/hull/hp_frame_over.png", "noclamp"))
   surface.SetDrawColor(Color(255, 255, 255, 255))
@@ -546,7 +288,7 @@ function ENT:HUDDrawHull()
 end
 
 function ENT:HUDDrawSpeedometer()
-  local speed = self:GetSpeed()
+  local speed = self:GetThrust()
   local color = Color(255, 255, 255, 255)
 
   if (speed < 0) then
@@ -556,49 +298,104 @@ function ENT:HUDDrawSpeedometer()
 
   local w, h = ScrW() / 100 * 20, ScrW() / 100 * 20 / 4
   local x, y = ScrW() - w - w / 8, ScrH() / 4 * 3.4 + h / 2 * 1.5
-  local per = math.Clamp(speed / self:GetMaxSpeed(), 0, 1)
+  local per = math.Clamp(speed / self:GetMaxThrust(), 0, 1)
+
   surface.SetDrawColor(Color(255, 255, 255, 255))
   surface.SetMaterial(Material("hud/speedo/speed_frame_under.png", "noclamp"))
   surface.DrawTexturedRectUV(x, y, w, h, 0, 0, 1, 1)
+
   local barX, barY = x + w * 0.01953125, y + h * 0.234375
   local barW, barH = w * 0.9541015625, h * 0.53515625
+
   surface.SetDrawColor(color)
   surface.SetMaterial(Material("hud/speedo/speed_bar.png", "noclamp"))
   surface.DrawTexturedRectUV(barX, barY, barW * per, barH, 0, 0, per, 1)
+
   surface.SetDrawColor(Color(255, 255, 255, 255))
   surface.SetMaterial(Material("hud/speedo/speed_frame_over.png", "noclamp"))
   surface.DrawTexturedRectUV(x, y, w, h, 0, 0, 1, 1)
 end
 
-function ENT:GetReticleLock()
-  if (not self:CanLock()) then
-    return false
+function ENT:HUDDrawCompass(fpvX, fpvY)
+  local size = ScrW() / 10
+  local x, y
+
+  if (false and self:GetFirstPerson()) then
+    x = fpvX or ScrW() / 2
+    y = fpvY or ScrH() / 4 * 3.1
+  else
+    x = size * 0.65
+    y = x
   end
 
-  local b1, b2 = self:OBBMins(), self:OBBMaxs()
+  surface.SetTexture(surface.GetTextureID("hud/sw_shipcompass_BG"))
+  surface.SetDrawColor(0, 170, 255, 255)
+  surface.DrawTexturedRectRotated(x, y, size, size, 0)
 
-  for l, w in pairs(ents.FindInBox(self:LocalToWorld(b1), self:LocalToWorld(b2) + self:GetForward() * 10000)) do
-    if (IsValid(w) and w.IsSWVRVehicle and w ~= self and not IsValid(w:GetParent()) and SWVR:LightOrDark(w:GetAllegiance()) ~= SWVR:LightOrDark(self:GetAllegiance())) then
-      local tr = util.TraceLine({
-        start = self:GetPos(),
-        endpos = w:GetPos(),
-        filter = self
-      })
+  local rotate = (self:GetAngles().y - 90) * -1
+  local al = 1 -- swvr.LightOrDark(self)
+  local maxDist = 5000
 
-      if (not tr.HitWorld) then
-        local vpos = w:GetPos() + w:GetUp() * (w:GetModelRadius() / 3)
+  for k, v in pairs(ents.FindInSphere(self:GetPos(), maxDist)) do
+    if (IsValid(v) and (v.IsSWVRVehicle or v.LFS) and v ~= self and al ~= swvr.LightOrDark(v)) then
+      local dist = (self:GetPos() - v:GetPos()):Length() / maxDist
+      local a = 1 - dist
+      local r = ((self:GetPos() - v:GetPos()):Angle().y - 90) + rotate - 180
 
-        return vpos
-      end
+      surface.SetDrawColor(255, 255, 255, 255 * a)
+      surface.SetTexture(surface.GetTextureID("hud/sw_shipcompass_locator")) -- Print the texture to the screen
+      surface.DrawTexturedRectRotated(x, y, size, size, r)
     end
-    -- TODO Check for ships that can't be locked on to (cloak/jammer/etc.)
   end
 
-  return false
+  --surface.SetDrawColor(Color(0, 170, 255, 255))
+  surface.SetDrawColor(HUDColor())
+  surface.SetTexture(surface.GetTextureID("hud/sw_shipcompass_disk"))
+  surface.DrawTexturedRectRotated(x, y, size, size, rotate)
+end
+
+function ENT:HUDDrawReticles()
+  local group = nil
+
+  local tr
+  if group and group.IsTracking then
+    tr = util.TraceLine({
+      start = LocalPlayer():EyePos(),
+      endpos = LocalPlayer():EyePos() + LocalPlayer():GetAimVector():Angle():Forward() * 10000,
+      filter = {self, LocalPlayer()}
+    })
+  else
+    tr = util.TraceLine({
+      start = self:GetPos(),
+      endpos = self:GetPos() + self:GetForward() * 10000,
+      filter = {self, LocalPlayer()}
+    })
+  end
+
+  surface.SetTextColor(Color(255, 255, 255, 255))
+  local vpos = tr.HitPos
+  local material = "hud/reticle.png"
+  surface.SetMaterial(Material(material, "noclamp"))
+
+  if (group and group.CanLock) then
+    local lock = self:GetReticleLock()
+
+    if (lock) then
+      vpos = lock
+      material = "hud/reticle_lock.png"
+    end
+  end
+
+  local screenpos = vpos:ToScreen()
+  local x, y = screenpos.x, screenpos.y
+  local w, h = ScrW() / 100 * 2, ScrW() / 100 * 2
+  surface.SetDrawColor(Color(255, 255, 255, 255))
+  surface.SetMaterial(Material(material, "noclamp"))
+  surface.DrawTexturedRectUV(x - w / 2, y - h / 2, w, h, 0, 0, 1, 1)
 end
 
 function ENT:HUDDrawOverheating()
-  local group = self.WeaponGroups[LocalPlayer():GetNWString("SeatName")]
+  local group = NULL
 
   if not (group and group.CanOverheat) then return end
 
@@ -651,88 +448,13 @@ function ENT:HUDDrawOverheating()
   surface.DrawRect(x - w / 2, y + ScrW() / 100 * 1.5, w, h)
 end
 
-function ENT:HUDDrawReticles()
-  local group = self.WeaponGroups[LocalPlayer():GetNWString("SeatName")]
-
-  local tr
-  if group and group.IsTracking then
-    tr = util.TraceLine({
-      start = LocalPlayer():EyePos(),
-      endpos = LocalPlayer():EyePos() + LocalPlayer():GetAimVector():Angle():Forward() * 10000,
-      filter = {self, LocalPlayer()}
-    })
-  else
-    tr = util.TraceLine({
-      start = self:GetPos(),
-      endpos = self:GetPos() + self:GetForward() * 10000,
-      filter = {self, LocalPlayer()}
-    })
-  end
-
-  surface.SetTextColor(Color(255, 255, 255, 255))
-  local vpos = tr.HitPos
-  local material = "hud/reticle.png"
-  surface.SetMaterial(Material(material, "noclamp"))
-
-  if (group and group.CanLock) then
-    local lock = self:GetReticleLock()
-
-    if (lock) then
-      vpos = lock
-      material = "hud/reticle_lock.png"
-    end
-  end
-
-  local screenpos = vpos:ToScreen()
-  local x, y = screenpos.x, screenpos.y
-  local w, h = ScrW() / 100 * 2, ScrW() / 100 * 2
-  surface.SetDrawColor(Color(255, 255, 255, 255))
-  surface.SetMaterial(Material(material, "noclamp"))
-  surface.DrawTexturedRectUV(x - w / 2, y - h / 2, w, h, 0, 0, 1, 1)
-end
-
-function ENT:HUDDrawCompass(fpvX, fpvY)
-  local size = ScrW() / 10
-  local x, y
-
-  if (self:GetFirstPerson()) then
-    x = fpvX or ScrW() / 2
-    y = fpvY or ScrH() / 4 * 3.1
-  else
-    x = size * 0.65
-    y = x
-  end
-
-  surface.SetTexture(surface.GetTextureID("hud/sw_shipcompass_BG"))
-  surface.SetDrawColor(255, 255, 255, 255)
-  surface.DrawTexturedRectRotated(x, y, size, size, 0)
-  local rotate = (self:GetAngles().y - 90) * -1
-  local al = SWVR:LightOrDark(self:GetAllegiance())
-  local maxDist = 5000
-
-  for k, v in pairs(ents.FindInSphere(self:GetPos(), maxDist)) do
-    if (IsValid(v) and v.IsSWVRVehicle and v ~= self and al ~= SWVR:LightOrDark(v:GetAllegiance())) then
-      local dist = (self:GetPos() - v:GetPos()):Length() / maxDist
-      local a = 1 - dist
-      local r = ((self:GetPos() - v:GetPos()):Angle().y - 90) + rotate - 180
-      surface.SetDrawColor(255, 255, 255, 255 * a)
-      surface.SetTexture(surface.GetTextureID("hud/sw_shipcompass_locator")) -- Print the texture to the screen
-      surface.DrawTexturedRectRotated(x, y, size, size, r)
-    end
-  end
-
-  surface.SetDrawColor(Color(255, 255, 255, 255))
-  surface.SetTexture(surface.GetTextureID("hud/sw_shipcompass_disk"))
-  surface.DrawTexturedRectRotated(x, y, size, size, rotate)
-end
-
 function ENT:HUDDrawAltimeter(fpvX, fpvY)
   local p = LocalPlayer()
   local size = ScrW() / 10
 
   local x, y
 
-  if (self:GetFirstPerson()) then
+  if (false /* self:GetFirstPerson() */) then
     x = fpvX or ScrW() / 2
     y = fpvY or ScrH() / 4 * 3.1
   else
@@ -744,9 +466,9 @@ function ENT:HUDDrawAltimeter(fpvX, fpvY)
   local max_ld = 20000
   local ld = 300
 
-  if (self:GetLandHeight() > 0) then
-    ld = self:GetLandHeight()
-  end
+  -- if (self:GetLandHeight() > 0) then
+  --   ld = self:GetLandHeight()
+  -- end
 
   if (ld > 500) then
     max_ld = 1000
@@ -773,18 +495,19 @@ function ENT:HUDDrawAltimeter(fpvX, fpvY)
   surface.SetTextColor(Color(255, 255, 255, a))
   surface.SetDrawColor(Color(255, 255, 255, a))
   --local dist = math.Clamp(math.Round(self:GetPos().z - tr.HitPos.z), 0, max_ld * 2)
-  local dist = math.Round((self:GetPos().z - tr.HitPos.z) / 40 / 0.75)
+  local dist = math.Round((self:GetPos().z - tr.HitPos.z) / 59.49)
   local t = dist
   local w = size
   local h = size / 2
   x = x - w / 2
   y = y + size / 2 * 1.1
-  surface.SetFont("HUD_Altimeter")
+
+  surface.SetFont("SWVR_Altimeter")
   surface.SetMaterial(Material("hud/altimeter/altimeter_frame.png", "noclamp"))
   surface.DrawTexturedRectUV(x, y, w, h, 0, 0, 1, 1)
   surface.SetTextPos(x + w * 0.45, y + h * 0.125)
 
-  if (self:IsTakingOff()) then
+  if (not self:EngineActive()) then
     t = "N/A"
     surface.DrawText(t)
   else
@@ -795,7 +518,7 @@ function ENT:HUDDrawAltimeter(fpvX, fpvY)
     surface.SetMaterial(Material("hud/altimeter/altimeter_light1.png", "noclamp"))
     surface.DrawTexturedRectUV(x, y, w, h, 0, 0, 1, 1)
 
-    if (self:IsTakingOff()) then
+    if (not self:EngineActive()) then
       surface.SetMaterial(Material("hud/altimeter/altimeter_light2.png", "noclamp"))
       surface.DrawTexturedRectUV(x, y, w, h, 0, 0, 1, 1)
     end
@@ -806,158 +529,170 @@ function ENT:HUDDrawTransponder()
   local size = ScrW() / 10
   local w, h = size, size / 3.08
   local x, y = ScrW() - w / 2 - size * 0.65, ScrW() / 100
-  local Transponder = self:GetTransponder()
+  local transponder = self:GetTransponder()
+
   surface.SetMaterial(Material("hud/clearance_code.png", "noclamp"))
-  surface.SetFont("HUD_Transponder")
+  surface.SetFont("SWVR_Transponder")
   surface.SetDrawColor(255, 255, 255, 255)
   surface.DrawTexturedRectUV(x, y, w, h, 0, 0, 1, 1)
+
   surface.SetTextPos(x + w * 0.32, y + h * 0.45)
-  surface.DrawText(Transponder)
+  surface.DrawText(transponder)
 end
 
-function ENT:HUDDrawOverlay()
-  if not isnumber(self.Cockpit) then return end
+local MIN_ALT = 0
 
-  if self.DrawGlass then
-    surface.SetTexture(surface.GetTextureID("models/props_c17/frostedglass_01a_dx60")) -- Print the texture to the screen
-    surface.SetDrawColor(255, 255, 255, 255) -- Colour of the HUD
-    surface.DrawTexturedRect(0,0, ScrW(), ScrH()) -- Position, Size
-  end
+function ENT:HUDDrawDebug()
+  local x = ScrW() / 2
 
-  surface.SetTexture(self.Cockpit) -- Print the texture to the screen
-  surface.SetDrawColor(255, 255, 255, 255) -- Colour of the HUD
-  surface.DrawTexturedRect(0, 0, ScrW(), ScrH()) -- Position, Size
+  local throttle = math.max(math.Round((self:GetThrust() - 1) / (self:GetBoostThrust() - 1) * 100, 0), 0)
+  draw.SimpleText("Throttle\t\t" .. throttle .. "%", "SWVR_Debug", x, 10, Color(255, 255, 255), TEXT_ALIGN_CENTER)
+
+  local vel = math.Round(self:GetVelocity():Length() * 0.09144, 0)
+  draw.SimpleText("Velocity\t\t" .. vel .. "km/h", "SWVR_Debug", x, 35, Color(255, 255, 255), TEXT_ALIGN_CENTER)
+
+  local alt = math.Round(self:GetPos().z, 0)
+
+  if alt + MIN_ALT < 0 then MIN_ALT = math.abs(alt) end
+
+  draw.SimpleText("Altitude\t\t" .. math.Round((self:GetPos().z + MIN_ALT) * 0.0254, 0) .. "m", "SWVR_Debug", x, 60, Color(255, 255, 255), TEXT_ALIGN_CENTER)
+
+  draw.SimpleText("Thrust\t\t" .. math.Round(self:GetThrust(), 0), "SWVR_Debug", x, 85, Color(255, 255, 255), TEXT_ALIGN_CENTER)
 end
 
-hook.Add("StartChat", "SWVRStartChat", function()
-  LocalPlayer().IsChatting = true
-end)
+-- VIEW FUNCTIONS
 
-hook.Add("FinishChat", "SWVRFinishChat", function()
-  LocalPlayer().IsChatting = false
-end)
+function ENT:CalcView(ply, pos, ang, fov)
+  local seat = ply:GetVehicle()
 
-hook.Add("PlayerBindPress", "SWMouseWheel", function(p, bind, pressed)
-  if p:GetNWBool("Flying") then
-    if (bind == "invnext") then
-      p.SWVRViewDistance = p.SWVRViewDistance + 5
-    elseif (bind == "invprev") then
-      p.SWVRViewDistance = p.SWVRViewDistance - 5
-    end
+  ply.SW_ViewOffset = ply.SW_ViewOffset or 0
 
-    p.SWVRViewDistance = math.Clamp(p.SWVRViewDistance, -500, 500)
-  end
-end)
+  ply.SW_ViewOffset = ply.SW_ViewOffset + ((ply:KeyDown(IN_WALK) and 0 or 0.8) - ply.SW_ViewOffset) * RealFrameTime() * 10
 
-hook.Add("ScoreboardShow", "SWVRScoreboardShow", function()
-  local p = LocalPlayer()
-  local Piloting = p:GetViewEntity() ~= p and p:GetViewEntity().IsSWVRVehicle
+  local view = {}
+  view.origin = pos
+  view.fov = fov
+  view.drawviewer = true
+  view.angles = ((self:GetForward() * ply.SW_ViewOffset + ply:EyeAngles():Forward()) * 0.5):Angle()
 
-  if (Piloting and p:GetViewEntity():CanFreeLook() and p:GetInfoNum("swvr_key_freelook", KEY_TAB) == KEY_TAB) then
-    return false
-  end
-end)
+  view.angles.r = 0
 
-hook.Add("CalcView", "SWVRVehicleView", function(p)
-  if not LocalPlayer():GetNWBool("Flying", false) then
-    return
+  if self:GetSeat(1) ~= seat then
+    view.angles = ply:EyeAngles()
   end
 
-  local View = {}
-  local Piloting = p:GetViewEntity() ~= p and p:GetViewEntity().IsSWVRVehicle
-  local IsPassenger = IsValid(p:GetVehicle()) and IsValid(p:GetVehicle():GetParent()) and p:GetVehicle():GetParent().IsSWVRVehicle
-  local pos, ship
+  if not seat:GetThirdPersonMode() then
+    view.drawviewer = false
 
-  if Piloting then
-    ship = p:GetViewEntity()
-
-    if IsValid(ship) and ship:CheckHook(hook.Run("SWVRCalcView", p, true)) then
-      return
-    end
-
-    if IsValid(ship) and not ship.HasCustomCalcView then
-      local scale = ship:GetModelScale()
-      local fpvpos = ship:GetFPVPos() or Vector(0, 0, 0)
-      pos = ship:LocalToWorld(fpvpos * scale)
-      View = ship:VehicleView((ship.ViewDistance or 800), (ship.ViewHeight or 800), pos)
-
-      return View
-    end
-  elseif IsPassenger then
-    ship = p:GetVehicle():GetParent()
-
-    if IsValid(ship) and ship:CheckHook(hook.Run("SWVRCalcView", p, false)) then
-      return
-    end
-
-    local v = p:GetVehicle()
-    local NoFirstPerson = v:GetNWBool("NoFirstPerson")
-
-    if IsValid(v) and IsValid(ship) and not ship.HasCustomCalcView and (v:GetThirdPersonMode() or NoFirstPerson) then
-      View = ship:VehicleView(ship.ViewDistance or 800, ship.ViewHeight or 250)
-
-      return View
-    end
+    return self:CalcFirstPersonView(view)
   end
+
+  local radius = 550
+  radius = radius + radius * seat:GetCameraDistance()
+
+  local target = view.origin - view.angles:Forward() * radius + view.angles:Up() * radius * 0.2
+  local offset = 4
+
+  local tr = util.TraceHull({
+    start = view.origin,
+    endpos = target,
+    filter = function(e)
+      local cls = e:GetClass()
+
+      return not (cls:StartWith("prop_physics") or cls:StartWith("prop_dynamic") or cls:StartWith("prop_ragdoll") or e:IsVehicle() or cls:StartWith("gmod_") or cls:StartWith("player") or e.IsSWVRVehicle)
+    end,
+    mins = Vector(-offset, -offset, -offset),
+    maxs = Vector(offset, offset, offset)
+  })
+
+  view.origin = tr.HitPos
+
+  if tr.Hit and not tr.StartSolid then
+    view.origin = view.origin + tr.HitNormal * offset
+  end
+
+  return self:CalcThirdPersonView(view)
+end
+
+--- Override first person view calculations
+function ENT:CalcFirstPersonView(view)
+  return view
+end
+
+--- Override third person view calculations
+function ENT:CalcThirdPersonView(view)
+  return view
+end
+
+hook.Add("CalcView", "SW_CalcView", function(ply, pos, ang, fov)
+  if ply:GetViewEntity() ~= ply then return end
+
+  local seat = ply:GetVehicle()
+
+  if not IsValid(seat) then return end
+
+  local vehicle = seat:GetParent()
+
+  if not (IsValid(vehicle) and vehicle.IsSWVRVehicle) then return end
+
+  return vehicle:CalcView(ply, pos, ang, fov)
 end)
 
-hook.Add("HUDPaint", "SWVRHUDPaint", function()
+hook.Add( "HUDPaint", "SWVR.HUDPaint", function()
   local ply = LocalPlayer()
 
-  if not ply:GetNWBool("Flying") then return end
+  if ply:GetViewEntity() ~= ply then return end
 
-  local ship = ply:GetNWEntity("Ship")
+  local seat = ply:GetVehicle()
 
-  if not IsValid(ship) then return end
+  if not IsValid(seat) then return end
 
-  if (ship:CheckHook(hook.Run("SWVRHUDPaint", ship))) then
-    return
+  local parent = seat:GetParent()
+
+  if not parent.IsSWVRVehicle then return end
+
+  if cvars.Bool("swvr_debug_draw") then
+    parent:HUDDrawDebug()
   end
 
-  if not IsValid(ship) then return end
+  if hook.Run("SWVR.HUDPaint", parent) == false then return end
 
-  if ship:GetFirstPerson() and ship:GetPilot() == ply then
-    ship:HUDDrawOverlay()
+  if hook.Run("SWVR.HUDShouldDraw", "Crosshair") ~= false then
+    -- parent:HUDDrawCrosshair(seat:GetNWInt("SeatIndex") == 1)
+    parent:HUDDrawReticles()
   end
 
-  ship:HUDDrawHull()
-  ship:HUDDrawReticles()
-  ship:HUDDrawSpeedometer()
-  ship:HUDDrawTransponder()
-  ship:HUDDrawCompass(ScrW() / 2, ScrH() / 4 * 2.8)
-  ship:HUDDrawAltimeter(ScrW() / 2, ScrH() / 4 * 2.8)
-  ship:HUDDrawOverheating()
+
+  if hook.Run("SWVR.HUDShouldDraw", "Hull") ~= false then
+    parent:HUDDrawHull()
+  end
+
+  if hook.Run("SWVR.HUDShouldDraw", "Speedometer") ~= false then
+    parent:HUDDrawSpeedometer()
+  end
+
+  parent:HUDDrawAltimeter()
+  parent:HUDDrawCompass()
+  parent:HUDDrawTransponder()
 end)
 
-function ENT:DispatchListeners(event, ...)
-  for k, v in pairs(self.Events[string.upper(event)] or {}) do
-    v(...)
+hook.Add("PostDrawTranslucentRenderables", "SWVR.DebugVisuals", function()
+  if not cvars.Bool("swvr_debug_visuals_draw") then return end
+
+  render.SetColorMaterial()
+
+  for _, ent in ipairs(ents.GetAll()) do
+    if not IsValid(ent) or not ent.IsSWVRVehicle then continue end
+    -- The position to render the sphere at, in this case, the looking position of the local player
+
+    local controls = ent.Controls
+
+    cam.IgnoreZ(true)
+
+    -- Draw the spheres!
+    render.DrawSphere(ent:LocalToWorld(controls.Thrust), 15, 20, 20, Color(0, 175, 175, 100))
+    render.DrawSphere(ent:LocalToWorld(controls.Wings), 15, 20, 20, Color(175, 175, 0, 100))
+    render.DrawSphere(ent:LocalToWorld(controls.Elevator), 15, 20, 20, Color(175, 0, 175, 100))
+    render.DrawSphere(ent:LocalToWorld(controls.Rudder), 15, 20, 20, Color(0, 175, 0, 100))
   end
-
-  hook.Run("SWVR." .. event, self, ...)
-end
-
-function ENT:AddEvent(name, callback)
-  self.Events = self.Events or {}
-  self.Events[string.upper(name)] = self.Events[string.upper(name)] or {}
-  table.insert(self.Events[string.upper(name)], callback)
-end
-
-function ENT:DispatchEvent(event)
-  if self["_" .. event] then
-    self["_" .. event](self)
-  end
-end
-
-net.Receive("SWVREvent", function()
-  local event = net.ReadString()
-  local ship = net.ReadEntity()
-  ship:DispatchEvent(event)
-end)
-
-net.Receive("SWVR.NetworkWeapons", function()
-  local ship = net.ReadEntity()
-  local groups = net.ReadTable()
-
-  ship.WeaponGroups[groups.Name] = groups
 end)

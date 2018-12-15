@@ -47,8 +47,11 @@ end
 function EFFECT:Render()
   if not cvars.Bool("swvr_shields_draw") then return end
 
-  local ship = LocalPlayer():GetNWEntity("Ship", NULL)
-  if IsValid(ship) and ship.IsSWVRVehicle and ship:GetFirstPerson() and ship == self:GetParent() then return end
+  local seat = LocalPlayer():GetVehicle()
+  if IsValid(seat) then
+    local parent = seat:GetParent()
+    if IsValid(parent) and parent.IsSWVRVehicle and not seat:GetThirdPersonMode() and parent == self:GetParent() then return end
+  end
 
   -- What fraction towards finishing are we at
   local Fraction = (self.LifeTime - CurTime()) / self.Time
