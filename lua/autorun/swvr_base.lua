@@ -21,7 +21,7 @@ include("swvr_meta.lua")
 include("swvr_util.lua")
 
 --- Retrieve all existing SWVR vehicles
--- @return Table of entities
+-- @return Table of `Entity` classes
 function swvr.GetVehicles()
   local vehicles = {}
   for _, ent in ipairs(ents.GetAll()) do
