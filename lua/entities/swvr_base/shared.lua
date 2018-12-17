@@ -134,8 +134,15 @@ function ENT:GetStability()
   return self:WaterLevel() > 2 and 0 or (self:IsDestroyed() and 0.1 or (self:EngineActive() and 0.7 or 0))
 end
 
--- Vehicle Seats
+--- Seat Functions
+-- @section seats
 
+--- Add a seat to the vehicle. The first seat is always the pilot.
+-- @server
+-- @param name The name of the seat for easy reference
+-- @param pos The position of the seat in local coordinated
+-- @param ang The angles of the seat in local angles
+-- @return The seat entity itself for convenience
 function ENT:AddSeat(name, pos, ang)
   if CLIENT then return end
 
@@ -185,6 +192,10 @@ function ENT:AddSeat(name, pos, ang)
   return seat
 end
 
+--- Retrieve an actual seat entity.
+-- @shared
+-- @param index The index of the seat. Can be a number or string.
+-- @return The found entity or NULL
 function ENT:GetSeat(index)
   self.Seats = self.Seats or {}
 
@@ -230,26 +241,8 @@ function ENT:GetSeats()
   return self.Seats or {}
 end
 
---- Convenience function
--- @shared
--- @return Entity The pilot of the ship
-function ENT:GetPilot()
-  return self:GetPassenger(1)
-end
-
-function ENT:GetPassenger(index)
-  local seat = self:GetSeat(index)
-
-  if not IsValid(seat) then return NULL end
-
-  if SERVER then
-    return seat:GetDriver()
-  else
-    return seat:GetNWEntity("Driver", NULL)
-  end
-end
-
--- Vehicle Weapons
+--- Weapons Functions
+-- @section weapons
 
 function ENT:AddWeapon(name, pos, ang, callback)
   if CLIENT then return end
@@ -340,7 +333,27 @@ function ENT:GetWeapons()
   return self.Weapons or {}
 end
 
--- Vehicle Conveinience Functions
+--- Convenience Functions
+-- @section helpers
+
+--- Convenience function
+-- @shared
+-- @return Entity The pilot of the ship
+function ENT:GetPilot()
+  return self:GetPassenger(1)
+end
+
+function ENT:GetPassenger(index)
+  local seat = self:GetSeat(index)
+
+  if not IsValid(seat) then return NULL end
+
+  if SERVER then
+    return seat:GetDriver()
+  else
+    return seat:GetNWEntity("Driver", NULL)
+  end
+end
 
 function ENT:PlaySound(path, callback, options)
   if CLIENT then
@@ -380,7 +393,8 @@ function ENT:PlaySound(path, callback, options)
   return sound
 end
 
--- Vehicle Networking
+--- Internal Networking
+-- @section networking
 
 local EVENTS = {
   "CanEnter",
