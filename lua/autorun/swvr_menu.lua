@@ -101,6 +101,8 @@ if SERVER then
   CreateConVar("swvr_collisions_multiplier", "1", { FCVAR_ARCHIVE, FCVAR_NOTIFY }, "Collision Multiplier")
   CreateConVar("swvr_disable_use", "0", { FCVAR_ARCHIVE, FCVAR_NOTIFY }, "Disable players from entering ships.")
   CreateConVar("swvr_autocorrect", "0", { FCVAR_ARCHIVE, FCVAR_NOTIFY }, "Enable collision protection (autocorrect).")
+  CreateConVar("swvr_coldstart_enabled", "0", { FCVAR_ARCHIVE, FCVAR_NOTIFY }, "Enable cold startup time.")
+  CreateConVar("swvr_coldstart_time", "6", { FCVAR_ARCHIVE, FCVAR_NOTIFY }, "Cold start wait time.")
 else
   CreateClientConVar("swvr_hud_color_r", "255", true, false, "HUD red channel.")
   CreateClientConVar("swvr_hud_color_g", "255", true, false, "HUD green channel.")
@@ -209,7 +211,9 @@ if CLIENT then
     swvr_weapons_multiplier = "1.00",
     swvr_collisions_enabled = "1",
     swvr_collisions_multiplier = "1.00",
-    swvr_autocorrect = "1"
+    swvr_autocorrect = "1",
+    swvr_coldstart_enabled = "0",
+    swvr_coldstart_time = "6"
   }
 
   local function BuildServerSettings(pnl)
@@ -233,13 +237,15 @@ if CLIENT then
 
     pnl:Help("Global Multiplier Settings")
 
-
     pnl:NumSlider("Health Multiplier", "swvr_health_multiplier", "0.1", "10.0", 2)
     pnl:NumSlider("Shield Multiplier", "swvr_shields_multiplier", "0.0", "10.0", 2)
     pnl:NumSlider("Weapon Damage Multiplier", "swvr_weapons_multiplier", "0.0", "10.0", 2)
     pnl:NumSlider("Collision Multiplier", "swvr_collisions_multiplier", "0.0", "2.0", 2)
 
     pnl:Help("Extra Settings")
+
+    pnl:CheckBox("Enable Cold Engine Start", "swvr_coldstart_enabled")
+    pnl:NumSlider("Cold Start Time", "swvr_coldstart_time", "0.0", "10.0",  2)
 
     pnl:CheckBox("Disable Entering Ships", "swvr_disable_use")
     pnl:CheckBox("Enable Collision Protection (Autocorrect)", "swvr_autocorrect")

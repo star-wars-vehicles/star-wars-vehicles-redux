@@ -82,6 +82,7 @@ function ENT:Initialize()
   self:SetCooldown("Engine", CurTime())
 
   self.FireCannon = self.FireBullets
+  self.ColdStart = true
 
   self:OnInitialize()
 
@@ -275,7 +276,7 @@ end
 function ENT:ToggleEngine()
   if self:GetCooldown("Engine") > CurTime() then return end
 
-  if self:EngineActive() then
+  if self:EngineActive() or self.Starting then
     self:StopEngine()
   else
     self:StartEngine()
@@ -287,16 +288,38 @@ end
 function ENT:StartEngine()
   if self:EngineActive() or self:IsDestroyed() or self:WaterLevel() > 2 then return end
 
-  self:EngineActive(true)
+  if cvars.Bool("swvr_coldstart_enabled") and self.ColdStart then
+    self.Starting = true
 
-  self.NextInertia = 0
+    self:DispatchNetworkEvent("OnEngineStartup")
+    self:EmitSound("ENGINE_START_COLD")
 
-  self:DispatchNetworkEvent("OnEngineStart")
+    timer.Create("ColdStart" .. self:EntIndex(), cvars.Number("swvr_coldstart_time", 6), 1, function()
+      if not IsValid(self) then return end
+
+      self.ColdStart = false
+      self:StartEngine()
+    end)
+  else
+    self:EngineActive(true)
+
+    self.NextInertia = 0
+
+    self:DispatchNetworkEvent("OnEngineStart")
+  end
 end
 
 function ENT:StopEngine()
-  if not self:EngineActive() then return end
+  if not (self:EngineActive() or self.Starting) then return end
 
+  if self.ColdStart then
+    self:DispatchNetworkEvent("OnEngineShutdown")
+    timer.Remove("ColdStart" .. self:EntIndex())
+    self:StopSound("ENGINE_START_COLD")
+    self:EmitSound("ENGINE_SHUTDOWN2")
+  end
+
+  self.Starting = false
   self:EngineActive(false)
 
   self:DispatchNetworkEvent("OnEngineStop")

@@ -5,7 +5,7 @@
 swvr = swvr or {}
 
 --- Current SWVR version
-swvr.Version = 1.0
+swvr.Version = 48
 
 --- Author of SWVR
 swvr.Author = "Doctor Jew"
@@ -193,4 +193,31 @@ sound.Add({
   level = 125,
   pitch = 100,
   sound = "swvr/vehicles/ywing_eng_loop2.wav"
+})
+
+sound.Add({
+  name = "ENGINE_START_COLD",
+  channel = CHAN_STATIC,
+  volume = 1.0,
+  level = 100,
+  pitch = 100,
+  sound = "swvr/shared/swvr_startup.wav"
+})
+
+sound.Add({
+  name = "ENGINE_SHUTDOWN",
+  channel = CHAN_STATIC,
+  volume = 1.0,
+  level = 100,
+  pitch = 100,
+  sound = "swvr/shared/swvr_shutdown.wav"
+})
+
+sound.Add({
+  name = "ENGINE_SHUTDOWN2",
+  channel = CHAN_STATIC,
+  volume = 1.0,
+  level = 100,
+  pitch = 100,
+  sound = "swvr/shared/swvr_shutdown2.wav"
 })

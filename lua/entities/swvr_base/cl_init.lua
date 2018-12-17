@@ -39,10 +39,12 @@ function ENT:Think()
 
   self.NextAlarm = self.NextAlarm or 0
 
-  if self.NextAlarm < CurTime() and self:Health() < self:GetMaxHealth() * 0.1 and LocalPlayer():GetSWVehicle() == self then
+  if self.NextAlarm < CurTime() and self:Health() < self:GetMaxHealth() * 0.1 then
     self.NextAlarm = CurTime() + 0.5
 
-    self:EmitSound("swvr/shared/swvr_alarm.wav", 75, 100, cvars.Number("swvr_effect_volume", 1) / 100)
+    local vol = LocalPlayer():GetSWVehicle() == self and 1 or 0.25
+
+    self:EmitSound("swvr/shared/swvr_alarm.wav", 75, 100, cvars.Number("swvr_effect_volume", 1) / 100 * vol)
   end
 
   self:OnThink()

@@ -170,7 +170,7 @@ end
 -- @param name The name of the seat for easy reference
 -- @param pos The position of the seat in local coordinated
 -- @param ang The angles of the seat in local angles
--- @return The seat entity itself for convenience
+-- @return The seat `Entity` itself for convenience
 function ENT:AddSeat(name, pos, ang)
   if CLIENT then return end
 
@@ -223,7 +223,7 @@ end
 --- Retrieve an actual seat entity.
 -- @shared
 -- @param index The index of the seat. Can be a number or string.
--- @return The found entity or NULL
+-- @return The found `Entity` or `NULL`
 function ENT:GetSeat(index)
   self.Seats = self.Seats or {}
 
@@ -248,6 +248,9 @@ function ENT:GetSeat(index)
   return NULL
 end
 
+--- Get all the seats of a vehicle.
+-- @shared
+-- @return Table of `Entity` classes of seats
 function ENT:GetSeats()
   self.Seats = self.Seats or {}
 
@@ -272,6 +275,11 @@ end
 --- Weapons Functions
 -- @section weapons
 
+--- Add a weapon to the vehicle.
+-- @server
+-- @param name The name of the weapon
+-- @param pos The position of the weapon
+-- @return The new weapon `Entity` for convenience
 function ENT:AddWeapon(name, pos, callback)
   if CLIENT then return end
 
@@ -312,8 +320,14 @@ function ENT:AddWeapon(name, pos, callback)
   end
 
   self:SetWeaponCount(self:GetWeaponCount() + 1)
+
+  return ent
 end
 
+--- Retrieve one of the vehicle's weapons
+-- @shared
+-- @param name The name of the weapon to retrieve
+-- @return The found `Entity` or `NULL`
 function ENT:GetWeapon(name)
   self.Weapons = self.Weapons or {}
 
@@ -339,6 +353,9 @@ function ENT:GetWeapon(name)
   return NULL
 end
 
+--- Get all the vehicle's weapons
+-- @shared
+-- @return Table of `Entity` classes
 function ENT:GetWeapons()
   self.Weapons = self.Weapons or {}
 
@@ -360,6 +377,10 @@ function ENT:GetWeapons()
   return self.Weapons or {}
 end
 
+--- Fire one of the vehicle's weapons
+-- @server
+-- @param name The name of the weapon to fire
+-- @param options The options for the weapon
 function ENT:FireWeapon(name, options)
   if CLIENT then return end
 
@@ -393,13 +414,18 @@ end
 --- Convenience Functions
 -- @section helpers
 
---- Convenience function
+--- Get the pilot of the vehicle.
 -- @shared
 -- @return Entity The pilot of the ship
+-- @see ENT.GetPassenger
 function ENT:GetPilot()
   return self:GetPassenger(1)
 end
 
+--- Get the player from a specific seat.
+-- @shared
+-- @param index String or number index of the seat
+-- @return The found `Player` or `NULL`
 function ENT:GetPassenger(index)
   local seat = self:GetSeat(index)
 
@@ -450,7 +476,7 @@ function ENT:PlaySound(path, callback, options)
   return sound
 end
 
---- Internal Networking
+--- Networking
 -- @section networking
 
 local EVENTS = {
@@ -459,6 +485,8 @@ local EVENTS = {
   "OnExit",
   "OnEngineStart",
   "OnEngineStop",
+  "OnEngineStartup",
+  "OnEngineShutdown",
   "OnLand",
   "OnTakeoff",
   "OnCollide",
@@ -477,6 +505,10 @@ for i, evt in ipairs(EVENTS) do
   EVENTS_TABLE[i] = string.upper(evt)
 end
 
+--- Dispatch a networked event to all clients.
+-- @server
+-- @param event The event to dispatch
+-- @param ... Any arguments to network
 function ENT:DispatchNetworkEvent(event, ...)
   if CLIENT then return true, false end
 
@@ -498,6 +530,9 @@ function ENT:DispatchNetworkEvent(event, ...)
   return false, result
 end
 
+--- Dispatch an event only client/server side.
+-- @param event The event to dispatch
+-- @param ... Any arguments to send
 function ENT:DispatchEvent(event, ...)
   self.EventDispatcher = self.EventDispatcher or {}
   self.EventDispatcher[string.upper(event)] = self.EventDispatcher[string.upper(event)] or {}

@@ -32,7 +32,7 @@ Please only ever override functions specified as meant to be in the documentatio
 
 Overriding a base function could cause many problems. Even if the base doesn't appear to need it, in the future that can change!
 
-##Generating Documentation
+## Generating Documentation
 
 Generating documentation assumes you have `ldoc` as well as `lua-discount` installed.
 

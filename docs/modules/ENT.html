@@ -39,7 +39,9 @@
 <li><a href="#View_functions">View functions </a></li>
 <li><a href="#Setup_functions">Setup functions </a></li>
 <li><a href="#Seat_Functions">Seat Functions </a></li>
+<li><a href="#Weapons_Functions">Weapons Functions </a></li>
 <li><a href="#Convenience_Functions">Convenience Functions </a></li>
+<li><a href="#Networking">Networking </a></li>
 </ul>
 
 
@@ -202,12 +204,50 @@
 	<td class="name" nowrap><a href="#GetSeat">GetSeat(index) [shared]</a></td>
 	<td class="summary">Retrieve an actual seat entity.</td>
 	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GetSeats">GetSeats() [shared]</a></td>
+	<td class="summary">Get all the seats of a vehicle.</td>
+	</tr>
+</table>
+<h2><a href="#Weapons_Functions">Weapons Functions </a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#AddWeapon">AddWeapon(name, pos) [server]</a></td>
+	<td class="summary">Add a weapon to the vehicle.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GetWeapon">GetWeapon(name) [shared]</a></td>
+	<td class="summary">Retrieve one of the vehicle&rsquo;s weapons</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GetWeapons">GetWeapons() [shared]</a></td>
+	<td class="summary">Get all the vehicle&rsquo;s weapons</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#FireWeapon">FireWeapon(name, options) [server]</a></td>
+	<td class="summary">Fire one of the vehicle&rsquo;s weapons</td>
+	</tr>
 </table>
 <h2><a href="#Convenience_Functions">Convenience Functions </a></h2>
 <table class="function_list">
 	<tr>
 	<td class="name" nowrap><a href="#GetPilot">GetPilot() [shared]</a></td>
-	<td class="summary">Convenience function</td>
+	<td class="summary">Get the pilot of the vehicle.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GetPassenger">GetPassenger(index) [shared]</a></td>
+	<td class="summary">Get the player from a specific seat.</td>
+	</tr>
+</table>
+<h2><a href="#Networking">Networking </a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#DispatchNetworkEvent">DispatchNetworkEvent(event, ...) [server]</a></td>
+	<td class="summary">Dispatch a networked event to all clients.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#DispatchEvent">DispatchEvent(event, ...)</a></td>
+	<td class="summary">Dispatch an event only client/server side.</td>
 	</tr>
 </table>
 
@@ -789,7 +829,7 @@
     <h3>Returns:</h3>
     <ol>
 
-        The seat entity itself for convenience
+        The seat <code>Entity</code> itself for convenience
     </ol>
 
 
@@ -817,8 +857,141 @@
     <h3>Returns:</h3>
     <ol>
 
-        The found entity or NULL
+        The found <code>Entity</code> or <code>NULL</code>
     </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "GetSeats"></a>
+    <strong>GetSeats() [shared]</strong>
+    </dt>
+    <dd>
+    Get all the seats of a vehicle.
+
+    </ul>
+    </ul>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+        Table of <code>Entity</code> classes of seats
+    </ol>
+
+
+
+
+</dd>
+</dl>
+    <h2 class="section-header "><a name="Weapons_Functions"></a>Weapons Functions </h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "AddWeapon"></a>
+    <strong>AddWeapon(name, pos) [server]</strong>
+    </dt>
+    <dd>
+    Add a weapon to the vehicle.
+
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">name</span>
+         The name of the weapon
+        </li>
+        <li><span class="parameter">pos</span>
+         The position of the weapon
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        The new weapon <code>Entity</code> for convenience
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "GetWeapon"></a>
+    <strong>GetWeapon(name) [shared]</strong>
+    </dt>
+    <dd>
+    Retrieve one of the vehicle&rsquo;s weapons
+
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">name</span>
+         The name of the weapon to retrieve
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        The found <code>Entity</code> or <code>NULL</code>
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "GetWeapons"></a>
+    <strong>GetWeapons() [shared]</strong>
+    </dt>
+    <dd>
+    Get all the vehicle&rsquo;s weapons
+
+    </ul>
+    </ul>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+        Table of <code>Entity</code> classes
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "FireWeapon"></a>
+    <strong>FireWeapon(name, options) [server]</strong>
+    </dt>
+    <dd>
+    Fire one of the vehicle&rsquo;s weapons
+
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">name</span>
+         The name of the weapon to fire
+        </li>
+        <li><span class="parameter">options</span>
+         The options for the weapon
+        </li>
+    </ul>
+
 
 
 
@@ -833,7 +1006,7 @@
     <strong>GetPilot() [shared]</strong>
     </dt>
     <dd>
-    Convenience function
+    Get the pilot of the vehicle.
 
     </ul>
     </ul>
@@ -847,6 +1020,94 @@
     </ol>
 
 
+    <h3>See also:</h3>
+    <ul>
+         <a href="../modules/ENT.html#GetPassenger">ENT.GetPassenger</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "GetPassenger"></a>
+    <strong>GetPassenger(index) [shared]</strong>
+    </dt>
+    <dd>
+    Get the player from a specific seat.
+
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">index</span>
+         String or number index of the seat
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        The found <code>Player</code> or <code>NULL</code>
+    </ol>
+
+
+
+
+</dd>
+</dl>
+    <h2 class="section-header "><a name="Networking"></a>Networking </h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "DispatchNetworkEvent"></a>
+    <strong>DispatchNetworkEvent(event, ...) [server]</strong>
+    </dt>
+    <dd>
+    Dispatch a networked event to all clients.
+
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">event</span>
+         The event to dispatch
+        </li>
+        <li><span class="parameter">...</span>
+         Any arguments to network
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "DispatchEvent"></a>
+    <strong>DispatchEvent(event, ...)</strong>
+    </dt>
+    <dd>
+    Dispatch an event only client/server side.
+
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">event</span>
+         The event to dispatch
+        </li>
+        <li><span class="parameter">...</span>
+         Any arguments to send
+        </li>
+    </ul>
+
+
+
 
 
 </dd>
@@ -857,7 +1118,7 @@
 </div> <!-- id="main" -->
 <div id="about">
 <i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.4.6</a></i>
-<i style="float:right;">Last updated 2018-12-16 23:27:02 </i>
+<i style="float:right;">Last updated 2018-12-17 02:37:33 </i>
 </div> <!-- id="about" -->
 </div> <!-- id="container" -->
 </body>
