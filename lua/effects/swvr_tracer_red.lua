@@ -1,47 +1,79 @@
---DO NOT EDIT OR REUPLOAD THIS FILE
+EFFECT.Speed          = 6500
+EFFECT.Length         = 64
+--EFFECT.WhizSound			 = Sound( "nomad/whiz.wav" )
+EFFECT.WhizDistance   = 72
 
-EFFECT.Mat = Material("effects/sw_laser_red_main") -- Material( "effects/spark" )
-EFFECT.Mat2 = Material("effects/sw_laser_red_front") -- Material( "sprites/light_glow02_add" )
+TRACER_FLAG_USEATTACHMENT = 0x0002
+SOUND_FROM_WORLD          = 0
+CHAN_STATIC               = 6
 
-function EFFECT:Init( data )
+local MaterialMain  = Material("effects/sw_laser_red_main")
+local MaterialFront = Material("effects/sw_laser_red_front")
 
-	self.StartPos = data:GetStart()
-	self.EndPos = data:GetOrigin()
+function EFFECT:GetTracerOrigin(data)
+	local start = data:GetStart()
 
-	self.Dir = self.EndPos - self.StartPos
+	if (bit.band(data:GetFlags(), TRACER_FLAG_USEATTACHMENT) == TRACER_FLAG_USEATTACHMENT) then
+		local entity = data:GetEntity()
+		if (not IsValid(entity)) then return start end
+		if (not game.SinglePlayer() and entity:IsEFlagSet(EFL_DORMANT)) then return start end
 
-	self:SetRenderBoundsWS( self.StartPos, self.EndPos )
+		if (entity:IsWeapon() and entity:IsCarriedByLocalPlayer()) then
+			local pl = entity:GetOwner()
 
-	self.TracerTime = math.min( 1, self.StartPos:Distance( self.EndPos ) / 15000 )
-	self.Length = math.Rand( 0.1, 0.15 )
+			if (IsValid(pl)) then
+				local vm = pl:GetViewModel()
 
-	-- Die when it reaches its target
-	self.DieTime = CurTime() + self.TracerTime
+				if (IsValid(vm) and not LocalPlayer():ShouldDrawLocalPlayer()) then
+					entity = vm
+				else
+					-- HACK: fix the model in multiplayer
+					if (entity.WorldModel) then
+						entity:SetModel(entity.WorldModel)
+					end
+				end
+			end
+		end
+
+		local attachment = entity:GetAttachment(data:GetAttachment())
+
+		if (attachment) then
+			start = attachment.Pos
+		end
+	end
+
+	return start
+end
+
+function EFFECT:Init(data)
+	self.StartPos  = self:GetTracerOrigin(data)
+	self.EndPos    = data:GetOrigin()
+
+	self.Entity:SetRenderBoundsWS(self.StartPos, self.EndPos)
+
+	local diff     = (self.EndPos - self.StartPos)
+	self.Normal    = diff:GetNormal()
+	self.StartTime = 0
+	self.LifeTime  = (diff:Length() + self.Length) / self.Speed
 end
 
 function EFFECT:Think()
+	self.LifeTime = self.LifeTime - FrameTime()
+	self.StartTime = self.StartTime + FrameTime()
 
-	if CurTime() > self.DieTime then
-		return false
-	end
-
-	return true
-
+	return self.LifeTime > 0
 end
 
 function EFFECT:Render()
+	local endDistance   = self.Speed * self.StartTime
+	local startDistance = endDistance - self.Length
+	startDistance       = math.max(0, startDistance)
+	endDistance         = math.max(0, endDistance)
+	local startPos      = self.StartPos + self.Normal * startDistance
+	local endPos        = self.StartPos + self.Normal * (endDistance * 1.2)
 
-	local fDelta = ( self.DieTime - CurTime() ) / self.TracerTime
-	fDelta = math.Clamp( fDelta, 0, 1 ) ^ 1
-
-	local sinWave = math.sin( fDelta * math.pi )
-
-	local start_pos = self.EndPos - self.Dir * ( fDelta - sinWave * self.Length )
-	local end_pos = self.EndPos - self.Dir * ( fDelta + sinWave * self.Length )
-
-	render.SetMaterial( self.Mat )
-	render.DrawBeam( start_pos, end_pos, 15, 1, 0, Color(255,220,220,255) )
-
-	render.SetMaterial( self.Mat2 )
-	render.DrawSprite( start_pos, 30, 30, Color(255,220,220,255) )
+	render.SetMaterial(MaterialFront)
+	render.DrawSprite(endPos, 32, 24, color_white)
+	render.SetMaterial(MaterialMain)
+	render.DrawBeam(startPos, endPos, 20, 0, 1, color_white)
 end

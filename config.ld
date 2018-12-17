@@ -4,6 +4,7 @@ description = "The rewrite of the popular Star Wars Vehicles Episode 1 base"
 
 merge = true
 not_luadoc = true
+no_space_before_args = true
 
 format = "discount"
 dir = "docs"
@@ -19,7 +20,7 @@ custom_tags = {
 }
 
 custom_display_name_handler = function(item, default_handler)
-  local name = item.name
+  local name = item.type ~= "function" and item.name or item.name .. item.args
 
   for _, tag in ipairs({"shared", "client", "server"}) do
     if item.tags[tag] then

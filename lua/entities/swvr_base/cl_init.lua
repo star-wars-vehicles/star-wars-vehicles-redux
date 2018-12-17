@@ -83,8 +83,10 @@ function ENT:OnThink()
 
 end
 
--- DRAWING FUNCTION
+--- Drawing Functions
+-- @section drawing
 
+--- Called every frame to draw the entity. Do not override unless experienced.
 function ENT:Draw()
   self:DrawModel()
 
@@ -98,6 +100,7 @@ function ENT:Draw()
   self:DrawGlow()
 end
 
+--- Draw the engine exhaust
 function ENT:DrawExhaust()
   if not self:EngineActive() then return end
 
@@ -166,6 +169,7 @@ function ENT:DrawExhaust()
   end
 end
 
+--- Draw vehicle damage effects
 function ENT:DrawDamageEffects()
   local health = self:Health()
 
@@ -177,13 +181,14 @@ function ENT:DrawDamageEffects()
 
       local fx = EffectData()
       fx:SetOrigin(self:LocalToWorld(self.Controls.Thrust) - self:GetForward() * 50)
-      util.Effect("lfs_blacksmoke", fx)
+      util.Effect("swvr_smoke", fx)
     end
   end
 end
 
 local mat = Material("sprites/light_glow02_add")
 
+--- Draw vehicle engine glow
 function ENT:DrawGlow()
   if not self:EngineActive() then return end
   if not self.Settings.Engine.Glow then return end
@@ -199,12 +204,16 @@ function ENT:DrawGlow()
   end
 end
 
--- HUD FUNCTIONS
+--- HUD Functions
+-- @section hud
 
 local function HUDColor()
-  return Color(cvars.Number("swvr_hud_color_r"), cvars.Number("swvr_hud_color_g"), cvars.Number("swvr_hud_color_b"), cvars.Number("swvr_hud_color_a"))
+  --return Color(cvars.Number("swvr_hud_color_r"), cvars.Number("swvr_hud_color_g"), cvars.Number("swvr_hud_color_b"), cvars.Number("swvr_hud_color_a"))
+  return swvr.Config("hud.color", Color(255, 255, 255, 255))
 end
 
+--- Draw the vehicle crosshair
+-- @param isPilot If the local player is the pilot
 function ENT:HUDDrawCrosshair(isPilot)
   local ply = LocalPlayer()
 
@@ -235,16 +244,12 @@ function ENT:HUDDrawCrosshair(isPilot)
     surface.DrawLine(vehicle.x + dir.x * 10, vehicle.y + dir.y * 10, pilot.x - dir.x * 34, pilot.y - dir.y * 34)
   end
 
-  -- DrawCircle(vehicle.x, vehicle.y, 10)
-
   surface.DrawCircle(vehicle.x, vehicle.y, 10, Color(255, 255, 255, 100))
 
   surface.DrawLine(vehicle.x + 10, vehicle.y, vehicle.x + 20, vehicle.y)
   surface.DrawLine(vehicle.x - 10, vehicle.y, vehicle.x - 20, vehicle.y)
   surface.DrawLine(vehicle.x, vehicle.y + 10, vehicle.x, vehicle.y + 20)
   surface.DrawLine(vehicle.x, vehicle.y - 10, vehicle.x, vehicle.y - 20)
-
-  -- DrawCircle(pilot.x, pilot.y, 34)
 
   surface.DrawCircle(pilot.x, pilot.y, 34, Color(255, 255, 255, 100))
 end
@@ -329,7 +334,7 @@ function ENT:HUDDrawCompass(fpvX, fpvY)
   end
 
   surface.SetTexture(surface.GetTextureID("hud/sw_shipcompass_BG"))
-  surface.SetDrawColor(0, 170, 255, 255)
+  surface.SetDrawColor(HUDColor())
   surface.DrawTexturedRectRotated(x, y, size, size, 0)
 
   local rotate = (self:GetAngles().y - 90) * -1
@@ -337,7 +342,7 @@ function ENT:HUDDrawCompass(fpvX, fpvY)
   local maxDist = 5000
 
   for k, v in pairs(ents.FindInSphere(self:GetPos(), maxDist)) do
-    if (IsValid(v) and (v.IsSWVRVehicle or v.LFS) and v ~= self and al ~= swvr.LightOrDark(v)) then
+    if (IsValid(v) and (v.IsSWVRVehicle or v.IsSWVehicle) and v ~= self and al ~= swvr.LightOrDark(v)) then
       local dist = (self:GetPos() - v:GetPos()):Length() / maxDist
       local a = 1 - dist
       local r = ((self:GetPos() - v:GetPos()):Angle().y - 90) + rotate - 180
@@ -348,13 +353,12 @@ function ENT:HUDDrawCompass(fpvX, fpvY)
     end
   end
 
-  --surface.SetDrawColor(Color(0, 170, 255, 255))
   surface.SetDrawColor(HUDColor())
   surface.SetTexture(surface.GetTextureID("hud/sw_shipcompass_disk"))
   surface.DrawTexturedRectRotated(x, y, size, size, rotate)
 end
 
-function ENT:HUDDrawReticles()
+function ENT:HUDDrawReticle()
   local group = nil
 
   local tr
@@ -614,6 +618,9 @@ function ENT:CalcView(ply, pos, ang, fov)
   return self:CalcThirdPersonView(view)
 end
 
+--- View functions
+-- @section view
+
 --- Override first person view calculations
 function ENT:CalcFirstPersonView(view)
   return view
@@ -651,15 +658,14 @@ hook.Add( "HUDPaint", "SWVR.HUDPaint", function()
 
   if not parent.IsSWVRVehicle then return end
 
-  if cvars.Bool("swvr_debug_draw") then
+  if cvars.Bool("swvr_debug_statistics") then
     parent:HUDDrawDebug()
   end
 
   if hook.Run("SWVR.HUDPaint", parent) == false then return end
 
-  if hook.Run("SWVR.HUDShouldDraw", "Crosshair") ~= false then
-    -- parent:HUDDrawCrosshair(seat:GetNWInt("SeatIndex") == 1)
-    parent:HUDDrawReticles()
+  if hook.Run("SWVR.HUDShouldDraw", "Reticle") ~= false then
+    parent:HUDDrawReticle()
   end
 
 
@@ -671,13 +677,16 @@ hook.Add( "HUDPaint", "SWVR.HUDPaint", function()
     parent:HUDDrawSpeedometer()
   end
 
-  parent:HUDDrawAltimeter()
+  if hook.Run("SWVR.HUDShouldDraw", "Altimeter") ~= false then
+    parent:HUDDrawAltimeter()
+  end
+
   parent:HUDDrawCompass()
   parent:HUDDrawTransponder()
 end)
 
 hook.Add("PostDrawTranslucentRenderables", "SWVR.DebugVisuals", function()
-  if not cvars.Bool("swvr_debug_visuals_draw") then return end
+  if not cvars.Bool("swvr_debug_visuals") then return end
 
   render.SetColorMaterial()
 

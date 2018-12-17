@@ -24,9 +24,9 @@ enum.Allegiances = {
 -- @field 2 Light allegiances
 -- @field 3 Dark allegiances
 enum.Sides = {
-  { swvr.enum.Allegiances.NEU, swvr.enum.Allegiances.IND, swvr.enum.Allegiances.DEV },
-  { swvr.enum.Allegiances.REP, swvr.enum.Allegiances.REB },
-  { swvr.enum.Allegiances.EMP, swvr.enum.Allegiances.CIS, swvr.enum.Allegiances.FO }
+  { enum.Allegiances.NEU, enum.Allegiances.IND, enum.Allegiances.DEV },
+  { enum.Allegiances.REP, enum.Allegiances.REB },
+  { enum.Allegiances.EMP, enum.Allegiances.CIS, enum.Allegiances.FO }
 }
 
 --- Landing surfaces that vehicles can land on
@@ -40,11 +40,6 @@ enum.LandingSurfaces = {
   ["func_brush"] = true,
   ["func_conveyor"] = true,
   ["func_reflective_glass"] = true
-}
-
-enum.LfsTeam = {
-  [1] = 3,
-  [2] = 2
 }
 
 swvr.enum = enum

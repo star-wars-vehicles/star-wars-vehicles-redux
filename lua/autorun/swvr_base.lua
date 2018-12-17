@@ -21,6 +21,7 @@ include("swvr_meta.lua")
 include("swvr_util.lua")
 
 --- Retrieve all existing SWVR vehicles
+-- @shared
 -- @return Table of `Entity` classes
 function swvr.GetVehicles()
   local vehicles = {}
@@ -34,6 +35,7 @@ function swvr.GetVehicles()
 end
 
 --- Retrieve all players current in a SWVR vehicle
+-- @shared
 -- @return Table of Players
 -- @usage for _, ply in ipairs(swvr.GetPlayers()) do
 -- 	print(ply:SteamID64())
@@ -52,6 +54,7 @@ function swvr.GetPlayers()
 end
 
 --- Retrieve the cached config value for better performance
+-- @shared
 -- @param key The category or sub-category to retrieve
 -- @param default Default value returned in case key is not found
 -- @return The retrieved value if found or the default
@@ -93,9 +96,20 @@ if CLIENT then
     color = Color(cvars.Number("swvr_hud_color_r"), cvars.Number("swvr_hud_color_g"), cvars.Number("swvr_hud_color_b"), cvars.Number("swvr_hud_color_a"))
   }
 
-  for _, cvar in pairs({"r", "g", "b", "a"}) do
+  for _, cvar in ipairs({"r", "g", "b", "a"}) do
     cvars.AddChangeCallback("swvr_hud_color_" .. cvar, function(name, old, new)
-      swvr.config.color = Color(cvars.Number("swvr_hud_color_r"), cvars.Number("swvr_hud_color_g"), cvars.Number("swvr_hud_color_b"), cvars.Number("swvr_hud_color_a"))
+      swvr.config.hud.color = Color(cvars.Number("swvr_hud_color_r"), cvars.Number("swvr_hud_color_g"), cvars.Number("swvr_hud_color_b"), cvars.Number("swvr_hud_color_a"))
+    end)
+  end
+
+  swvr.config.debug = {
+    visuals = cvars.Bool("swvr_debug_visuals"),
+    statistics = cvars.Bool("swvr_debug_statistics")
+  }
+
+  for cvar in pairs(swvr.config.debug) do
+    cvars.AddChangeCallback("swvr_debug_" .. cvar, function(name, old, new)
+      swvr.config.debug[cvar] = new
     end)
   end
 end

@@ -101,6 +101,20 @@ if SERVER then
   CreateConVar("swvr_collisions_multiplier", "1", { FCVAR_ARCHIVE, FCVAR_NOTIFY }, "Collision Multiplier")
   CreateConVar("swvr_disable_use", "0", { FCVAR_ARCHIVE, FCVAR_NOTIFY }, "Disable players from entering ships.")
   CreateConVar("swvr_autocorrect", "0", { FCVAR_ARCHIVE, FCVAR_NOTIFY }, "Enable collision protection (autocorrect).")
+else
+  CreateClientConVar("swvr_hud_color_r", "255", true, false, "HUD red channel.")
+  CreateClientConVar("swvr_hud_color_g", "255", true, false, "HUD green channel.")
+  CreateClientConVar("swvr_hud_color_b", "255", true, false, "HUD blue channel.")
+  CreateClientConVar("swvr_hud_color_a", "255", true, false, "HUD alpha channel.")
+
+  CreateClientConVar("swvr_shields_draw", "1", true, false, "Draw shield effects.")
+  CreateClientConVar("swvr_engines_draw", "1", true, false, "Draw engine effects.")
+
+  CreateClientConVar("swvr_debug_statistics", "0", true, false, "Draw debug information.")
+  CreateClientConVar("swvr_debug_visuals", "0", true, false, "Draw debug visuals.")
+
+  CreateClientConVar("swvr_effect_volume", "100", true, false, "Volume of effects.")
+  CreateClientConVar("swvr_engine_volume", "100", true, false, "Volume of the engines.")
 end
 
 if CLIENT then
@@ -178,19 +192,6 @@ if CLIENT then
     swvr_key_view = "Toggle View Mode"
   }
 
-  CreateClientConVar("swvr_hud_color_r", "1.0", true, false, "HUD red channel.")
-  CreateClientConVar("swvr_hud_color_g", "1.0", true, false, "HUD green channel.")
-  CreateClientConVar("swvr_hud_color_b", "1.0", true, false, "HUD blue channel.")
-  CreateClientConVar("swvr_hud_color_a", "1.0", true, false, "HUD alpha channel.")
-
-  CreateClientConVar("swvr_shields_draw", "1", true, false, "Draw shield effects.")
-  CreateClientConVar("swvr_engines_draw", "1", true, false, "Draw engine effects.")
-  CreateClientConVar("swvr_debug_draw", "0", true, false, "Draw debug information.")
-  CreateClientConVar("swvr_debug_visuals_draw", "0", true, false, "Draw debug visuals.")
-
-  CreateClientConVar("swvr_effect_volume", "100", true, false, "Volume of effects.")
-  CreateClientConVar("swvr_engine_volume", "100", true, false, "Volume of the engines.")
-
   local CONTROL_DEFAULTS = {}
 
   for i = 1, #CONTROL_CVARS do
@@ -247,8 +248,16 @@ if CLIENT then
   end
 
   local CLIENT_DEFAULTS = {
+    swvr_effect_volume = "100",
+    swvr_engine_volume = "100",
     swvr_shields_draw = "1",
-    swvr_engines_draw = "1"
+    swvr_engines_draw = "1",
+    swvr_debug_statistics = "0",
+    swvr_debug_visuals = "0",
+    swvr_hud_color_r = "0",
+    swvr_hud_color_g = "160",
+    swvr_hud_color_b = "255",
+    swvr_hud_color_a = "255"
   }
 
   table.Add(CLIENT_DEFAULTS, CONTROL_DEFAULTS)
@@ -275,8 +284,8 @@ if CLIENT then
     pnl:CheckBox("Draw Shields", "swvr_shields_draw")
     pnl:CheckBox("Draw Engines", "swvr_engines_draw")
 
-    pnl:CheckBox("Draw Debug Statistics", "swvr_debug_draw")
-    pnl:CheckBox("Draw Debug Visuals", "swvr_debug_visuals_draw")
+    pnl:CheckBox("Draw Debug Statistics", "swvr_debug_statistics")
+    pnl:CheckBox("Draw Debug Visuals", "swvr_debug_visuals")
 
     pnl:Help("HUD Settings")
 
@@ -350,16 +359,7 @@ if CLIENT then
 
   vgui.Register("swvr::key", PANEL, "Panel")
 
-  -- Menu Hooks
-
-  hook.Add("PopulateToolMenu", "SWVR.PopulateToolMenu", function()
-    spawnmenu.AddToolMenuOption("Utilities", "Star Wars Vehicles", "SWVRSVSettings", "Server Settings", "", "", BuildServerSettings)
-    spawnmenu.AddToolMenuOption("Utilities", "Star Wars Vehicles", "SWVRCLSettings", "Client Settings", "", "", BuildClientSettings)
-  end)
-
-  hook.Add("AddToolMenuCategories", "SWVR.AddToolMenuCategories", function()
-    spawnmenu.AddToolCategory("Utilities", "Star Wars Vehicles", "Star Wars Vehicles")
-  end)
+  -- Spawnmenu Functions
 
   spawnmenu.AddCreationTab("Star Wars Vehicles: Redux", function()
     local ctrl = vgui.Create("SpawnmenuContentPanel")
@@ -453,6 +453,17 @@ if CLIENT then
     end
 
     return icon
+  end)
+
+  -- Menu Hooks
+
+  hook.Add("PopulateToolMenu", "SWVR.PopulateToolMenu", function()
+    spawnmenu.AddToolMenuOption("Utilities", "Star Wars Vehicles", "SWVRSVSettings", "Server Settings", "", "", BuildServerSettings)
+    spawnmenu.AddToolMenuOption("Utilities", "Star Wars Vehicles", "SWVRCLSettings", "Client Settings", "", "", BuildClientSettings)
+  end)
+
+  hook.Add("AddToolMenuCategories", "SWVR.AddToolMenuCategories", function()
+    spawnmenu.AddToolCategory("Utilities", "Star Wars Vehicles", "Star Wars Vehicles")
   end)
 
   hook.Add("SWVRVehiclesTab", "AddEntityContent", function(pnlContent, tree, node)
