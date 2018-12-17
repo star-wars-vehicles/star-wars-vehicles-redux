@@ -28,6 +28,10 @@ custom_display_name_handler = function(item, default_handler)
     end
   end
 
+  if item.tags["todo"] then
+    name = "<span style=\"color: red;\">" .. name .. "</span>"
+  end
+
   if name ~= item.name then return name end
 
   return default_handler(item)

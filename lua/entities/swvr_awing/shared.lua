@@ -61,7 +61,7 @@ ENT.Seats = {
 }
 
 ENT.Sounds = {
-  Engine = "AWING_ENGINE"
+  Engine = "YWING_ENGINE"
 }
 
 ENT.Gibs = {

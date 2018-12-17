@@ -1,12 +1,12 @@
 # Star Wars Vehicles Redux
 
-##Installation
+## Installation
 
 Create a folder inside `addons` called anything you want (preferably something like 'swvr').
 
 Place the contents of the `lua`, `materials`, `models`, and `sounds` folders inside.
 
-##Creating New Vehicles
+## Creating New Vehicles
 
 Please refer to the main documentation for extensive details on creating new vehicles.
 

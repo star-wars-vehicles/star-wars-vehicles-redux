@@ -4,7 +4,7 @@
 
 ENT.Type = "anim"
 
---- Nice display name
+--- Nice display name of the entity
 ENT.PrintName = "SWVR Base"
 
 --- Author of the `Entity`
@@ -28,8 +28,10 @@ ENT.Editable =  true
 
 -- Customizable Settings
 
---- Maximum starting health of the vehicle
+--- Maximum health of the vehicle
 ENT.MaxHealth = 1000
+
+--- Maximum shields of the vehicle, if any
 ENT.MaxShield = 0
 
 ENT.Mass = 2000
@@ -42,7 +44,7 @@ ENT.MaxPower = 500
 ENT.MaxThrust = 1200
 ENT.BoostThrust = 2000
 
--- How fast can the vehicle pitch/yaw/roll?
+--- How fast can the vehicle pitch/yaw/roll?
 ENT.Handling = Vector(300, 300, 300)
 
 ENT.Controls = {
@@ -59,6 +61,9 @@ ENT.Seats = nil
 -- Base Setup and Networking
 
 local AccessorBool = swvr.util.AccessorBool
+
+--- Setup functions
+-- @section setup
 
 function ENT:SetupDataTables()
   self:NetworkVar("Bool", 0, "Active")
@@ -125,6 +130,29 @@ function ENT:SetupDataTables()
 
     self:SetAllegiance(1)
     self:SetSeatCount(0)
+  end
+end
+
+--- Setup default vehicle events. This is shared but will product different results on client/server.
+-- @shared
+-- @param options The events to explicitly disable
+function ENT:SetupDefaults(options)
+  options = options or {}
+
+  if SERVER then
+    if options.OnEnter ~= false then
+      self:AddEvent("OnEnter", function(ent, ply, pilot)
+        if not pilot then return end
+        ent:EmitSound("vehicles/atv_ammo_close.wav")
+      end)
+    end
+
+    if options.OnExit ~= false then
+      self:AddEvent("OnExit", function(ent, ply, pilot)
+        if not pilot then return end
+        ent:EmitSound("vehicles/atv_ammo_open.wav")
+      end)
+    end
   end
 end
 
@@ -244,13 +272,13 @@ end
 --- Weapons Functions
 -- @section weapons
 
-function ENT:AddWeapon(name, pos, ang, callback)
+function ENT:AddWeapon(name, pos, callback)
   if CLIENT then return end
 
   local ent = ents.Create("prop_physics")
   ent:SetModel("models/props_junk/PopCan01a.mdl")
-  ent:SetPos(pos or self:GetPos())
-  ent:SetAngles(ang or self:GetAngles())
+  ent:SetPos(self:LocalToWorld(pos) or self:GetPos())
+  ent:SetAngles(self:GetAngles())
   ent:SetParent(self)
   ent:Spawn()
   ent:Activate()
@@ -265,9 +293,8 @@ function ENT:AddWeapon(name, pos, ang, callback)
 
   ent:SetNWString("SWVR.WeaponName", name)
 
-  -- For ease of use and consistency
-  ent.FireCannon = ent.FireBullets
 
+  -- For ease of use and consistency
   function ent:FireMissile(missileInfo)
     local tbl = missileInfo or {}
 
@@ -331,6 +358,36 @@ function ENT:GetWeapons()
   self.Weapons = weapons
 
   return self.Weapons or {}
+end
+
+function ENT:FireWeapon(name, options)
+  if CLIENT then return end
+
+  local weapon = self:GetWeapon(name)
+
+  options = options or {}
+
+  local wtype = options.Type or "cannon"
+
+  if string.lower(wtype) == "cannon" then
+    local bullet = {}
+    bullet.Num = 1
+    bullet.Src = weapon:GetPos() or self:LocalToWorld(Vector())
+    bullet.Dir = self:LocalToWorldAngles(Angle()):Forward()
+    bullet.Spread = options.Spread or Vector(0.01, 0.01, 0)
+    bullet.Tracer	= 1
+    bullet.TracerName	= options.Tracer or "swvr_tracer_red"
+    bullet.Force = 100
+    bullet.HullSize = 25
+    bullet.Damage	= options.Damage or 40
+    bullet.Attacker = options.Attacker or self:GetPilot()
+    bullet.AmmoType = "Pistol"
+    bullet.Callback = function(att, tr, dmginfo)
+      dmginfo:SetDamageType(DMG_AIRBOAT)
+    end
+
+    self:FireBullets(bullet)
+  end
 end
 
 --- Convenience Functions
@@ -483,6 +540,8 @@ end
 
 function ENT:SetCooldown(action, time)
   self.Cooldowns = self.Cooldowns or {}
+
+  if not action then return end
 
   if SERVER then
     net.Start("SWVR.Cooldown")

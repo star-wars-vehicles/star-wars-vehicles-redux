@@ -207,11 +207,6 @@ end
 --- HUD Functions
 -- @section hud
 
-local function HUDColor()
-  --return Color(cvars.Number("swvr_hud_color_r"), cvars.Number("swvr_hud_color_g"), cvars.Number("swvr_hud_color_b"), cvars.Number("swvr_hud_color_a"))
-  return swvr.Config("hud.color", Color(255, 255, 255, 255))
-end
-
 --- Draw the vehicle crosshair
 -- @param isPilot If the local player is the pilot
 function ENT:HUDDrawCrosshair(isPilot)
@@ -334,7 +329,7 @@ function ENT:HUDDrawCompass(fpvX, fpvY)
   end
 
   surface.SetTexture(surface.GetTextureID("hud/sw_shipcompass_BG"))
-  surface.SetDrawColor(HUDColor())
+  surface.SetDrawColor(swvr.Config("hud.color", Color(255, 255, 255, 255)))
   surface.DrawTexturedRectRotated(x, y, size, size, 0)
 
   local rotate = (self:GetAngles().y - 90) * -1
@@ -353,7 +348,7 @@ function ENT:HUDDrawCompass(fpvX, fpvY)
     end
   end
 
-  surface.SetDrawColor(HUDColor())
+  surface.SetDrawColor(swvr.Config("hud.color", Color(255, 255, 255, 255)))
   surface.SetTexture(surface.GetTextureID("hud/sw_shipcompass_disk"))
   surface.DrawTexturedRectRotated(x, y, size, size, rotate)
 end

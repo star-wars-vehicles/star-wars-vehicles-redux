@@ -185,3 +185,12 @@ if CLIENT then
     outline = false,
   })
 end
+
+sound.Add({
+  name = "YWING_ENGINE",
+  channel = CHAN_STATIC,
+  volume = 1.0,
+  level = 125,
+  pitch = 100,
+  sound = "swvr/vehicles/ywing_eng_loop2.wav"
+})

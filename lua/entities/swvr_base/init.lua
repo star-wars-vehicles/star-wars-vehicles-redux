@@ -81,27 +81,11 @@ function ENT:Initialize()
 
   self:SetCooldown("Engine", CurTime())
 
+  self.FireCannon = self.FireBullets
+
   self:OnInitialize()
 
   self.Initialized = true
-end
-
-function ENT:SetupDefaults(options)
-  options = options or {}
-
-  if options.OnEnter ~= false then
-    self:AddEvent("OnEnter", function(ent, ply, pilot)
-      if not pilot then return end
-      ent:EmitSound("vehicles/atv_ammo_close.wav")
-    end)
-  end
-
-  if options.OnExit ~= false then
-    self:AddEvent("OnExit", function(ent, ply, pilot)
-      if not pilot then return end
-      ent:EmitSound("vehicles/atv_ammo_open.wav")
-    end)
-  end
 end
 
 function ENT:OnInitialize()
@@ -128,8 +112,6 @@ function ENT:Think()
     end
   end
 
-  self:ThinkState()
-
   self:ThinkControls()
 
   self:ThinkPhysics()
@@ -144,10 +126,6 @@ end
 --- Custom think function
 -- Override this to run custom logic.
 function ENT:OnThink()
-
-end
-
-function ENT:ThinkState()
 
 end
 
