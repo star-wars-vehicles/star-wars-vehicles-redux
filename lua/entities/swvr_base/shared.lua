@@ -38,6 +38,7 @@ ENT.Mass = 2000
 ENT.Inertia = Vector(250000, 250000, 250000)
 
 ENT.MaxVelocity = 2500
+ENT.MinVelocity = 1
 
 ENT.MaxPower = 500
 
@@ -46,6 +47,7 @@ ENT.BoostThrust = 2000
 
 --- How fast can the vehicle pitch/yaw/roll?
 ENT.Handling = Vector(300, 300, 300)
+ENT.Landing = {}
 
 ENT.Controls = {
   Wings = Vector(),
@@ -53,6 +55,10 @@ ENT.Controls = {
   Rudder = Vector(),
   Thrust = Vector()
 }
+
+ENT.Throttle = Vector()
+
+ENT.Acceleration = Vector()
 
 ENT.Engines = nil
 ENT.Parts = nil
@@ -135,7 +141,7 @@ end
 
 --- Setup default vehicle events. This is shared but will product different results on client/server.
 -- @shared
--- @param options The events to explicitly disable
+-- @tparam table options The events to explicitly disable
 function ENT:SetupDefaults(options)
   options = options or {}
 
@@ -167,10 +173,10 @@ end
 
 --- Add a seat to the vehicle. The first seat is always the pilot.
 -- @server
--- @param name The name of the seat for easy reference
--- @param pos The position of the seat in local coordinated
--- @param ang The angles of the seat in local angles
--- @return The seat `Entity` itself for convenience
+-- @string name The name of the seat for easy reference
+-- @vector pos The position of the seat in local coordinated
+-- @angle ang The angles of the seat in local angles
+-- @treturn entity The seat `Entity` itself for convenience
 function ENT:AddSeat(name, pos, ang)
   if CLIENT then return end
 
@@ -223,7 +229,7 @@ end
 --- Retrieve an actual seat entity.
 -- @shared
 -- @param index The index of the seat. Can be a number or string.
--- @return The found `Entity` or `NULL`
+-- @treturn entity The found `Entity` or `NULL`
 function ENT:GetSeat(index)
   self.Seats = self.Seats or {}
 
@@ -250,7 +256,7 @@ end
 
 --- Get all the seats of a vehicle.
 -- @shared
--- @return Table of `Entity` classes of seats
+-- @treturn table Table of `Entity` classes of seats
 function ENT:GetSeats()
   self.Seats = self.Seats or {}
 
@@ -272,14 +278,15 @@ function ENT:GetSeats()
   return self.Seats or {}
 end
 
---- Weapons Functions
+--- Weapon Functions
 -- @section weapons
 
 --- Add a weapon to the vehicle.
 -- @server
--- @param name The name of the weapon
--- @param pos The position of the weapon
--- @return The new weapon `Entity` for convenience
+-- @string name The name of the weapon
+-- @vector pos The position of the weapon
+-- @func callback Callback used to update entity positioning
+-- @treturn entity The new weapon `Entity` for convenience
 function ENT:AddWeapon(name, pos, callback)
   if CLIENT then return end
 
@@ -301,24 +308,6 @@ function ENT:AddWeapon(name, pos, callback)
 
   ent:SetNWString("SWVR.WeaponName", name)
 
-
-  -- For ease of use and consistency
-  function ent:FireMissile(missileInfo)
-    local tbl = missileInfo or {}
-
-    local e = ents.Create("lunasflightschool_missile")
-    e:SetPos(tbl.Src or self:GetPos())
-    e:SetAngles(tbl.Dir:Angle())
-    e:Spawn()
-    e:Activate()
-    e:SetAttacker(tbl.Attacker or self:GetParent())
-    e:SetInflictor(tbl.Inflictor or self:GetParent())
-    e:SetStartVelocity(self:GetParent():GetVelocity():Length())
-    e:SetCleanMissile(true)
-
-    return e
-  end
-
   self:SetWeaponCount(self:GetWeaponCount() + 1)
 
   return ent
@@ -326,8 +315,8 @@ end
 
 --- Retrieve one of the vehicle's weapons
 -- @shared
--- @param name The name of the weapon to retrieve
--- @return The found `Entity` or `NULL`
+-- @string name The name of the weapon to retrieve
+-- @treturn entity The found `Entity` or `NULL`
 function ENT:GetWeapon(name)
   self.Weapons = self.Weapons or {}
 
@@ -355,7 +344,7 @@ end
 
 --- Get all the vehicle's weapons
 -- @shared
--- @return Table of `Entity` classes
+-- @treturn table Table of `Entity` classes
 function ENT:GetWeapons()
   self.Weapons = self.Weapons or {}
 
@@ -379,36 +368,79 @@ end
 
 --- Fire one of the vehicle's weapons
 -- @server
--- @param name The name of the weapon to fire
--- @param options The options for the weapon
+-- @string name The name of the weapon to fire
+-- @tab[opt] options The options for the weapon
 function ENT:FireWeapon(name, options)
   if CLIENT then return end
-
-  local weapon = self:GetWeapon(name)
 
   options = options or {}
 
   local wtype = options.Type or "cannon"
 
   if string.lower(wtype) == "cannon" then
-    local bullet = {}
-    bullet.Num = 1
-    bullet.Src = weapon:GetPos() or self:LocalToWorld(Vector())
-    bullet.Dir = self:LocalToWorldAngles(Angle()):Forward()
-    bullet.Spread = options.Spread or Vector(0.01, 0.01, 0)
-    bullet.Tracer	= 1
-    bullet.TracerName	= options.Tracer or "swvr_tracer_red"
-    bullet.Force = 100
-    bullet.HullSize = 25
-    bullet.Damage	= options.Damage or 40
-    bullet.Attacker = options.Attacker or self:GetPilot()
-    bullet.AmmoType = "Pistol"
-    bullet.Callback = function(att, tr, dmginfo)
-      dmginfo:SetDamageType(DMG_AIRBOAT)
-    end
-
-    self:FireBullets(bullet)
+    self:FireCannon(name, options)
   end
+end
+
+function ENT:FireCannon(name, options)
+  local weapon = self:GetWeapon(name)
+
+  if not IsValid(weapon) then return end
+
+  local bullet = {}
+  bullet.Num = 1
+  bullet.Src = weapon:GetPos() or self:LocalToWorld(Vector())
+  bullet.Dir = self:LocalToWorldAngles(Angle()):Forward()
+  bullet.Spread = options.Spread or Vector(0.01, 0.01, 0)
+  bullet.Tracer	= 1
+  bullet.TracerName	= options.Tracer or "swvr_tracer_red"
+  bullet.Force = 100
+  bullet.HullSize = 25
+  bullet.Damage	= options.Damage or 40
+  bullet.Attacker = options.Attacker or self:GetPilot()
+  bullet.AmmoType = "Pistol"
+  bullet.Callback = function(att, tr, dmginfo)
+    dmginfo:SetDamageType(DMG_AIRBOAT)
+  end
+
+  self:FireBullets(bullet)
+end
+
+function ENT:FireMissile(name, options)
+  options = options or {}
+
+  local weapon = self:GetWeapon(name)
+
+  if not IsValid(weapon) then return end
+
+  local tr = util.TraceHull({
+    start = self:GetPos(),
+    endpos = self:GetPos() + self:GetForward() * 10000,
+    mins = Vector(-32, -32, -32),
+    maxs = Vector(32, 32, 32),
+    filter = { self }
+  })
+
+  local pos = self:LocalToWorld(options.Pos) or weapon:GetPos()
+
+  local ent = ents.Create("lunasflightschool_missile")
+  ent:SetPos()
+  ent:SetAngles((tr.HitPos - pos):Angle())
+  ent:Spawn()
+  ent:Activate()
+  ent:SetAttacker(options.Attacker or self:GetPilot())
+  ent:SetInflictor(self)
+  ent:SetStartVelocity(self:GetVelocity():Length())
+  ent:SetCleanMissile(true)
+
+  if tr.Hit and IsValid(tr.Entity) and tr.Entity:GetClass():lower() ~= "lunasflightschool_missile" then
+    ent:SetLockOn(tr.Entity)
+    ent:SetStartVelocity(0)
+  end
+
+  constraint.NoCollide(ent, self, 0, 0)
+
+  return ent
 end
 
 --- Convenience Functions
@@ -416,7 +448,7 @@ end
 
 --- Get the pilot of the vehicle.
 -- @shared
--- @return Entity The pilot of the ship
+-- @treturn player The pilot of the ship
 -- @see ENT.GetPassenger
 function ENT:GetPilot()
   return self:GetPassenger(1)
@@ -425,7 +457,7 @@ end
 --- Get the player from a specific seat.
 -- @shared
 -- @param index String or number index of the seat
--- @return The found `Player` or `NULL`
+-- @treturn player The found `Player` or `NULL`
 function ENT:GetPassenger(index)
   local seat = self:GetSeat(index)
 
@@ -507,7 +539,7 @@ end
 
 --- Dispatch a networked event to all clients.
 -- @server
--- @param event The event to dispatch
+-- @string event The event to dispatch
 -- @param ... Any arguments to network
 function ENT:DispatchNetworkEvent(event, ...)
   if CLIENT then return true, false end
@@ -531,8 +563,11 @@ function ENT:DispatchNetworkEvent(event, ...)
 end
 
 --- Dispatch an event only client/server side.
--- @param event The event to dispatch
+-- @shared
+-- @string event The event to dispatch
 -- @param ... Any arguments to send
+-- @treturn bool If the event was stopped by a hook
+-- @return The result from the hook
 function ENT:DispatchEvent(event, ...)
   self.EventDispatcher = self.EventDispatcher or {}
   self.EventDispatcher[string.upper(event)] = self.EventDispatcher[string.upper(event)] or {}
@@ -556,6 +591,10 @@ function ENT:DispatchEvent(event, ...)
   return false, result
 end
 
+--- Add a callback to an event.
+-- @shared
+-- @string name The name of the event
+-- @func callback The callback to run on the event
 function ENT:AddEvent(name, callback)
   self.EventDispatcher = self.EventDispatcher or {}
   self.EventDispatcher[string.upper(name)] = self.EventDispatcher[string.upper(name)] or {}
@@ -563,11 +602,15 @@ function ENT:AddEvent(name, callback)
   table.insert(self.EventDispatcher[string.upper(name)], callback or function() return end)
 end
 
+--- Get the callbacks for an event.
+-- @shared
+-- @string event The name of the event
+-- @treturn table Table of callback functions
 function ENT:GetEvents(event)
   self.EventDispatcher = self.EventDispatcher or {}
 
   if isstring(event) then
-    return self.EventDispatcher[string.upper(name)] or {}
+    return self.EventDispatcher[string.upper(event)] or {}
   end
 
   return self.EventDispatcher

@@ -72,6 +72,6 @@ ENT.Weapons = {
 
 ```lua
 function ENT:OnInitialize()
-  self:AddSeat("Main", Vector(50, -60, 0), nil)
+  self:AddWeapon("Main", Vector(50, -60, 0), nil)
 end
 ```

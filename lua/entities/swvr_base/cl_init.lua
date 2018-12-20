@@ -34,6 +34,7 @@ function ENT:Initialize()
 end
 
 --- Called every frame by the engine
+-- @internal
 function ENT:Think()
   self:UpdateSounds()
 
@@ -71,6 +72,7 @@ function ENT:UpdateSounds()
 end
 
 --- Called by the engine when removed
+-- @internal
 function ENT:OnRemove()
   for name, patch in pairs(self.SoundPatches or {}) do
     patch:Stop()
@@ -103,6 +105,7 @@ function ENT:Draw()
 end
 
 --- Draw the engine exhaust
+-- @internal
 function ENT:DrawExhaust()
   if not self:EngineActive() then return end
 
@@ -172,6 +175,7 @@ function ENT:DrawExhaust()
 end
 
 --- Draw vehicle damage effects
+-- @internal
 function ENT:DrawDamageEffects()
   local health = self:Health()
 
@@ -191,6 +195,7 @@ end
 local mat = Material("sprites/light_glow02_add")
 
 --- Draw vehicle engine glow
+-- @internal
 function ENT:DrawGlow()
   if not self:EngineActive() then return end
   if not self.Settings.Engine.Glow then return end
@@ -210,7 +215,8 @@ end
 -- @section hud
 
 --- Draw the vehicle crosshair
--- @param isPilot If the local player is the pilot
+-- @client
+-- @bool isPilot If the local player is the pilot
 function ENT:HUDDrawCrosshair(isPilot)
   local ply = LocalPlayer()
 
@@ -449,6 +455,10 @@ function ENT:HUDDrawOverheating()
   surface.DrawRect(x - w / 2, y + ScrW() / 100 * 1.5, w, h)
 end
 
+--- Draw the vehicle's altimeter.
+-- @client
+-- @number fpvX First person view X
+-- @number fpvY First person view Y
 function ENT:HUDDrawAltimeter(fpvX, fpvY)
   local p = LocalPlayer()
   local size = ScrW() / 10
@@ -547,7 +557,7 @@ function ENT:HUDDrawDebug()
   local x = ScrW() / 2
 
   local throttle = math.max(math.Round((self:GetThrust() - 1) / (self:GetBoostThrust() - 1) * 100, 0), 0)
-  draw.SimpleText("Throttle\t\t" .. throttle .. "%", "SWVR_Debug", x, 10, Color(255, 255, 255), TEXT_ALIGN_CENTER)
+  draw.SimpleText("Throttle\t\t" .. throttle .. "%", "SWVR_Debug", x, 10, throttle <= 100 and Color(255, 255, 255) or Color(255, 0 ,0), TEXT_ALIGN_CENTER)
 
   local vel = math.Round(self:GetVelocity():Length() * 0.09144, 0)
   draw.SimpleText("Velocity\t\t" .. vel .. "km/h", "SWVR_Debug", x, 35, Color(255, 255, 255), TEXT_ALIGN_CENTER)
@@ -619,11 +629,15 @@ end
 -- @section view
 
 --- Override first person view calculations
+-- @client
+-- @tparam table view The view information
 function ENT:CalcFirstPersonView(view)
   return view
 end
 
 --- Override third person view calculations
+-- @client
+-- @tparam table view The view information
 function ENT:CalcThirdPersonView(view)
   return view
 end

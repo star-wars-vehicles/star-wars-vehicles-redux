@@ -36,8 +36,8 @@ Overriding a base function could cause many problems. Even if the base doesn't a
 
 Generating documentation assumes you have `ldoc` as well as `lua-discount` installed.
 
-Please install them using a tool like *luarocks* before continuing.
+Please install them using a tool like `luarocks` before continuing.
 
 Run `ldoc .` inside the root directory to generate documentation into the `docs` folder.
 
-The `doc.md` file inside of the documentation folder can bbe customized beforehand to change the manual.
+The `doc.md` file inside of the documentation folder can be customized beforehand to change the manual.
