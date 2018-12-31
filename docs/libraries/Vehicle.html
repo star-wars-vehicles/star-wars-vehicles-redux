@@ -47,11 +47,11 @@
 </ul>
 
 
-<h2>Modules</h2>
+<h2>Libraries</h2>
 <ul class="nowrap">
-  <li><a href="../modules/swvr.html">swvr</a></li>
-  <li><a href="../modules/PLAYER.html">PLAYER</a></li>
-  <li><strong>ENT</strong></li>
+  <li><a href="../libraries/swvr.html">swvr</a></li>
+  <li><a href="../libraries/Player.html">Player</a></li>
+  <li><strong>Vehicle</strong></li>
 </ul>
 <h2>Manual</h2>
 <ul class="nowrap">
@@ -62,7 +62,7 @@
 
 <div id="content">
 
-<h1>Module <code>ENT</code></h1>
+<h1>Module <code>Vehicle</code></h1>
 <p>Star Wars Vehicles Flight Base</p>
 <p>
 
@@ -106,11 +106,11 @@
 	</tr>
 	<tr>
 	<td class="name" nowrap><a href="#Enter"><span class="realm server" title="Server"></span>Enter(ply)</a></td>
-	<td class="summary">Makes a <code>Player</code> enter the vehicle</td>
+	<td class="summary">Makes a <a href="../libraries/Player.html#">Player</a> enter the vehicle</td>
 	</tr>
 	<tr>
 	<td class="name" nowrap><a href="#Exit"><span class="realm server" title="Server"></span>Exit(ply)</a></td>
-	<td class="summary">Called when a <code>Player</code> exits the vehicle</td>
+	<td class="summary">Called when a <a href="../libraries/Player.html#">Player</a> exits the vehicle</td>
 	</tr>
 </table>
 <h2><a href="#Fields">Fields</a></h2>
@@ -147,19 +147,19 @@
 <h2><a href="#Drawing_Functions">Drawing Functions </a></h2>
 <table class="function_list">
 	<tr>
-	<td class="name" nowrap><a href="#Draw">Draw()</a></td>
+	<td class="name" nowrap><a href="#Draw"><span class="realm client" title="Client"></span>Draw()</a></td>
 	<td class="summary">Called every frame to draw the entity.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#DrawExhaust">DrawExhaust()<div class="notice internal" title="Internal"></div></a></td>
+	<td class="name" nowrap><a href="#DrawExhaust"><span class="realm client" title="Client"></span>DrawExhaust()<div class="notice internal" title="Internal"></div></a></td>
 	<td class="summary">Draw the engine exhaust</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#DrawDamageEffects">DrawDamageEffects()<div class="notice internal" title="Internal"></div></a></td>
+	<td class="name" nowrap><a href="#DrawDamageEffects"><span class="realm client" title="Client"></span>DrawDamageEffects()<div class="notice internal" title="Internal"></div></a></td>
 	<td class="summary">Draw vehicle damage effects</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#DrawGlow">DrawGlow()<div class="notice internal" title="Internal"></div></a></td>
+	<td class="name" nowrap><a href="#DrawGlow"><span class="realm client" title="Client"></span>DrawGlow()<div class="notice internal" title="Internal"></div></a></td>
 	<td class="summary">Draw vehicle engine glow</td>
 	</tr>
 </table>
@@ -199,7 +199,7 @@
 <h2><a href="#Damage_Interactions">Damage Interactions </a></h2>
 <table class="function_list">
 	<tr>
-	<td class="name" nowrap><a href="#OnTakeDamage">OnTakeDamage(dmg)<div class="notice future" title="Future"></div><div class="notice internal" title="Internal"></div></a></td>
+	<td class="name" nowrap><a href="#OnTakeDamage"><span class="realm server" title="Server"></span>OnTakeDamage(dmg)<div class="notice internal" title="Internal"></div></a></td>
 	<td class="summary">Called by the engine when the entity takes damage</td>
 	</tr>
 	<tr>
@@ -217,6 +217,10 @@
 </table>
 <h2><a href="#Setup_functions">Setup functions </a></h2>
 <table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#SetupDataTables"><span class="realm shared" title="Shared"></span>SetupDataTables()<div class="notice internal" title="Internal"></div></a></td>
+	<td class="summary">Setups the internal DTVars which creates getters/setters.</td>
+	</tr>
 	<tr>
 	<td class="name" nowrap><a href="#SetupDefaults"><span class="realm shared" title="Shared"></span>SetupDefaults(options)</a></td>
 	<td class="summary">Setup default vehicle events.</td>
@@ -240,7 +244,7 @@
 <h2><a href="#Weapon_Functions">Weapon Functions </a></h2>
 <table class="function_list">
 	<tr>
-	<td class="name" nowrap><a href="#AddWeapon"><span class="realm server" title="Server"></span>AddWeapon(name, pos, callback)</a></td>
+	<td class="name" nowrap><a href="#AddWeapon"><span class="realm server" title="Server"></span>AddWeapon(name[, pos[, callback]])</a></td>
 	<td class="summary">Add a weapon to the vehicle.</td>
 	</tr>
 	<tr>
@@ -270,7 +274,7 @@
 <h2><a href="#Networking">Networking </a></h2>
 <table class="function_list">
 	<tr>
-	<td class="name" nowrap><a href="#DispatchNetworkEvent"><span class="realm server" title="Server"></span>DispatchNetworkEvent(event, ...)</a></td>
+	<td class="name" nowrap><a href="#DispatchNWEvent"><span class="realm server" title="Server"></span>DispatchNWEvent(event, ...)</a></td>
 	<td class="summary">Dispatch a networked event to all clients.</td>
 	</tr>
 	<tr>
@@ -462,7 +466,7 @@
     <strong><span class="realm server" title="Server"></span>Enter(ply)</strong>
     </dt>
     <dd>
-    Makes a <code>Player</code> enter the vehicle
+    Makes a <a href="../libraries/Player.html#">Player</a> enter the vehicle
 
     </ul>
     </ul>
@@ -476,7 +480,7 @@
     <ul>
         <li><span class="parameter">ply</span>
             <span class="types"><span class="type">player</span></span>
-         The <code>Player</code> to enter the vehicle
+         The <a href="../libraries/Player.html#">Player</a> to enter the vehicle
         </li>
     </ul>
 
@@ -484,7 +488,7 @@
 
     <h3>See also:</h3>
     <ul>
-         <a href="../modules/ENT.html#Exit">ENT.Exit</a>
+         <a href="../libraries/Vehicle.html#Exit">Exit</a>
     </ul>
 
 
@@ -494,7 +498,7 @@
     <strong><span class="realm server" title="Server"></span>Exit(ply)</strong>
     </dt>
     <dd>
-    Called when a <code>Player</code> exits the vehicle
+    Called when a <a href="../libraries/Player.html#">Player</a> exits the vehicle
 
     </ul>
     </ul>
@@ -508,7 +512,7 @@
     <ul>
         <li><span class="parameter">ply</span>
             <span class="types"><span class="type">player</span></span>
-         The <code>Player</code> that exited
+         The <a href="../libraries/Player.html#">Player</a> that exited
         </li>
     </ul>
 
@@ -516,7 +520,7 @@
 
     <h3>See also:</h3>
     <ul>
-         <a href="../modules/ENT.html#Enter">ENT.Enter</a>
+         <a href="../libraries/Vehicle.html#Enter">Enter</a>
     </ul>
 
 
@@ -678,7 +682,7 @@
     <dl class="function">
     <dt>
     <a name = "Draw"></a>
-    <strong>Draw()</strong>
+    <strong><span class="realm client" title="Client"></span>Draw()</strong>
     </dt>
     <dd>
     Called every frame to draw the entity.  Do not override unless experienced.
@@ -699,7 +703,7 @@
 </dd>
     <dt>
     <a name = "DrawExhaust"></a>
-    <strong>DrawExhaust()<div class="notice internal" title="Internal"></div></strong>
+    <strong><span class="realm client" title="Client"></span>DrawExhaust()<div class="notice internal" title="Internal"></div></strong>
     </dt>
     <dd>
     Draw the engine exhaust
@@ -720,7 +724,7 @@
 </dd>
     <dt>
     <a name = "DrawDamageEffects"></a>
-    <strong>DrawDamageEffects()<div class="notice internal" title="Internal"></div></strong>
+    <strong><span class="realm client" title="Client"></span>DrawDamageEffects()<div class="notice internal" title="Internal"></div></strong>
     </dt>
     <dd>
     Draw vehicle damage effects
@@ -741,7 +745,7 @@
 </dd>
     <dt>
     <a name = "DrawGlow"></a>
-    <strong>DrawGlow()<div class="notice internal" title="Internal"></div></strong>
+    <strong><span class="realm client" title="Client"></span>DrawGlow()<div class="notice internal" title="Internal"></div></strong>
     </dt>
     <dd>
     Draw vehicle engine glow
@@ -914,7 +918,7 @@
 
     <h3>See also:</h3>
     <ul>
-         <a href="../modules/ENT.html#Takeoff">ENT.Takeoff</a>
+         <a href="../libraries/Vehicle.html#Takeoff">Takeoff</a>
     </ul>
 
 
@@ -952,7 +956,7 @@
     <dl class="function">
     <dt>
     <a name = "OnTakeDamage"></a>
-    <strong>OnTakeDamage(dmg)<div class="notice future" title="Future"></div><div class="notice internal" title="Internal"></div></strong>
+    <strong><span class="realm server" title="Server"></span>OnTakeDamage(dmg)<div class="notice internal" title="Internal"></div></strong>
     </dt>
     <dd>
     Called by the engine when the entity takes damage
@@ -997,7 +1001,7 @@
 
     <h3>See also:</h3>
     <ul>
-         <a href="../modules/ENT.html#OnTakeDamage">ENT.OnTakeDamage</a>
+         <a href="../libraries/Vehicle.html#OnTakeDamage">OnTakeDamage</a>
     </ul>
 
 
@@ -1035,7 +1039,7 @@
 
     <h3>See also:</h3>
     <ul>
-         <a href="../modules/ENT.html#Explode">ENT.Explode</a>
+         <a href="../libraries/Vehicle.html#Explode">Explode</a>
     </ul>
 
 
@@ -1060,7 +1064,7 @@
 
     <h3>See also:</h3>
     <ul>
-         <a href="../modules/ENT.html#Destroy">ENT.Destroy</a>
+         <a href="../libraries/Vehicle.html#Destroy">Destroy</a>
     </ul>
 
 
@@ -1069,6 +1073,27 @@
     <h2 class="section-header "><a name="Setup_functions"></a>Setup functions </h2>
 
     <dl class="function">
+    <dt>
+    <a name = "SetupDataTables"></a>
+    <strong><span class="realm shared" title="Shared"></span>SetupDataTables()<div class="notice internal" title="Internal"></div></strong>
+    </dt>
+    <dd>
+    Setups the internal DTVars which creates getters/setters.
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+
+
+
+
+
+</dd>
     <dt>
     <a name = "SetupDefaults"></a>
     <strong><span class="realm shared" title="Shared"></span>SetupDefaults(options)</strong>
@@ -1209,7 +1234,7 @@
     <dl class="function">
     <dt>
     <a name = "AddWeapon"></a>
-    <strong><span class="realm server" title="Server"></span>AddWeapon(name, pos, callback)</strong>
+    <strong><span class="realm server" title="Server"></span>AddWeapon(name[, pos[, callback]])</strong>
     </dt>
     <dd>
     Add a weapon to the vehicle.
@@ -1231,10 +1256,12 @@
         <li><span class="parameter">pos</span>
             <span class="types"><span class="type">vector</span></span>
          The position of the weapon
+         (<em>optional</em>)
         </li>
         <li><span class="parameter">callback</span>
             <span class="types"><span class="type">func</span></span>
          Callback used to update entity positioning
+         (<em>optional</em>)
         </li>
     </ul>
 
@@ -1373,7 +1400,6 @@
 
     <h3>See also:</h3>
     <ul>
-         <a href="../modules/ENT.html#GetPassenger">ENT.GetPassenger</a>
     </ul>
 
 
@@ -1404,7 +1430,7 @@
     <ol>
 
            <span class="types"><span class="type">player</span></span>
-        The found <code>Player</code> or <code>NULL</code>
+        The found <a href="../libraries/Player.html#">Player</a> or <code>NULL</code>
     </ol>
 
 
@@ -1416,8 +1442,8 @@
 
     <dl class="function">
     <dt>
-    <a name = "DispatchNetworkEvent"></a>
-    <strong><span class="realm server" title="Server"></span>DispatchNetworkEvent(event, ...)</strong>
+    <a name = "DispatchNWEvent"></a>
+    <strong><span class="realm server" title="Server"></span>DispatchNWEvent(event, ...)</strong>
     </dt>
     <dd>
     Dispatch a networked event to all clients.
@@ -1558,7 +1584,7 @@
 </div> <!-- id="main" -->
 <div id="about">
 <i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.4.6</a></i>
-<i style="float:right;">Last updated 2018-12-24 10:33:22 </i>
+<i style="float:right;">Last updated 2018-12-30 20:18:29 </i>
 </div> <!-- id="about" -->
 </div> <!-- id="container" -->
 </body>

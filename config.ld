@@ -13,7 +13,7 @@ file = 'lua'
 style = './docs/css'
 
 readme = './docs/doc.md'
-kind_names = { topic = 'Manual', script = 'Module' }
+kind_names = { topic = 'Manual', module = 'Libraries' }
 
 custom_tags = {
   { 'shared', hidden = true },
