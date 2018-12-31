@@ -1,5 +1,6 @@
 --- Star Wars Vehicles Flight Base
--- @module ENT
+-- @module Vehicle
+-- @alias ENT
 -- @author Doctor Jew
 
 ENT.Type = "anim"
@@ -71,6 +72,9 @@ local AccessorBool = swvr.util.AccessorBool
 --- Setup functions
 -- @section setup
 
+--- Setups the internal DTVars which creates getters/setters.
+-- @shared
+-- @internal
 function ENT:SetupDataTables()
   self:NetworkVar("Bool", 0, "Active")
   self:NetworkVar("Bool", 1, "Destroyed")
@@ -89,16 +93,17 @@ function ENT:SetupDataTables()
   self:NetworkVar("Float", 5, "TargetThrust")
   self:NetworkVar("Float", 6, "MaxThrust")
   self:NetworkVar("Float", 7, "BoostThrust")
+  self:NetworkVar("Float", 8, "MaxVerticalThrust")
 
-  self:NetworkVar("Float", 8, "NextPrimaryFire")
-  self:NetworkVar("Float", 9, "NextSecondaryFire")
-  self:NetworkVar("Float", 10, "NextAlternateFire")
+  self:NetworkVar("Float", 9, "NextPrimaryFire")
+  self:NetworkVar("Float", 10, "NextSecondaryFire")
+  self:NetworkVar("Float", 11, "NextAlternateFire")
 
-  self:NetworkVar("Float", 11, "MaxVelocity")
-  self:NetworkVar("Float", 12, "MaxPower")
+  self:NetworkVar("Float", 12, "MaxVelocity")
+  self:NetworkVar("Float", 13, "MaxPower")
 
-  self:NetworkVar("Float", 13, "PrimaryOverheat")
-  self:NetworkVar("Float", 14, "SecondaryOverheat")
+  self:NetworkVar("Float", 14, "PrimaryOverheat")
+  self:NetworkVar("Float", 15, "SecondaryOverheat")
 
   self:NetworkVar("String", 0, "Transponder")
 
@@ -125,9 +130,12 @@ function ENT:SetupDataTables()
     self:SetShield(self.MaxShield or 0)
     self:SetMaxShield(self.MaxShield or 0)
     self:SetMaxHP(self.MaxHealth)
+
     self:SetThrust(0)
     self:SetMaxThrust(self.MaxThrust)
     self:SetBoostThrust(self.BoostThrust)
+    self:SetMaxVerticalThrust(isnumber(self.MaxVerticalThrust) and self.MaxVerticalThrust or self:GetMaxThrust() * 0.15)
+
     self:SetMaxPower(self.MaxPower)
 
     self:SetNextPrimaryFire(CurTime())
@@ -137,6 +145,12 @@ function ENT:SetupDataTables()
     self:SetAllegiance(1)
     self:SetSeatCount(0)
   end
+
+  self:SetupCustomDataTables()
+end
+
+function ENT:SetupCustomDataTables()
+
 end
 
 --- Setup default vehicle events. This is shared but will product different results on client/server.
@@ -284,15 +298,15 @@ end
 --- Add a weapon to the vehicle.
 -- @server
 -- @string name The name of the weapon
--- @vector pos The position of the weapon
--- @func callback Callback used to update entity positioning
+-- @vector[opt] pos The position of the weapon
+-- @func[opt] callback Callback used to update entity positioning
 -- @treturn entity The new weapon `Entity` for convenience
 function ENT:AddWeapon(name, pos, callback)
   if CLIENT then return end
 
   local ent = ents.Create("prop_physics")
   ent:SetModel("models/props_junk/PopCan01a.mdl")
-  ent:SetPos(self:LocalToWorld(pos) or self:GetPos())
+  ent:SetPos(pos and self:LocalToWorld(pos) or self:GetPos())
   ent:SetAngles(self:GetAngles())
   ent:SetParent(self)
   ent:Spawn()
@@ -541,7 +555,7 @@ end
 -- @server
 -- @string event The event to dispatch
 -- @param ... Any arguments to network
-function ENT:DispatchNetworkEvent(event, ...)
+function ENT:DispatchNWEvent(event, ...)
   if CLIENT then return true, false end
 
   local cancel, result = self:DispatchEvent(event, ...)

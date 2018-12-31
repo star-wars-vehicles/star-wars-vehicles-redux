@@ -1,5 +1,6 @@
 --- Star Wars Vehicles Flight Base
--- @module ENT
+-- @module Vehicle
+-- @alias ENT
 -- @author Doctor Jew
 
 AddCSLuaFile("shared.lua")
@@ -98,7 +99,7 @@ function ENT:Initialize()
 
   self:SetCooldown("Engine", CurTime())
 
-  self.ColdStart = true
+  self.ColdStart = cvars.Bool("swvr_coldstart_enabled")
 
   self:OnInitialize()
 
@@ -123,7 +124,7 @@ function ENT:Think()
 
     local phys = self:GetPhysicsObject()
 
-    if IsValid(phys) then
+    if IsValid(phys) and phys:IsMotionEnabled() then
       phys:SetMass(self.Mass)
       phys:SetInertia(inertia)
     end
@@ -187,7 +188,7 @@ function ENT:ThinkControls()
 
     for key, action in pairs(WEAPON_MAP) do
       if index == 1 and self["GetNext" .. key .. "Fire"](self) > CurTime() then continue end
-      if ply:ControlDown(key) then self:DispatchNetworkEvent((index ~= 1 and "Gunner" or "") .. action, { Index = index, Player = ply, Seat = seat }) end
+      if ply:ControlDown(key) then self:DispatchNWEvent((index ~= 1 and "Gunner" or "") .. action, { Index = index, Player = ply, Seat = seat }) end
     end
   end
 end
@@ -237,7 +238,7 @@ end
 --- Makes a `Player` enter the vehicle
 -- @server
 -- @player ply The `Player` to enter the vehicle
--- @see ENT.Exit
+-- @see Exit
 function ENT:Enter(ply)
   if not IsValid(ply) then return end
 
@@ -276,17 +277,17 @@ function ENT:Enter(ply)
     seat:SetNWEntity("Driver", ply)
   end
 
-  self:DispatchNetworkEvent("OnEnter", ply, ply:GetNWInt("SWVR.SeatIndex") == 1)
+  self:DispatchNWEvent("OnEnter", ply, ply:GetNWInt("SWVR.SeatIndex") == 1)
 end
 
 --- Called when a `Player` exits the vehicle
 -- @server
 -- @player ply The `Player` that exited
--- @see ENT.Enter
+-- @see Enter
 function ENT:Exit(ply)
   if not IsValid(ply) then return end
 
-  self:DispatchNetworkEvent("OnExit", ply, ply:GetNWInt("SWVR.SeatIndex") == 1)
+  self:DispatchNWEvent("OnExit", ply, ply:GetNWInt("SWVR.SeatIndex") == 1)
 
   ply:SetNWInt("SWVR.SeatIndex", 0)
 end
@@ -312,7 +313,7 @@ function ENT:StartEngine()
   if cvars.Bool("swvr_coldstart_enabled") and self.ColdStart then
     self.Starting = true
 
-    self:DispatchNetworkEvent("OnEngineStartup")
+    self:DispatchNWEvent("OnEngineStartup")
     self:EmitSound("ENGINE_START_COLD")
 
     timer.Create("ColdStart" .. self:EntIndex(), cvars.Number("swvr_coldstart_time", 6), 1, function()
@@ -326,7 +327,26 @@ function ENT:StartEngine()
 
     self.NextInertia = 0
 
-    self:DispatchNetworkEvent("OnEngineStart")
+    if not IsValid(self.RotorWash) then
+      local fx = ents.Create("env_rotorwash_emitter")
+      fx:SetPos(self:GetPos())
+      fx:SetAngles(Angle())
+      fx:Spawn()
+      fx:Activate()
+      fx:SetParent(self)
+      fx.DoNotDuplicate = true
+
+      self:DeleteOnRemove(fx)
+
+      -- CPPI support
+      if fx.CPPISetOwner and self.CPPIGetOwner then
+        fx:CPPISetOwner(self:CPPIGetOwner())
+      end
+
+      self.RotorWash = fx
+    end
+
+    self:DispatchNWEvent("OnEngineStart")
   end
 end
 
@@ -334,7 +354,7 @@ function ENT:StopEngine()
   if not (self:EngineActive() or self.Starting) then return end
 
   if self.ColdStart then
-    self:DispatchNetworkEvent("OnEngineShutdown")
+    self:DispatchNWEvent("OnEngineShutdown")
     timer.Remove("ColdStart" .. self:EntIndex())
     self:StopSound("ENGINE_START_COLD")
     self:EmitSound("ENGINE_SHUTDOWN2")
@@ -343,12 +363,14 @@ function ENT:StopEngine()
   self.Starting = false
   self:EngineActive(false)
 
-  self:DispatchNetworkEvent("OnEngineStop")
+  if IsValid(self.RotorWash) then self.RotorWash:Remove() end
+
+  self:DispatchNWEvent("OnEngineStop")
 end
 
 --- Land the vehicle if possible
 -- @treturn bool If the vehicle was landed or not
--- @see ENT.Takeoff
+-- @see Takeoff
 function ENT:Land()
   if self:GetCooldown("Land") > CurTime() then return false end
   if true then return end
@@ -364,7 +386,7 @@ function ENT:Land()
   self.Landed = true
   self.LandPos = tr.HitPos + (self.LandOffset or Vector(0, 0, 0))
 
-  self:DispatchNetworkEvent("OnLand")
+  self:DispatchNWEvent("OnLand")
 
   self:SetCooldown("Land", CurTime() + 1)
 
@@ -379,7 +401,7 @@ function ENT:Takeoff()
 
 
 
-  self:DispatchNetworkEvent("OnTakeoff")
+  self:DispatchNWEvent("OnTakeoff")
 
   self:SetCooldown("Land", CurTime() + 1)
 
@@ -412,7 +434,7 @@ function ENT:ThinkPhysics()
       thrust = ((push and 500 or 0) - (pilot:ControlDown("backward") and 500 or 0)) * FrameTime()
     end
 
-    self.TargetPower = math.Clamp(self.TargetPower + thrust, self.MinVelocity, push and boost_thrust or max_thrust)
+    self.TargetPower = math.Clamp(self.TargetPower + thrust, self.MinVelocity or 0, push and boost_thrust or max_thrust)
   else
     self.TargetPower = self.TargetPower - math.Clamp(self.TargetPower, -250, 250)
   end
@@ -430,25 +452,24 @@ function ENT:ThinkPhysics()
 
   local fwd_vel = math.Clamp(fwd:Dot(vel:GetNormalized()), -1, 1) * vel:Length()
 
-  local power = math.max(max_velocity * throttle - fwd_vel, 0) / max_velocity * self:GetMaxPower() * boost_thrust
+  local power = math.max(max_velocity * throttle - fwd_vel, 0) / max_velocity * self:GetMaxPower() * boost_thrust * FrameTime()
 
-  phys:ApplyForceOffset(fwd * power * FrameTime(), self:LocalToWorld(self.Controls.Thrust))
+  if true and IsValid(pilot) then
+    local up, down = pilot:ControlDown("up"), pilot:ControlDown("down")
 
-  -- Vertical Movement
+    -- self.TargetPower = vel:Length() / max_velocity * boost_thrust
 
-  -- if self:EngineActive() and IsValid(pilot) then
-  --   if pilot:ControlDown("up") and pilot:ControlUp("down") then
-  --     self.Throttle.z = 550
-  --   elseif pilot:ControlDown("down") and pilot:ControlUp("up") then
-  --     self.Throttle.z = -550
-  --   else
-  --     self.Throttle.z = 0
-  --   end
+    local vertical_thrust = (up and self:GetMaxVerticalThrust() or 0) + (down and -self:GetMaxVerticalThrust() or 0)
 
-  --   local p = math.max(550 * - (math.Clamp( self:GetUp():Dot( vel:GetNormalized() ), -1, 1 ) * vel:Length()), 0 ) / 550 * self:GetMaxPower() * 600
+    local force = self:GetUp() * (vertical_thrust * phys:GetMass() * FrameTime())
 
-  --   phys:ApplyForceCenter(self:GetUp() * p * FrameTime())
-  -- end
+    print(force)
+
+    phys:ApplyForceOffset(force, self:LocalToWorld(self.Controls.Elevator))
+    phys:ApplyForceOffset(force, self:LocalToWorld(self.Controls.Wings))
+  end
+
+  phys:ApplyForceOffset(fwd * power, self:LocalToWorld(self.Controls.Thrust))
 
   -- Turning movement
 
@@ -484,7 +505,7 @@ function ENT:ThinkPhysics()
     left, right = pilot:ControlDown("left"), pilot:ControlDown("right")
   end
 
-  local roll_scalar = math.min(self:GetVelocity():Length() / math.min(max_velocity, 3000) * 0.5, 1)
+  local roll_scalar = math.min(self:GetVelocity():Length() / math.min(max_velocity * 0.5, 3000), 1)
 
   yaw_scalar = math.max(yaw_scalar, 1 - roll_scalar)
 
@@ -548,20 +569,20 @@ function ENT:PhysicsCollide(data, phys)
     dmg:SetAttacker(data.HitEntity)
     dmg:SetInflictor(data.HitEntity)
 
-    if self:DispatchNetworkEvent("OnCollide", data.HitEntity, dmg:GetDamage()) then return end
+    if self:DispatchNWEvent("OnCollide", data.HitEntity, dmg:GetDamage()) then return end
 
     self:EmitSound("Airboat_impact_hard")
 
     self:TakeDamageInfo(dmg)
   else
-    if self:DispatchNetworkEvent("OnCollide", data.HitEntity, 0) then return end
+    if self:DispatchNWEvent("OnCollide", data.HitEntity, 0) then return end
     self:EmitSound("MetalVehicle.ImpactSoft")
   end
 end
 
 --- Called by the engine when the entity takes damage
+-- @server
 -- @internal
--- @future
 -- @param dmg `DamageInfo` structure containing damage information
 function ENT:OnTakeDamage(dmg)
   self:TakePhysicsDamage(dmg)
@@ -604,7 +625,7 @@ end
 
 --- Shield damage visuals
 -- @server
--- @see ENT.OnTakeDamage
+-- @see OnTakeDamage
 function ENT:ShieldDamage()
   if not IsValid(self) then
     return
@@ -626,14 +647,14 @@ function ENT:ShieldDamage()
     util.Effect("swvr_shield", partFX)
   end
 
-  self:DispatchNetworkEvent("OnShieldDamage")
+  self:DispatchNWEvent("OnShieldDamage")
 end
 
 --- Destroys the vehicle physically
 -- @server
 -- @entity[opt] attacker The attacker that destroyed the vehicle
 -- @entity[opt] inflictor The inflictor that destroyed the vehicle
--- @see ENT.Explode
+-- @see Explode
 function ENT:Destroy(attacker, inflictor)
   if self:IsDestroyed() then return end
 
@@ -648,7 +669,7 @@ end
 
 --- Blows up the vehicle visually
 -- @server
--- @see ENT.Destroy
+-- @see Destroy
 function ENT:Explode()
   if self.Done then return end
 

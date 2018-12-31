@@ -22,7 +22,7 @@ include("swvr_util.lua")
 
 --- Retrieve all existing SWVR vehicles
 -- @shared
--- @return Table of `Entity` classes
+-- @treturn table Table of `Entity` classes
 function swvr.GetVehicles()
   local vehicles = {}
   for _, ent in ipairs(ents.GetAll()) do
@@ -36,7 +36,7 @@ end
 
 --- Retrieve all players current in a SWVR vehicle
 -- @shared
--- @return Table of Players
+-- @treturn tablecc Table of Players
 -- @usage for _, ply in ipairs(swvr.GetPlayers()) do
 -- 	print(ply:SteamID64())
 -- end
@@ -55,7 +55,7 @@ end
 
 --- Retrieve the cached config value for better performance
 -- @shared
--- @param key The category or sub-category to retrieve
+-- @string key The category or sub-category to retrieve
 -- @param default Default value returned in case key is not found
 -- @return The retrieved value if found or the default
 -- @usage local value = swvr.Config("volume.engine", 100)

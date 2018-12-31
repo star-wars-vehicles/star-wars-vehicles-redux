@@ -1,5 +1,6 @@
 --- Star Wars Vehicles Flight Base
--- @module ENT
+-- @module Vehicle
+-- @alias ENT
 -- @author Doctor Jew
 
 include("shared.lua")
@@ -60,7 +61,7 @@ function ENT:UpdateSounds()
 
   local dist = (LocalPlayer():GetViewEntity():GetPos() - self:GetPos()):Length()
 
-  self.PitchOffset = self.PitchOffset and self.PitchOffset + (math.Clamp((dist - self.LastDist) * FrameTime() * 300,-40,40) - self.PitchOffset) * FrameTime() * 5 or 0
+  self.PitchOffset = self.PitchOffset and self.PitchOffset + (math.Clamp((dist - self.LastDist) * FrameTime() * 150,-40,40) - self.PitchOffset) * FrameTime() * 5 or 0
   self.LastDist = dist
 
   local pitch = self:GetThrust() / self:GetBoostThrust()
@@ -91,6 +92,7 @@ end
 -- @section drawing
 
 --- Called every frame to draw the entity. Do not override unless experienced.
+-- @client
 function ENT:Draw()
   self:DrawModel()
 
@@ -105,6 +107,7 @@ function ENT:Draw()
 end
 
 --- Draw the engine exhaust
+-- @client
 -- @internal
 function ENT:DrawExhaust()
   if not self:EngineActive() then return end
@@ -175,6 +178,7 @@ function ENT:DrawExhaust()
 end
 
 --- Draw vehicle damage effects
+-- @client
 -- @internal
 function ENT:DrawDamageEffects()
   local health = self:Health()
@@ -195,6 +199,7 @@ end
 local mat = Material("sprites/light_glow02_add")
 
 --- Draw vehicle engine glow
+-- @client
 -- @internal
 function ENT:DrawGlow()
   if not self:EngineActive() then return end
