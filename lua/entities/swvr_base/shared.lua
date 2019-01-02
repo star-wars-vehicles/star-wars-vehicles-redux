@@ -295,6 +295,27 @@ end
 --- Weapon Functions
 -- @section weapons
 
+function ENT:AddWeaponGroup(name)
+  if CLIENT then return end
+
+  local ent = ents.Create("prop_physics")
+  ent:SetModel("models/props_junk/PopCan01a.mdl")
+  ent:SetPos(self:GetPos())
+  ent:SetAngles(self:GetAngles())
+  ent:SetParent(self)
+  ent:Spawn()
+  ent:Activate()
+  ent:SetRenderMode(RENDERMODE_TRANSALPHA)
+  ent:SetColor(Color(255, 255, 255, 0))
+  ent:SetSolid(SOLID_NONE)
+  ent:AddFlags(FL_DONTTOUCH)
+
+  local phys = ent:GetPhysicsObject()
+  phys:EnableCollisions(false)
+  phys:EnableMotion(false)
+
+end
+
 --- Add a weapon to the vehicle.
 -- @server
 -- @string name The name of the weapon
@@ -390,10 +411,9 @@ function ENT:FireWeapon(name, options)
   options = options or {}
 
   local wtype = options.Type or "cannon"
+  local t = wtype:sub(1,1):upper() .. wtype:sub(2):lower()
 
-  if string.lower(wtype) == "cannon" then
-    self:FireCannon(name, options)
-  end
+  if self["Fire" .. t] then self["Fire" .. t](self, name, options) end
 end
 
 function ENT:FireCannon(name, options)
@@ -403,8 +423,8 @@ function ENT:FireCannon(name, options)
 
   local bullet = {}
   bullet.Num = 1
-  bullet.Src = weapon:GetPos() or self:LocalToWorld(Vector())
-  bullet.Dir = self:LocalToWorldAngles(Angle()):Forward()
+  bullet.Src = weapon:GetPos() or self:GetPos()
+  bullet.Dir = weapon:GetAngles():Forward() or self:GetAngles():Forward()
   bullet.Spread = options.Spread or Vector(0.01, 0.01, 0)
   bullet.Tracer	= 1
   bullet.TracerName	= options.Tracer or "swvr_tracer_red"
@@ -455,6 +475,30 @@ function ENT:FireMissile(name, options)
   constraint.NoCollide(ent, self, 0, 0)
 
   return ent
+end
+
+function ENT:FindTarget()
+  local targets = ents.FindInCone(self:GetPos(), self:GetForward(), 100000, math.cos(0.1))
+
+  for _, ent in pairs(targets) do
+    -- TODO Check for ships that can't be locked on to (cloak/jammer/etc.)
+    if (IsValid(ent) and ent.IsSWVRVehicle and ent ~= self and not IsValid(ent:GetParent()) and ent:GetAllegiance() ~= self:GetAllegiance()) then
+      local origin = ent:GetPos() - self:GetPos()
+      origin:Normalize()
+      origin = self:GetPos() + origin * 100
+
+      local tr = util.TraceLine({
+        start = origin,
+        endpos = ent:GetPos()
+      })
+
+      if (not tr.HitWorld) then
+        return ent
+      end
+    end
+  end
+
+  return NULL
 end
 
 --- Convenience Functions

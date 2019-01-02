@@ -24,7 +24,7 @@ The first way is what I will refer to as the *hard-coded* way. This is manually 
 
 The second way is the *dyanmic* way. This means adding the seats at run-time when the ship is initialized. This method should be used inside of the `ENT:OnInitialize()` method inside of the `init.lua` file.
 
-You are allowed to mix these methods if you so desire.
+You are allowed to mix these methods if you so desire. Note that any hard-coded seats will be registered before the dynamic seats.
 
 **Hard-Coded**
 
@@ -55,7 +55,7 @@ The first way is what I will refer to as the *hard-coded* way. This is manually 
 
 The second way is the *dyanmic* way. This means adding the weapons at run-time when the ship is initialized. This method should be used inside of the `ENT:OnInitialize()` method inside of the `init.lua` file.
 
-You are allowed to mix these methods if you so desire.
+You are allowed to mix these methods if you so desire. Note that any hard-coded weapons will be registered before the dynamic weapons.
 
 **Hard-Coded**
 
@@ -75,3 +75,7 @@ function ENT:OnInitialize()
   self:AddWeapon("Main", Vector(50, -60, 0), nil)
 end
 ```
+
+## Effects
+
+While not recommended, all of the effects on the vehicles can be completely overriden or disabled.

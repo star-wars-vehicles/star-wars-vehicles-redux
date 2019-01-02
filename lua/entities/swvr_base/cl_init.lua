@@ -29,6 +29,32 @@ function ENT:Initialize()
     self:EmitSound("swvr/shields/swvr_shield_absorb_" .. math.Round(math.random(1, 4)) .. ".wav", 500, 100,  cvars.Number("swvr_effect_volume", 100) / 100, CHAN_BODY)
   end)
 
+  if istable(self.Engines) then
+    local engines = {}
+    for k, v in pairs(self.Engines) do
+      if isvector(v) then
+        engines[#engines + 1] = { Pos = v, Callback = nil }
+      elseif istable(v) then
+        engines[#engines + 1] = v
+      end
+    end
+
+    self.Engines = engines
+  end
+
+  if istable(self.DamageVectors) then
+    local dmg = {}
+    for k, v in pairs(self.DamageVectors) do
+      if isvector(v) then
+        dmg[#dmg + 1] = { Pos = v, Callback = nil }
+      elseif istable(v) then
+        dmg[#dmg + 1] = v
+      end
+    end
+
+    self.DamageVectors = dmg
+  end
+
   self:OnInitialize()
 
   self.Initialized = true
@@ -88,6 +114,24 @@ function ENT:OnThink()
 
 end
 
+function ENT:AddDamagePosition(pos, cb)
+  self.DamageVectors = self.DamageVectors or {}
+
+  self.DamageVectors[#self.DamageVectors + 1] = { Pos = pos, Callback = cb }
+end
+
+function ENT:GetDamagePositions()
+  return self.DamageVectors
+end
+
+function ENT:AddEngine(pos, cb)
+  self.Engines[#self.Engines + 1] = { Pos = pos, Callback = cb }
+end
+
+function ENT:GetEngines()
+  return self.Engines
+end
+
 --- Drawing Functions
 -- @section drawing
 
@@ -132,10 +176,12 @@ function ENT:DrawExhaust()
   local color = self.Settings.Engine.Color
 
   if self.Settings.Engine.Type == 1 then
-    for _, v in ipairs(self.Engines) do
+    for _, v in ipairs(self:GetEngines()) do
+      if v.Callback and v.Callback(self) == false then continue end
+
       local normal = (self:GetForward() * -1):GetNormalized()
       local roll = math.Rand(-90, 90)
-      local pos = self:LocalToWorld(v * self:GetModelScale())
+      local pos = self:LocalToWorld(v.Pos * self:GetModelScale())
       local sprite = self.FXEmitter:Add(self.Settings.Engine.Sprite, pos)
 
       sprite:SetVelocity(normal)
@@ -152,8 +198,10 @@ function ENT:DrawExhaust()
       self.NextFX = CurTime() + 0.01
 
       if self.FXEmitter then
-        for _, v in ipairs(self.Engines) do
-          local vOffset = self:LocalToWorld(v)
+        for _, v in ipairs(self:GetEngines()) do
+          if v.Callback and v.Callback(self) == false then continue end
+
+          local vOffset = self:LocalToWorld(v.Pos * self:GetModelScale())
           local vNormal = -self:GetForward()
 
           vOffset = vOffset + vNormal * 5
@@ -189,8 +237,22 @@ function ENT:DrawDamageEffects()
     if self.NextDFX < CurTime() then
       self.NextDFX = CurTime() + 0.05
 
+      local vectors = self:GetDamagePositions()
+
+      if vectors then
+        for _, v in ipairs(vectors) do
+          if isfunction(v.Callback) and v.Callback(self) ~= false then
+            local fx = EffectData()
+            fx:SetOrigin(self:LocalToWorld(v.Pos * self:GetModelScale()))
+            util.Effect("swvr_smoke", fx)
+          end
+        end
+
+        return
+      end
+
       local fx = EffectData()
-      fx:SetOrigin(self:LocalToWorld(self.Controls.Thrust) - self:GetForward() * 50)
+      fx:SetOrigin(self:LocalToWorld(self.Controls.Thrust * self:GetModelScale()) - self:GetForward() * 50)
       util.Effect("swvr_smoke", fx)
     end
   end
@@ -211,8 +273,10 @@ function ENT:DrawGlow()
 
   render.SetMaterial(mat)
 
-  for _, pos in ipairs(self.Engines) do
-    render.DrawSprite(self:LocalToWorld(pos), size, size, color)
+  for _, v in ipairs(self:GetEngines()) do
+    if v.Callback and v.Callback(self) == false then continue end
+
+    render.DrawSprite(self:LocalToWorld(v.Pos * self:GetModelScale()), size, size, color)
   end
 end
 
@@ -390,11 +454,14 @@ function ENT:HUDDrawReticle()
   surface.SetMaterial(Material(material, "noclamp"))
 
   if (group and group.CanLock) then
-    local lock = self:GetReticleLock()
+    local target = self:FindTarget()
 
-    if (lock) then
-      vpos = lock
-      material = "hud/reticle_lock.png"
+    if IsValid(target) then
+      local lock = target:GetPos() + target:GetUp() * (target:GetModelRadius() / 3)
+      if (lock) then
+        vpos = lock
+        material = "hud/reticle_lock.png"
+      end
     end
   end
 
@@ -444,11 +511,14 @@ function ENT:HUDDrawOverheating()
 
   local vpos = tr.HitPos
 
-  if (group.CanLock) then
-    local lock = self:GetReticleLock()
+  if (group and group.CanLock) then
+    local target = self:FindTarget()
 
-    if (lock) then
-      vpos = lock
+    if IsValid(target) then
+      local lock = target:GetPos() + target:GetUp() * (target:GetModelRadius() / 3)
+      if (lock) then
+        vpos = lock
+      end
     end
   end
 
@@ -715,9 +785,9 @@ hook.Add("PostDrawTranslucentRenderables", "SWVR.DebugVisuals", function()
     cam.IgnoreZ(true)
 
     -- Draw the spheres!
-    render.DrawSphere(ent:LocalToWorld(controls.Thrust), 15, 20, 20, Color(0, 175, 175, 100))
-    render.DrawSphere(ent:LocalToWorld(controls.Wings), 15, 20, 20, Color(175, 175, 0, 100))
-    render.DrawSphere(ent:LocalToWorld(controls.Elevator), 15, 20, 20, Color(175, 0, 175, 100))
-    render.DrawSphere(ent:LocalToWorld(controls.Rudder), 15, 20, 20, Color(0, 175, 0, 100))
+    render.DrawSphere(ent:LocalToWorld(controls.Thrust * ent:GetModelScale()), 15, 20, 20, Color(0, 175, 175, 100))
+    render.DrawSphere(ent:LocalToWorld(controls.Wings * ent:GetModelScale()), 15, 20, 20, Color(175, 175, 0, 100))
+    render.DrawSphere(ent:LocalToWorld(controls.Elevator * ent:GetModelScale()), 15, 20, 20, Color(175, 0, 175, 100))
+    render.DrawSphere(ent:LocalToWorld(controls.Rudder * ent:GetModelScale()), 15, 20, 20, Color(0, 175, 0, 100))
   end
 end)

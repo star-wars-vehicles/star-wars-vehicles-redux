@@ -62,6 +62,7 @@ function ENT:Initialize()
   phys:EnableMotion(true)
 
   self:PhysWake()
+  self:StartMotionController()
 
   -- Generate control surface helpers
   for control in pairs(self.Controls) do
@@ -131,8 +132,6 @@ function ENT:Think()
   end
 
   self:ThinkControls()
-
-  self:ThinkPhysics()
 
   self:OnThink()
 
@@ -408,7 +407,12 @@ function ENT:Takeoff()
   return true
 end
 
-function ENT:ThinkPhysics()
+--- Simulate the physics on the vehicle, called by the engine.
+-- @internal
+-- @server
+-- @tparam PhysObj phys The physics object of the vehicle.
+-- @number deltaTime Time since the last call.
+function ENT:PhysicsSimulate(phys, delta)
   if self:IsDestroyed() then self:StopEngine() end
 
   -- Forward movement
@@ -431,7 +435,7 @@ function ENT:ThinkPhysics()
 
     if IsValid(pilot) then
       push = pilot:ControlDown("forward")
-      thrust = ((push and 500 or 0) - (pilot:ControlDown("backward") and 500 or 0)) * FrameTime()
+      thrust = ((push and 500 or 0) - (pilot:ControlDown("backward") and 500 or 0)) * delta
     end
 
     self.TargetPower = math.Clamp(self.TargetPower + thrust, self.MinVelocity or 0, push and boost_thrust or max_thrust)
@@ -439,9 +443,7 @@ function ENT:ThinkPhysics()
     self.TargetPower = self.TargetPower - math.Clamp(self.TargetPower, -250, 250)
   end
 
-  self:SetThrust(self:GetThrust() + (self.TargetPower - self:GetThrust()) * FrameTime())
-
-  local phys = self:GetPhysicsObject()
+  self:SetThrust(self:GetThrust() + (self.TargetPower - self:GetThrust()) * delta)
 
   if not IsValid(phys) then return end
 
@@ -452,7 +454,7 @@ function ENT:ThinkPhysics()
 
   local fwd_vel = math.Clamp(fwd:Dot(vel:GetNormalized()), -1, 1) * vel:Length()
 
-  local power = math.max(max_velocity * throttle - fwd_vel, 0) / max_velocity * self:GetMaxPower() * boost_thrust * FrameTime()
+  local power = math.max(max_velocity * throttle - fwd_vel, 0) / max_velocity * self:GetMaxPower() * boost_thrust * delta
 
   if true and IsValid(pilot) then
     local up, down = pilot:ControlDown("up"), pilot:ControlDown("down")
@@ -461,9 +463,7 @@ function ENT:ThinkPhysics()
 
     local vertical_thrust = (up and self:GetMaxVerticalThrust() or 0) + (down and -self:GetMaxVerticalThrust() or 0)
 
-    local force = self:GetUp() * (vertical_thrust * phys:GetMass() * FrameTime())
-
-    print(force)
+    local force = self:GetUp() * (vertical_thrust * phys:GetMass() * delta)
 
     phys:ApplyForceOffset(force, self:LocalToWorld(self.Controls.Elevator))
     phys:ApplyForceOffset(force, self:LocalToWorld(self.Controls.Wings))
