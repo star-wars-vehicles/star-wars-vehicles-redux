@@ -620,7 +620,7 @@ function ENT:DispatchNWEvent(event, ...)
   return false, result
 end
 
---- Dispatch an event only client/server side.
+--- Dispatch an event only client/server side. Test.
 -- @shared
 -- @string event The event to dispatch
 -- @param ... Any arguments to send

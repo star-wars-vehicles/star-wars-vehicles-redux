@@ -20,8 +20,8 @@ install:
 
 script:
   - ldoc . --fatalwarnings
-  - luacheck .
-  - bash scripts/deploy.sh
+  # - luacheck .
+  # - bash scripts/deploy.sh
 
 
 deploy:
@@ -32,6 +32,3 @@ deploy:
   local-dir: docs
   on:
     branch: master
-  - provider: releases
-  api_key:
-    secure: TEST
