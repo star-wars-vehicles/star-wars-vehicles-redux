@@ -10,11 +10,12 @@ before_install:
   - source $HOME/env/bin/activate
 
 install:
+  - luarocks install lua-discount
   - luarocks install ldoc
   - cd $TRAVIS_BUILD_DIR
 
 script:
-  - ldoc . --fatalwarnings
+  - ldoc .
 
 
 deploy:

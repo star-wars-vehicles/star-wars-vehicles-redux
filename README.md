@@ -1,5 +1,7 @@
 # Star Wars Vehicles Redux
 
+[![Build Status](https://travis-ci.org/star-wars-vehicles/star-wars-vehicles-redux.svg?branch=master)](https://travis-ci.org/star-wars-vehicles/star-wars-vehicles-redux)
+
 ## Installation
 
 Create a folder inside `addons` called anything you want (preferably something like 'swvr').
