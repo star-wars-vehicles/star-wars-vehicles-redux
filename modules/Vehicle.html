@@ -1,0 +1,1558 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<head>
+    <title>Star Wars Vehicles Redux</title>
+    <link rel="stylesheet" href="../ldoc.css" type="text/css" />
+</head>
+<body>
+
+<div id="container">
+
+<div id="product">
+	<div id="product_logo"></div>
+	<div id="product_name"><big><b></b></big></div>
+	<div id="product_description"></div>
+</div> <!-- id="product" -->
+
+
+<div id="main">
+
+
+<!-- Menu -->
+
+<div id="navigation">
+<br/>
+<h1>SWVR</h1>
+
+<ul>
+  <li><a href="../index.html">Index</a></li>
+</ul>
+
+<h2>Contents</h2>
+<ul>
+<li><a href="#Functions">Functions</a></li>
+<li><a href="#Fields">Fields</a></li>
+<li><a href="#Drawing_Functions">Drawing Functions </a></li>
+<li><a href="#HUD_Functions">HUD Functions </a></li>
+<li><a href="#View_functions">View functions </a></li>
+<li><a href="#Engine_Interaction">Engine Interaction </a></li>
+<li><a href="#Damage_Interactions">Damage Interactions </a></li>
+<li><a href="#Setup_functions">Setup functions </a></li>
+<li><a href="#Seat_Functions">Seat Functions </a></li>
+<li><a href="#Weapon_Functions">Weapon Functions </a></li>
+<li><a href="#Convenience_Functions">Convenience Functions </a></li>
+<li><a href="#Networking">Networking </a></li>
+</ul>
+
+
+<h2>Modules</h2>
+<ul class="nowrap">
+  <li><a href="../modules/swvr.html">swvr</a></li>
+  <li><a href="../modules/Player.html">Player</a></li>
+  <li><strong>Vehicle</strong></li>
+</ul>
+<h2>Manual</h2>
+<ul class="nowrap">
+  <li><a href="../manual/doc.md.html">doc</a></li>
+</ul>
+
+</div>
+
+<div id="content">
+
+<h1>Module <code>Vehicle</code></h1>
+<p>Star Wars Vehicles Flight Base</p>
+<p>
+
+</p>
+    <h3>Info:</h3>
+    <ul>
+        <li><strong>Author</strong>: Doctor Jew</li>
+    </ul>
+
+
+<h2><a href="#Functions">Functions</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#Think">Think()<div class="notice internal" title="Internal"></div></a></td>
+	<td class="summary">Called every frame by the engine</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#OnRemove">OnRemove()<div class="notice internal" title="Internal"></div></a></td>
+	<td class="summary">Called by the engine when removed</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#SpawnFunction">SpawnFunction(ply, tr, ClassName)<div class="notice internal" title="Internal"></div></a></td>
+	<td class="summary">Called when a player spawns the vehicle, do not override.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Initialize">Initialize()<div class="notice internal" title="Internal"></div></a></td>
+	<td class="summary">Called by the engine to initialize the entity.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#OnThink">OnThink()</a></td>
+	<td class="summary">Custom think function
+ Override this to run custom logic.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#PrimaryAttack"><span class="realm shared" title="Shared"></span>PrimaryAttack()</a></td>
+	<td class="summary">Primary attack function.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#SecondaryAttack"><span class="realm shared" title="Shared"></span>SecondaryAttack()</a></td>
+	<td class="summary">Secondary attack function</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Enter"><span class="realm server" title="Server"></span>Enter(ply)</a></td>
+	<td class="summary">Makes a <a href="../modules/Player.html#">Player</a> enter the vehicle</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Exit"><span class="realm server" title="Server"></span>Exit(ply)</a></td>
+	<td class="summary">Called when a <a href="../modules/Player.html#">Player</a> exits the vehicle</td>
+	</tr>
+</table>
+<h2><a href="#Fields">Fields</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#PrintName">PrintName</a></td>
+	<td class="summary">Nice display name of the entity</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Author">Author</a></td>
+	<td class="summary">Author of the <code>Entity</code></td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Category">Category</a></td>
+	<td class="summary"><code>Entity</code> category, used to assign to a faction</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Class">Class</a></td>
+	<td class="summary">Vehicle class (fighter, bomber, etc.)</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#MaxHealth">MaxHealth</a></td>
+	<td class="summary">Maximum health of the vehicle</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#MaxShield">MaxShield</a></td>
+	<td class="summary">Maximum shields of the vehicle, if any</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Handling">Handling</a></td>
+	<td class="summary">How fast can the vehicle pitch/yaw/roll?</td>
+	</tr>
+</table>
+<h2><a href="#Drawing_Functions">Drawing Functions </a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#Draw">Draw()</a></td>
+	<td class="summary">Called every frame to draw the entity.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#DrawExhaust">DrawExhaust()<div class="notice internal" title="Internal"></div></a></td>
+	<td class="summary">Draw the engine exhaust</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#DrawDamageEffects">DrawDamageEffects()<div class="notice internal" title="Internal"></div></a></td>
+	<td class="summary">Draw vehicle damage effects</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#DrawGlow">DrawGlow()<div class="notice internal" title="Internal"></div></a></td>
+	<td class="summary">Draw vehicle engine glow</td>
+	</tr>
+</table>
+<h2><a href="#HUD_Functions">HUD Functions </a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#HUDDrawCrosshair"><span class="realm client" title="Client"></span>HUDDrawCrosshair(isPilot)</a></td>
+	<td class="summary">Draw the vehicle crosshair</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#HUDDrawAltimeter"><span class="realm client" title="Client"></span>HUDDrawAltimeter(fpvX, fpvY)</a></td>
+	<td class="summary">Draw the vehicle's altimeter.</td>
+	</tr>
+</table>
+<h2><a href="#View_functions">View functions </a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#CalcFirstPersonView"><span class="realm client" title="Client"></span>CalcFirstPersonView(view)</a></td>
+	<td class="summary">Override first person view calculations</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#CalcThirdPersonView"><span class="realm client" title="Client"></span>CalcThirdPersonView(view)</a></td>
+	<td class="summary">Override third person view calculations</td>
+	</tr>
+</table>
+<h2><a href="#Engine_Interaction">Engine Interaction </a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#Land">Land()</a></td>
+	<td class="summary">Land the vehicle if possible</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Takeoff">Takeoff()</a></td>
+	<td class="summary">Takeoff the vehicle if landed</td>
+	</tr>
+</table>
+<h2><a href="#Damage_Interactions">Damage Interactions </a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#OnTakeDamage">OnTakeDamage(dmg)<div class="notice future" title="Future"></div><div class="notice internal" title="Internal"></div></a></td>
+	<td class="summary">Called by the engine when the entity takes damage</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#ShieldDamage"><span class="realm server" title="Server"></span>ShieldDamage()</a></td>
+	<td class="summary">Shield damage visuals</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Destroy"><span class="realm server" title="Server"></span>Destroy([attacker[, inflictor]])</a></td>
+	<td class="summary">Destroys the vehicle physically</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Explode"><span class="realm server" title="Server"></span>Explode()</a></td>
+	<td class="summary">Blows up the vehicle visually</td>
+	</tr>
+</table>
+<h2><a href="#Setup_functions">Setup functions </a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#SetupDefaults"><span class="realm shared" title="Shared"></span>SetupDefaults(options)</a></td>
+	<td class="summary">Setup default vehicle events.</td>
+	</tr>
+</table>
+<h2><a href="#Seat_Functions">Seat Functions </a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#AddSeat"><span class="realm server" title="Server"></span>AddSeat(name, pos, ang)</a></td>
+	<td class="summary">Add a seat to the vehicle.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GetSeat"><span class="realm shared" title="Shared"></span>GetSeat(index)</a></td>
+	<td class="summary">Retrieve an actual seat entity.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GetSeats"><span class="realm shared" title="Shared"></span>GetSeats()</a></td>
+	<td class="summary">Get all the seats of a vehicle.</td>
+	</tr>
+</table>
+<h2><a href="#Weapon_Functions">Weapon Functions </a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#AddWeapon"><span class="realm server" title="Server"></span>AddWeapon(name, pos, callback)</a></td>
+	<td class="summary">Add a weapon to the vehicle.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GetWeapon"><span class="realm shared" title="Shared"></span>GetWeapon(name)</a></td>
+	<td class="summary">Retrieve one of the vehicle's weapons</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GetWeapons"><span class="realm shared" title="Shared"></span>GetWeapons()</a></td>
+	<td class="summary">Get all the vehicle's weapons</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#FireWeapon"><span class="realm server" title="Server"></span>FireWeapon(name[, options])</a></td>
+	<td class="summary">Fire one of the vehicle's weapons</td>
+	</tr>
+</table>
+<h2><a href="#Convenience_Functions">Convenience Functions </a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#GetPilot"><span class="realm shared" title="Shared"></span>GetPilot()</a></td>
+	<td class="summary">Get the pilot of the vehicle.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GetPassenger"><span class="realm shared" title="Shared"></span>GetPassenger(index)</a></td>
+	<td class="summary">Get the player from a specific seat.</td>
+	</tr>
+</table>
+<h2><a href="#Networking">Networking </a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#DispatchNetworkEvent"><span class="realm server" title="Server"></span>DispatchNetworkEvent(event, ...)</a></td>
+	<td class="summary">Dispatch a networked event to all clients.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#DispatchEvent"><span class="realm shared" title="Shared"></span>DispatchEvent(event, ...)</a></td>
+	<td class="summary">Dispatch an event only client/server side.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#AddEvent"><span class="realm shared" title="Shared"></span>AddEvent(name, callback)</a></td>
+	<td class="summary">Add a callback to an event.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GetEvents"><span class="realm shared" title="Shared"></span>GetEvents(event)</a></td>
+	<td class="summary">Get the callbacks for an event.</td>
+	</tr>
+</table>
+
+<br/>
+<br/>
+
+
+    <h2 class="section-header "><a name="Functions"></a>Functions</h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "Think"></a>
+    <strong>Think()<div class="notice internal" title="Internal"></div></strong>
+    </dt>
+    <dd>
+    Called every frame by the engine
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "OnRemove"></a>
+    <strong>OnRemove()<div class="notice internal" title="Internal"></div></strong>
+    </dt>
+    <dd>
+    Called by the engine when removed
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "SpawnFunction"></a>
+    <strong>SpawnFunction(ply, tr, ClassName)<div class="notice internal" title="Internal"></div></strong>
+    </dt>
+    <dd>
+    Called when a player spawns the vehicle, do not override.
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">ply</span>
+            <span class="types"><span class="type">player</span></span>
+         The <em>player</em> that spawned the vehicle
+        </li>
+        <li><span class="parameter">tr</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.1/manual.html#5.5">table</a></span>
+         Trace result structure
+        </li>
+        <li><span class="parameter">ClassName</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+         The entity class of the vehicle
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Initialize"></a>
+    <strong>Initialize()<div class="notice internal" title="Internal"></div></strong>
+    </dt>
+    <dd>
+    Called by the engine to initialize the entity.
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "OnThink"></a>
+    <strong>OnThink()</strong>
+    </dt>
+    <dd>
+    Custom think function
+ Override this to run custom logic.
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "PrimaryAttack"></a>
+    <strong><span class="realm shared" title="Shared"></span>PrimaryAttack()</strong>
+    </dt>
+    <dd>
+    Primary attack function.
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "SecondaryAttack"></a>
+    <strong><span class="realm shared" title="Shared"></span>SecondaryAttack()</strong>
+    </dt>
+    <dd>
+    Secondary attack function
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Enter"></a>
+    <strong><span class="realm server" title="Server"></span>Enter(ply)</strong>
+    </dt>
+    <dd>
+    Makes a <a href="../modules/Player.html#">Player</a> enter the vehicle
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">ply</span>
+            <span class="types"><span class="type">player</span></span>
+         The <a href="../modules/Player.html#">Player</a> to enter the vehicle
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Exit"></a>
+    <strong><span class="realm server" title="Server"></span>Exit(ply)</strong>
+    </dt>
+    <dd>
+    Called when a <a href="../modules/Player.html#">Player</a> exits the vehicle
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">ply</span>
+            <span class="types"><span class="type">player</span></span>
+         The <a href="../modules/Player.html#">Player</a> that exited
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+    </ul>
+
+
+</dd>
+</dl>
+    <h2 class="section-header "><a name="Fields"></a>Fields</h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "PrintName"></a>
+    <strong>PrintName</strong>
+    </dt>
+    <dd>
+    Nice display name of the entity
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Author"></a>
+    <strong>Author</strong>
+    </dt>
+    <dd>
+    Author of the <code>Entity</code>
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Category"></a>
+    <strong>Category</strong>
+    </dt>
+    <dd>
+    <code>Entity</code> category, used to assign to a faction
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Class"></a>
+    <strong>Class</strong>
+    </dt>
+    <dd>
+    Vehicle class (fighter, bomber, etc.)
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "MaxHealth"></a>
+    <strong>MaxHealth</strong>
+    </dt>
+    <dd>
+    Maximum health of the vehicle
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "MaxShield"></a>
+    <strong>MaxShield</strong>
+    </dt>
+    <dd>
+    Maximum shields of the vehicle, if any
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Handling"></a>
+    <strong>Handling</strong>
+    </dt>
+    <dd>
+    How fast can the vehicle pitch/yaw/roll?
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+
+
+
+
+
+</dd>
+</dl>
+    <h2 class="section-header "><a name="Drawing_Functions"></a>Drawing Functions </h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "Draw"></a>
+    <strong>Draw()</strong>
+    </dt>
+    <dd>
+    Called every frame to draw the entity.  Do not override unless experienced.
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "DrawExhaust"></a>
+    <strong>DrawExhaust()<div class="notice internal" title="Internal"></div></strong>
+    </dt>
+    <dd>
+    Draw the engine exhaust
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "DrawDamageEffects"></a>
+    <strong>DrawDamageEffects()<div class="notice internal" title="Internal"></div></strong>
+    </dt>
+    <dd>
+    Draw vehicle damage effects
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "DrawGlow"></a>
+    <strong>DrawGlow()<div class="notice internal" title="Internal"></div></strong>
+    </dt>
+    <dd>
+    Draw vehicle engine glow
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+
+
+
+
+
+</dd>
+</dl>
+    <h2 class="section-header "><a name="HUD_Functions"></a>HUD Functions </h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "HUDDrawCrosshair"></a>
+    <strong><span class="realm client" title="Client"></span>HUDDrawCrosshair(isPilot)</strong>
+    </dt>
+    <dd>
+    Draw the vehicle crosshair
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">isPilot</span>
+            <span class="types"><span class="type">bool</span></span>
+         If the local player is the pilot
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "HUDDrawAltimeter"></a>
+    <strong><span class="realm client" title="Client"></span>HUDDrawAltimeter(fpvX, fpvY)</strong>
+    </dt>
+    <dd>
+    Draw the vehicle's altimeter.
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">fpvX</span>
+            <span class="types"><span class="type">number</span></span>
+         First person view X
+        </li>
+        <li><span class="parameter">fpvY</span>
+            <span class="types"><span class="type">number</span></span>
+         First person view Y
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+</dl>
+    <h2 class="section-header "><a name="View_functions"></a>View functions </h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "CalcFirstPersonView"></a>
+    <strong><span class="realm client" title="Client"></span>CalcFirstPersonView(view)</strong>
+    </dt>
+    <dd>
+    Override first person view calculations
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">view</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.1/manual.html#5.5">table</a></span>
+         The view information
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "CalcThirdPersonView"></a>
+    <strong><span class="realm client" title="Client"></span>CalcThirdPersonView(view)</strong>
+    </dt>
+    <dd>
+    Override third person view calculations
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">view</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.1/manual.html#5.5">table</a></span>
+         The view information
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+</dl>
+    <h2 class="section-header "><a name="Engine_Interaction"></a>Engine Interaction </h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "Land"></a>
+    <strong>Land()</strong>
+    </dt>
+    <dd>
+    Land the vehicle if possible
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        If the vehicle was landed or not
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Takeoff"></a>
+    <strong>Takeoff()</strong>
+    </dt>
+    <dd>
+    Takeoff the vehicle if landed
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        If the vehicle did takeoff or not
+    </ol>
+
+
+
+
+</dd>
+</dl>
+    <h2 class="section-header "><a name="Damage_Interactions"></a>Damage Interactions </h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "OnTakeDamage"></a>
+    <strong>OnTakeDamage(dmg)<div class="notice future" title="Future"></div><div class="notice internal" title="Internal"></div></strong>
+    </dt>
+    <dd>
+    Called by the engine when the entity takes damage
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">dmg</span>
+         <code>DamageInfo</code> structure containing damage information
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "ShieldDamage"></a>
+    <strong><span class="realm server" title="Server"></span>ShieldDamage()</strong>
+    </dt>
+    <dd>
+    Shield damage visuals
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+
+
+
+    <h3>See also:</h3>
+    <ul>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Destroy"></a>
+    <strong><span class="realm server" title="Server"></span>Destroy([attacker[, inflictor]])</strong>
+    </dt>
+    <dd>
+    Destroys the vehicle physically
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">attacker</span>
+            <span class="types"><span class="type">entity</span></span>
+         The attacker that destroyed the vehicle
+         (<em>optional</em>)
+        </li>
+        <li><span class="parameter">inflictor</span>
+            <span class="types"><span class="type">entity</span></span>
+         The inflictor that destroyed the vehicle
+         (<em>optional</em>)
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Explode"></a>
+    <strong><span class="realm server" title="Server"></span>Explode()</strong>
+    </dt>
+    <dd>
+    Blows up the vehicle visually
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+
+
+
+    <h3>See also:</h3>
+    <ul>
+    </ul>
+
+
+</dd>
+</dl>
+    <h2 class="section-header "><a name="Setup_functions"></a>Setup functions </h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "SetupDefaults"></a>
+    <strong><span class="realm shared" title="Shared"></span>SetupDefaults(options)</strong>
+    </dt>
+    <dd>
+    Setup default vehicle events.  This is shared but will product different results on client/server.
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">options</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.1/manual.html#5.5">table</a></span>
+         The events to explicitly disable
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+</dl>
+    <h2 class="section-header "><a name="Seat_Functions"></a>Seat Functions </h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "AddSeat"></a>
+    <strong><span class="realm server" title="Server"></span>AddSeat(name, pos, ang)</strong>
+    </dt>
+    <dd>
+    Add a seat to the vehicle.  The first seat is always the pilot.
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">name</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+         The name of the seat for easy reference
+        </li>
+        <li><span class="parameter">pos</span>
+            <span class="types"><span class="type">vector</span></span>
+         The position of the seat in local coordinated
+        </li>
+        <li><span class="parameter">ang</span>
+            <span class="types"><span class="type">angle</span></span>
+         The angles of the seat in local angles
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">entity</span></span>
+        The seat <code>Entity</code> itself for convenience
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "GetSeat"></a>
+    <strong><span class="realm shared" title="Shared"></span>GetSeat(index)</strong>
+    </dt>
+    <dd>
+    Retrieve an actual seat entity.
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">index</span>
+         The index of the seat. Can be a number or string.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">entity</span></span>
+        The found <code>Entity</code> or <code>NULL</code>
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "GetSeats"></a>
+    <strong><span class="realm shared" title="Shared"></span>GetSeats()</strong>
+    </dt>
+    <dd>
+    Get all the seats of a vehicle.
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.1/manual.html#5.5">table</a></span>
+        Table of <code>Entity</code> classes of seats
+    </ol>
+
+
+
+
+</dd>
+</dl>
+    <h2 class="section-header "><a name="Weapon_Functions"></a>Weapon Functions </h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "AddWeapon"></a>
+    <strong><span class="realm server" title="Server"></span>AddWeapon(name, pos, callback)</strong>
+    </dt>
+    <dd>
+    Add a weapon to the vehicle.
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">name</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+         The name of the weapon
+        </li>
+        <li><span class="parameter">pos</span>
+            <span class="types"><span class="type">vector</span></span>
+         The position of the weapon
+        </li>
+        <li><span class="parameter">callback</span>
+            <span class="types"><span class="type">func</span></span>
+         Callback used to update entity positioning
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">entity</span></span>
+        The new weapon <code>Entity</code> for convenience
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "GetWeapon"></a>
+    <strong><span class="realm shared" title="Shared"></span>GetWeapon(name)</strong>
+    </dt>
+    <dd>
+    Retrieve one of the vehicle's weapons
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">name</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+         The name of the weapon to retrieve
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">entity</span></span>
+        The found <code>Entity</code> or <code>NULL</code>
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "GetWeapons"></a>
+    <strong><span class="realm shared" title="Shared"></span>GetWeapons()</strong>
+    </dt>
+    <dd>
+    Get all the vehicle's weapons
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.1/manual.html#5.5">table</a></span>
+        Table of <code>Entity</code> classes
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "FireWeapon"></a>
+    <strong><span class="realm server" title="Server"></span>FireWeapon(name[, options])</strong>
+    </dt>
+    <dd>
+    Fire one of the vehicle's weapons
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">name</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+         The name of the weapon to fire
+        </li>
+        <li><span class="parameter">options</span>
+            <span class="types"><span class="type">tab</span></span>
+         The options for the weapon
+         (<em>optional</em>)
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+</dl>
+    <h2 class="section-header "><a name="Convenience_Functions"></a>Convenience Functions </h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "GetPilot"></a>
+    <strong><span class="realm shared" title="Shared"></span>GetPilot()</strong>
+    </dt>
+    <dd>
+    Get the pilot of the vehicle.
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">player</span></span>
+        The pilot of the ship
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "GetPassenger"></a>
+    <strong><span class="realm shared" title="Shared"></span>GetPassenger(index)</strong>
+    </dt>
+    <dd>
+    Get the player from a specific seat.
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">index</span>
+         String or number index of the seat
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">player</span></span>
+        The found <a href="../modules/Player.html#">Player</a> or <code>NULL</code>
+    </ol>
+
+
+
+
+</dd>
+</dl>
+    <h2 class="section-header "><a name="Networking"></a>Networking </h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "DispatchNetworkEvent"></a>
+    <strong><span class="realm server" title="Server"></span>DispatchNetworkEvent(event, ...)</strong>
+    </dt>
+    <dd>
+    Dispatch a networked event to all clients.
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">event</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+         The event to dispatch
+        </li>
+        <li><span class="parameter">...</span>
+         Any arguments to network
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "DispatchEvent"></a>
+    <strong><span class="realm shared" title="Shared"></span>DispatchEvent(event, ...)</strong>
+    </dt>
+    <dd>
+    Dispatch an event only client/server side.
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">event</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+         The event to dispatch
+        </li>
+        <li><span class="parameter">...</span>
+         Any arguments to send
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+        <li>
+           <span class="types"><span class="type">bool</span></span>
+        If the event was stopped by a hook</li>
+        <li>
+        The result from the hook</li>
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "AddEvent"></a>
+    <strong><span class="realm shared" title="Shared"></span>AddEvent(name, callback)</strong>
+    </dt>
+    <dd>
+    Add a callback to an event.
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">name</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+         The name of the event
+        </li>
+        <li><span class="parameter">callback</span>
+            <span class="types"><span class="type">func</span></span>
+         The callback to run on the event
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "GetEvents"></a>
+    <strong><span class="realm shared" title="Shared"></span>GetEvents(event)</strong>
+    </dt>
+    <dd>
+    Get the callbacks for an event.
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">event</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+         The name of the event
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.1/manual.html#5.5">table</a></span>
+        Table of callback functions
+    </ol>
+
+
+
+
+</dd>
+</dl>
+
+
+</div> <!-- id="content" -->
+</div> <!-- id="main" -->
+<div id="about">
+<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.4.6</a></i>
+<i style="float:right;">Last updated 2018-12-25 11:30:02 </i>
+</div> <!-- id="about" -->
+</div> <!-- id="container" -->
+</body>
+</html>

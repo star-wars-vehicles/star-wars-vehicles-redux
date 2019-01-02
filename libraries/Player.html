@@ -1,0 +1,327 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<head>
+    <title>Star Wars Vehicles Redux</title>
+    <link rel="stylesheet" href="../ldoc.css" type="text/css" />
+</head>
+<body>
+
+<div id="container">
+
+<div id="product">
+	<div id="product_logo"></div>
+	<div id="product_name"><big><b></b></big></div>
+	<div id="product_description"></div>
+</div> <!-- id="product" -->
+
+
+<div id="main">
+
+
+<!-- Menu -->
+
+<div id="navigation">
+<br/>
+<h1>SWVR</h1>
+
+<ul>
+  <li><a href="../index.html">Index</a></li>
+</ul>
+
+<h2>Contents</h2>
+<ul>
+<li><a href="#Functions">Functions</a></li>
+</ul>
+
+
+<h2>Libraries</h2>
+<ul class="nowrap">
+  <li><a href="../libraries/swvr.html">swvr</a></li>
+  <li><strong>Player</strong></li>
+  <li><a href="../libraries/Vehicle.html">Vehicle</a></li>
+</ul>
+<h2>Manual</h2>
+<ul class="nowrap">
+  <li><a href="../manual/doc.md.html">doc</a></li>
+</ul>
+
+</div>
+
+<div id="content">
+
+<h1>Module <code>Player</code></h1>
+<p>Star Wars Vehicles Player Meta</p>
+<p>
+</p>
+    <h3>Info:</h3>
+    <ul>
+        <li><strong>Author</strong>: Doctor Jew</li>
+    </ul>
+
+
+<h2><a href="#Functions">Functions</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#ButtonDown"><span class="realm shared" title="Shared"></span>ButtonDown(button)</a></td>
+	<td class="summary">Check if a player has a button down.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#ButtonUp"><span class="realm shared" title="Shared"></span>ButtonUp(button)</a></td>
+	<td class="summary">Check if a player has a button up.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#ControlDown"><span class="realm shared" title="Shared"></span>ControlDown(control)</a></td>
+	<td class="summary">Check if a player has a SWVR control down.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#ControlUp"><span class="realm shared" title="Shared"></span>ControlUp(control)</a></td>
+	<td class="summary">Check if a player has a SWVR control up.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#ControlSet"><span class="realm shared" title="Shared"></span>ControlSet(control)</a></td>
+	<td class="summary">Check if a player has a control set.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GetSWVehicle"><span class="realm shared" title="Shared"></span>GetSWVehicle()</a></td>
+	<td class="summary">Get the player&rsquo;s current SWVR vehicle, if any.</td>
+	</tr>
+</table>
+
+<br/>
+<br/>
+
+
+    <h2 class="section-header "><a name="Functions"></a>Functions</h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "ButtonDown"></a>
+    <strong><span class="realm shared" title="Shared"></span>ButtonDown(button)</strong>
+    </dt>
+    <dd>
+    Check if a player has a button down.
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">button</span>
+         Any KEY_CODE enum
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        If the button is down
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="../libraries/Player.html#ButtonUp">ButtonUp</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "ButtonUp"></a>
+    <strong><span class="realm shared" title="Shared"></span>ButtonUp(button)</strong>
+    </dt>
+    <dd>
+    Check if a player has a button up.
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">button</span>
+         Any KEY_CODE enum
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="../libraries/Player.html#ButtonDown">ButtonDown</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "ControlDown"></a>
+    <strong><span class="realm shared" title="Shared"></span>ControlDown(control)</strong>
+    </dt>
+    <dd>
+    Check if a player has a SWVR control down.
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">control</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+         The suffix of the control
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        If the control is down or not
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="../libraries/Player.html#ControlUp">ControlUp</a>
+    </ul>
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example"><span class="keyword">local</span> eject = ply:ControlDown(<span class="string">"eject"</span>)</pre>
+    </ul>
+
+</dd>
+    <dt>
+    <a name = "ControlUp"></a>
+    <strong><span class="realm shared" title="Shared"></span>ControlUp(control)</strong>
+    </dt>
+    <dd>
+    Check if a player has a SWVR control up.
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">control</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+         The suffix of the control
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        If the control is up or not
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="../libraries/Player.html#ControlDown">ControlDown</a>
+    </ul>
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example"><span class="keyword">local</span> eject = ply:ControlUp(<span class="string">"eject"</span>)</pre>
+    </ul>
+
+</dd>
+    <dt>
+    <a name = "ControlSet"></a>
+    <strong><span class="realm shared" title="Shared"></span>ControlSet(control)</strong>
+    </dt>
+    <dd>
+    Check if a player has a control set.
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">control</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+         The control to check
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        If the player has the control set
+    </ol>
+
+
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example"><span class="keyword">local</span> has_eject = ply:ControlSet(<span class="string">"eject"</span>)</pre>
+    </ul>
+
+</dd>
+    <dt>
+    <a name = "GetSWVehicle"></a>
+    <strong><span class="realm shared" title="Shared"></span>GetSWVehicle()</strong>
+    </dt>
+    <dd>
+    Get the player&rsquo;s current SWVR vehicle, if any.
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">entity</span></span>
+        The current vehicle entity or NULL
+    </ol>
+
+
+
+
+</dd>
+</dl>
+
+
+</div> <!-- id="content" -->
+</div> <!-- id="main" -->
+<div id="about">
+<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.4.6</a></i>
+<i style="float:right;">Last updated 2019-01-02 21:27:20 </i>
+</div> <!-- id="about" -->
+</div> <!-- id="container" -->
+</body>
+</html>
