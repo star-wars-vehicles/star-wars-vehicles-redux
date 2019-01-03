@@ -23,19 +23,22 @@ script:
   - ldoc .
   - mkdir -p ./build/lua;
   - shopt -s globstar;
+  - which luasrcdiet;
   - for i in "./lua"/**; do
       if [ -f "$i" ]; then
         outdir=${i#./lua/};
         outdir=${outdir%/*.*};
         mkdir -p "./build/lua/$outdir";
         outfile="./build/lua/$outdir/"$(basename $i .lua 2>&1)"_.lua";
-        LuaSrcDiet --none --opt-comments --opt-emptylines $i -o $outfile;
+        luasrcdiet --none --opt-comments --opt-emptylines $i -o $outfile;
       fi
     done
   - if [ -e ./materials/ ]; then cp -R ./materials/. ./build/materials; fi
   - if [ -e ./models/ ]; then cp -R ./models/. ./build/models; fi
   - if [ -e ./sound/ ]; then cp -R ./sound/. ./build/sound; fi
-  - cd ./build && zip -r9 ../star-wars-vehicles-redux.zip * && cd $TRAVIS_BUILD_DIR
+  - cd ./build;
+  - zip -r9 ../star-wars-vehicles-redux.zip * > /dev/null 2>&1;
+  - cd $TRAVIS_BUILD_DIR;
 
 
 after_script:
