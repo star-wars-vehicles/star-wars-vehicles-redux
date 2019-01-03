@@ -10,9 +10,9 @@ format = 'discount'
 dir = 'docs'
 file = 'lua'
 
-style = './docs/css'
+style = true
 
-readme = './docs/doc.md'
+readme = './README.md'
 kind_names = { topic = 'Manual', module = 'Libraries' }
 
 custom_tags = {

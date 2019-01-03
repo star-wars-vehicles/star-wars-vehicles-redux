@@ -19,7 +19,7 @@ end
 --- Check if a player has a button up.
 -- @shared
 -- @param button Any KEY_CODE enum
--- @terturn bool If the button is up
+-- @treturn bool If the button is up
 -- @see ButtonDown
 function PLAYER:ButtonUp(button)
   return not self.Inputs[button]

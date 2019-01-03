@@ -24,9 +24,9 @@ enum.Allegiances = {
 -- @field 2 Light allegiances
 -- @field 3 Dark allegiances
 enum.Sides = {
-  { enum.Allegiances.NEU, enum.Allegiances.IND, enum.Allegiances.DEV },
-  { enum.Allegiances.REP, enum.Allegiances.REB },
-  { enum.Allegiances.EMP, enum.Allegiances.CIS, enum.Allegiances.FO }
+  [1] = { enum.Allegiances.NEU, enum.Allegiances.IND, enum.Allegiances.DEV },
+  [2] = { enum.Allegiances.REP, enum.Allegiances.REB },
+  [3] = { enum.Allegiances.EMP, enum.Allegiances.CIS, enum.Allegiances.FO }
 }
 
 --- Landing surfaces that vehicles can land on

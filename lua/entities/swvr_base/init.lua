@@ -411,7 +411,7 @@ end
 -- @internal
 -- @server
 -- @tparam PhysObj phys The physics object of the vehicle.
--- @number deltaTime Time since the last call.
+-- @number delta Time since the last call.
 function ENT:PhysicsSimulate(phys, delta)
   if self:IsDestroyed() then self:StopEngine() end
 

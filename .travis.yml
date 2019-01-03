@@ -1,3 +1,4 @@
+sudo: false
 language: python
 
 cache:
@@ -14,15 +15,42 @@ install:
   - luarocks install ldoc
   - cd $TRAVIS_BUILD_DIR
 
+before_script:
+  - wget -O ldoc.css https://gist.githubusercontent.com/DoctorJew/018661e82c4fb724c48962d8667d27fa/raw/3d1e00522012f87ae8980d07c77a1bbd4cb3d85d/ldoc.css
+
 script:
   - ldoc .
+  - mkdir -p ./build/lua;
+  - shopt -s globstar;
+  - for i in "./lua"/**; do
+      if [ -f "$i" ]; then
+        outdir=${i#./lua/};
+        outdir=${outdir%/*.*};
+        mkdir -p "./build/lua/$outdir";
+        outfile="./build/lua/$outdir/"$(basename $i .lua 2>&1)"_.lua";
+        cmd /c "LuaSrcDiet --none --opt-comments --opt-emptylines $i -o $outfile";
+      fi
+    done
+  - if [ -e ./materials/ ]; then cp -R ./materials/. ./build/materials; fi
+  - if [ -e ./models/ ]; then cp -R ./models/. ./build/models; fi
+  - if [ -e ./sound/ ]; then cp -R ./sound/. ./build/sound; fi
+  - cd ./build && zip -r9 ../star-wars-vehicles-redux.zip * && cd $TRAVIS_BUILD_DIR
 
+
+after_script:
+  - rm -rf ./build
 
 deploy:
-  provider: pages
-  skip-cleanup: true
-  github-token: $GITHUB_TOKEN
-  keep-history: true
-  local-dir: docs
-  on:
-    branch: master
+  - provider: pages
+    skip-cleanup: true
+    github-token: $GITHUB_TOKEN
+    keep-history: true
+    local-dir: docs
+    on:
+      branch: master
+  - provider: releases
+    api_key: $GITHUB_TOKEN
+    file: "star-wars-vehicles-redux.zip"
+    skip_cleanup: true
+    on:
+      tags: true

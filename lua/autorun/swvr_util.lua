@@ -1,8 +1,16 @@
+--- SWVR utility  functions
+-- @module swvr
+-- @author Doctor Jew
+
 swvr = swvr or {}
 
-swvr.util = swvr.util or {}
+--- SWVR utility functions
+local util = {}
 
-function swvr.util.GenerateTransponder(entity)
+--- Generate a transponder for an entity.
+-- @entity The entity to use to generate
+-- @treturn string The transponder code
+function util.GenerateTransponder(entity)
   local steamid = entity:GetCreator():SteamID()
 
   if (steamid == "STEAM_ID_PENDING") then
@@ -17,10 +25,10 @@ function swvr.util.GenerateTransponder(entity)
     code = transponder
   end
 
-  return code .. " " .. steamid .. swvr.util.CountOwnedEntities(entity:GetClass(), entity:GetCreator())
+  return code .. " " .. steamid .. util.CountOwnedEntities(entity:GetClass(), entity:GetCreator())
 end
 
-function swvr.util.CountOwnedEntities(ply, class)
+function util.CountOwnedEntities(ply, class)
   local count = 0
 
   for k, v in pairs(isstring(class) and ents.FindByClass(class) or ents.GetAll()) do
@@ -32,7 +40,7 @@ function swvr.util.CountOwnedEntities(ply, class)
   return count
 end
 
-function swvr.util.AccessorBool(tbl, name, prefix)
+function util.AccessorBool(tbl, name, prefix)
   tbl[prefix .. name] = function(self, value)
     if value == nil then
       return tobool(self["Get" .. name](self))
@@ -41,3 +49,5 @@ function swvr.util.AccessorBool(tbl, name, prefix)
     self["Set" .. name](self, value)
   end
 end
+
+swvr.util = util
