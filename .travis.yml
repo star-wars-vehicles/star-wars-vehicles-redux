@@ -13,6 +13,7 @@ before_install:
 install:
   - luarocks install lua-discount
   - luarocks install ldoc
+  - luarocks install luasrcdiet
   - cd $TRAVIS_BUILD_DIR
 
 before_script:
