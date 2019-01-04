@@ -540,7 +540,7 @@ function ENT:HUDDrawAltimeter(fpvX, fpvY)
 
   local x, y
 
-  if (false /* self:GetFirstPerson() */) then
+  if false then -- self:GetFirstPerson()
     x = fpvX or ScrW() / 2
     y = fpvY or ScrH() / 4 * 3.1
   else
