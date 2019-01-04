@@ -7,6 +7,13 @@ This file uses change log convention from [Keep a CHANGELOG].
 ### Changed
 - Working on Travis CI documentation generating and building.
 
+## [0.2.0] - 2019-01-04
+### Changed
+- Changed `ENT:PhysicsSimulate` to split into two new methods `ENT:SimulateThrust` and `ENT:SimulateAerodynamics`.
+### Added
+- Added internal function `ENT:SimulateThrust`.
+- Added internal function `ENT:SimulateAerodynamics`.
+
 ## [0.1.1] - 2019-01-04
 ### Changed
 - Changed `.travis.yml` to alert development server on build status.
@@ -18,5 +25,6 @@ This file uses change log convention from [Keep a CHANGELOG].
 [Keep a CHANGELOG]: http://keepachangelog.com
 [Semantic Versioning]: http://semver.org/
 
-[unreleased]: https://github.com/DoctorJew/star-wars-vehicles-redux/compare/0.1.1...HEAD
+[unreleased]: https://github.com/DoctorJew/star-wars-vehicles-redux/compare/0.2.0...HEAD
+[0.2.0]: https://github.com/DoctorJew/star-wars-vehicles-redux/compare/0.1.1...0.2.0
 [0.1.1]: https://github.com/DoctorJew/star-wars-vehicles-redux/compare/0.1.0...0.1.1

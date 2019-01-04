@@ -398,8 +398,6 @@ function ENT:Takeoff()
   if self:GetCooldown("Land") > CurTime() then return false end
   if not self.Landed then return false end
 
-
-
   self:DispatchNWEvent("OnTakeoff")
 
   self:SetCooldown("Land", CurTime() + 1)
@@ -413,37 +411,41 @@ end
 -- @tparam PhysObj phys The physics object of the vehicle.
 -- @number delta Time since the last call.
 function ENT:PhysicsSimulate(phys, delta)
-  if self:IsDestroyed() then self:StopEngine() end
+  self:SimulateThrust(phys, delta)
 
-  -- Forward movement
+  self:SimulateAerodynamics(phys, delta)
+end
 
+function ENT:SimulateThrust(phys, delta)
   local max_thrust = self:GetMaxThrust()
   local boost_thrust = self:GetBoostThrust()
   local max_velocity = self:GetMaxVelocity()
 
-  self.TargetPower = self.TargetPower or 0
+  self.TargetThrust = self.TargetThrust or 0
+
+  local active = self:EngineActive()
 
   local seat = self:GetSeat(1)
+  local pilot = NULL
 
-  if not IsValid(seat) then return end
+  if active then
+    if not IsValid(seat) then return end
 
-  local pilot = seat:GetDriver()
-
-  if self:EngineActive() then
+    pilot = seat:GetDriver()
     local thrust = 0
     local push = false
 
     if IsValid(pilot) then
       push = pilot:ControlDown("forward")
-      thrust = ((push and 500 or 0) - (pilot:ControlDown("backward") and 500 or 0)) * delta
+      thrust = ((push and 2000 or 0) - (pilot:ControlDown("backward") and 2000 or 0)) * delta
     end
 
-    self.TargetPower = math.Clamp(self.TargetPower + thrust, self.MinVelocity or 0, push and boost_thrust or max_thrust)
+    self.TargetThrust = math.Clamp(self.TargetThrust + thrust, 1, push and boost_thrust or max_thrust)
   else
-    self.TargetPower = self.TargetPower - math.Clamp(self.TargetPower, -250, 250)
+    self.TargetThrust = self.TargetThrust - math.Clamp(self.TargetThrust, -250, 250)
   end
 
-  self:SetThrust(self:GetThrust() + (self.TargetPower - self:GetThrust()) * delta)
+  self:SetThrust(self:GetThrust() + (self.TargetThrust - self:GetThrust()) * delta)
 
   if not IsValid(phys) then return end
 
@@ -454,12 +456,18 @@ function ENT:PhysicsSimulate(phys, delta)
 
   local fwd_vel = math.Clamp(fwd:Dot(vel:GetNormalized()), -1, 1) * vel:Length()
 
-  local power = math.max(max_velocity * throttle - fwd_vel, 0) / max_velocity * self:GetMaxPower() * boost_thrust * delta
+  local power = (max_velocity * throttle - fwd_vel) / max_velocity * self:GetMaxPower() * boost_thrust * delta
+
+  if self:IsDestroyed() or not active then
+    self:StopEngine()
+
+    return
+  end
 
   if true and IsValid(pilot) then
     local up, down = pilot:ControlDown("up"), pilot:ControlDown("down")
 
-    -- self.TargetPower = vel:Length() / max_velocity * boost_thrust
+    -- self.TargetThrust = vel:Length() / max_velocity * boost_thrust
 
     local vertical_thrust = (up and self:GetMaxVerticalThrust() or 0) + (down and -self:GetMaxVerticalThrust() or 0)
 
@@ -470,8 +478,20 @@ function ENT:PhysicsSimulate(phys, delta)
   end
 
   phys:ApplyForceOffset(fwd * power, self:LocalToWorld(self.Controls.Thrust))
+end
 
-  -- Turning movement
+function ENT:SimulateAerodynamics(phys, delta)
+  local max_velocity = self:GetMaxVelocity()
+
+  local seat = self:GetSeat(1)
+
+  if not IsValid(seat) then return end
+
+  local pilot = seat:GetDriver()
+
+  local up = self:GetUp()
+  local lt = self:GetRight() * -1
+  local fwd = self:GetForward()
 
   local max_pitch, max_yaw, max_roll = self.Handling.x, self.Handling.y, self.Handling.z
   local left, right = false, false
@@ -523,9 +543,6 @@ function ENT:PhysicsSimulate(phys, delta)
 
   if not self:IsDestroyed() then
     local force = Angle(0, 0, -self:GetAngularVelocity().r + roll * stability) * mass * 500 * stability
-
-    local up = self:GetUp()
-    local lt = self:GetRight() * -1
 
     local r = lt * (force.r * 0.5)
 
