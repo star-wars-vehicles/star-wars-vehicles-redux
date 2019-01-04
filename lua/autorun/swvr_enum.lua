@@ -20,13 +20,10 @@ enum.Allegiances = {
 }
 
 --- Maps allegiances to side numerical constants
--- @field 1 Neutral allegiances
--- @field 2 Light allegiances
--- @field 3 Dark allegiances
 enum.Sides = {
-  [1] = { enum.Allegiances.NEU, enum.Allegiances.IND, enum.Allegiances.DEV },
-  [2] = { enum.Allegiances.REP, enum.Allegiances.REB },
-  [3] = { enum.Allegiances.EMP, enum.Allegiances.CIS, enum.Allegiances.FO }
+  [1] = { enum.Allegiances.NEU, enum.Allegiances.IND, enum.Allegiances.DEV }, -- Neutral, Independent, In Development
+  [2] = { enum.Allegiances.REP, enum.Allegiances.REB }, -- Galactic Republic, Rebel Alliance
+  [3] = { enum.Allegiances.EMP, enum.Allegiances.CIS, enum.Allegiances.FO } -- Galactic Empire, Confederacy of Independent Systems, First Order
 }
 
 --- Landing surfaces that vehicles can land on

@@ -8,7 +8,15 @@ no_space_before_args = true
 
 format = 'discount'
 dir = 'docs'
-file = 'lua'
+
+local exclude = {
+  'lua/autorun/swvr_menu.lua',
+  'lua/effects',
+  'lua/entities/swvr_awing',
+  'lua/entities/swvr_explosion.lua'
+}
+
+file = { 'lua', exclude = exclude }
 
 style = true
 

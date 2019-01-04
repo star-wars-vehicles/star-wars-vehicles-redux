@@ -8,7 +8,7 @@ swvr = swvr or {}
 local util = {}
 
 --- Generate a transponder for an entity.
--- @entity The entity to use to generate
+-- @entity entity The entity to use to generate
 -- @treturn string The transponder code
 function util.GenerateTransponder(entity)
   local steamid = entity:GetCreator():SteamID()

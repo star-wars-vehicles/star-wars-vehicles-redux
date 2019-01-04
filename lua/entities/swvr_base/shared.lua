@@ -507,7 +507,7 @@ end
 --- Get the pilot of the vehicle.
 -- @shared
 -- @treturn player The pilot of the ship
--- @see ENT.GetPassenger
+-- @see GetPassenger
 function ENT:GetPilot()
   return self:GetPassenger(1)
 end

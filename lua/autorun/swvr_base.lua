@@ -26,7 +26,7 @@ include("swvr_util.lua")
 function swvr.GetVehicles()
   local vehicles = {}
   for _, ent in ipairs(ents.GetAll()) do
-    if not ent.IsSWVehicle then continue end
+    if not ent.IsSWVRVehicle then continue end
 
     vehicles[#vehicles + 1] = ent
   end
