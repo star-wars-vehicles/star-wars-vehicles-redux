@@ -1,6 +1,7 @@
 # Star Wars Vehicles Redux
 
 [![Build Status](https://travis-ci.org/star-wars-vehicles/star-wars-vehicles-redux.svg?branch=master)](https://travis-ci.org/star-wars-vehicles/star-wars-vehicles-redux)
+![](https://img.shields.io/github/last-commit/star-wars-vehicles/star-wars-vehicles-redux.svg)
 
 ## Installation
 
