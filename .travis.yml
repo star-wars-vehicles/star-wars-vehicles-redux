@@ -42,9 +42,18 @@ script:
   - zip -r9 ../star-wars-vehicles-redux.zip * > /dev/null 2>&1;
   - cd $TRAVIS_BUILD_DIR;
 
-
 after_script:
   - rm -rf ./build
+
+after_success:
+  - wget https://raw.githubusercontent.com/DiscordHooks/travis-ci-discord-webhook/master/send.sh
+  - chmod +x send.sh
+  - ./send.sh success $WEBHOOK_URL
+
+after_failure:
+  - wget https://raw.githubusercontent.com/DiscordHooks/travis-ci-discord-webhook/master/send.sh
+  - chmod +x send.sh
+  - ./send.sh failure $WEBHOOK_URL
 
 deploy:
   - provider: pages
