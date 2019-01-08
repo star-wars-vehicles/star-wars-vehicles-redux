@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.org/star-wars-vehicles/star-wars-vehicles-redux.svg?branch=master)](https://travis-ci.org/star-wars-vehicles/star-wars-vehicles-redux)
 ![](https://img.shields.io/github/last-commit/star-wars-vehicles/star-wars-vehicles-redux.svg)
+[![](https://img.shields.io/steam/downloads/495762961.svg)](https://steamcommunity.com/sharedfiles/filedetails/?id=495762961)
 
 ## Installation
 
@@ -53,6 +54,8 @@ This is currently being explored as an option for developers.
 
 ## Seats
 
+### Adding Seats
+
 There are current two ways to add seats to vehicles.
 
 The first way is what I will refer to as the *hard-coded* way. This is manually specifying the seat details inside the `ENT.Seats` table inside of the `shared.lua` file.
@@ -84,6 +87,8 @@ end
 
 ## Weapons
 
+### Adding Weapons
+
 Similar to seats, weapons can both be added using the same two ways.
 
 The first way is what I will refer to as the *hard-coded* way. This is manually specifying the weapon details inside the `ENT.Weapons` table inside of the `shared.lua` file.
@@ -110,6 +115,43 @@ function ENT:OnInitialize()
   self:AddWeapon("Main", Vector(50, -60, 0), nil)
 end
 ```
+
+### Using Weapons
+
+Using the added weapons are extremely easy. The built in function `ENT:FireWeapon(name, options)` is designed to be able to easily fire any weapon added, even custom firing functions.
+
+Firing the weapon might look something like this.
+
+```lua
+function ENT:PrimaryAttack()
+  if self:GetNextPrimaryFire() > CurTime() then return end
+
+  self:SetNextPrimaryFire(CurTime() + 0.1)
+
+  self:EmitSound("AWING_FIRE1")
+
+  for _, name in ipairs({"FrontL", "FrontR"}) do
+    self:FireWeapon(name)
+  end
+end
+```
+
+In this example, the second parameter `options` of `ENT:FireWeapon(name, options)` is ignored. This is usually alright if you're just firing a cannon.
+
+Often times though, you'll want to customize the weapon you're firing. Use the `options` parameter to customize the weapon before firing it.
+
+```lua
+self:FireWeapon("Main", {
+  Type = "proton_torpedo",
+  Damage = 500
+})
+```
+
+Internally, the specific weapon firing function gets called by translating the `Type` field from `snake_case` to `CamelCase`.
+
+In this case, `proton_torpedo` becomes `ProtonTorpedo` and thus the function `ENT:FireProtonTorpedo(name, options)` is automatically called for you!
+
+Any options passed into `ENT;FireWeapon()` are also passed into the specific firing function automatically.
 
 ## Effects
 

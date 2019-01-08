@@ -79,10 +79,14 @@ function ENT:SetupDataTables()
   self:NetworkVar("Bool", 0, "Active")
   self:NetworkVar("Bool", 1, "Destroyed")
   self:NetworkVar("Bool", 2, "EngineActive")
+  self:NetworkVar("Bool", 3, "TakingOff")
+  self:NetworkVar("Bool", 4, "Landing")
+  self:NetworkVar("Bool", 5, "Starting")
 
   self:NetworkVar("Int", 0, "Allegiance", { KeyName = "allegiance", Edit = { type = "Int", order = 1, min = 0, max = 2, category = "Details" } })
   self:NetworkVar("Int", 1, "SeatCount")
   self:NetworkVar("Int", 2, "WeaponCount")
+  self:NetworkVar("Int", 3, "LastVehicleState")
 
   self:NetworkVar("Float", 0, "HP", { KeyName = "health", Edit = { type = "Float", order = 1, min = 0, max = self.MaxHealth, category = "Condition" } })
   self:NetworkVar("Float", 1, "MaxHP")
@@ -111,6 +115,9 @@ function ENT:SetupDataTables()
   AccessorBool(self, "Destroyed", "Is")
   AccessorBool(self, "Active", "Is")
   AccessorBool(self, "EngineActive", "")
+  AccessorBool(self, "TakingOff", "Is")
+  AccessorBool(self, "Landing", "Is")
+  AccessorBool(self, "Starting", "Is")
 
   if SERVER then
     self:NetworkVarNotify("HP", function(ent, name, old, new)
@@ -124,6 +131,11 @@ function ENT:SetupDataTables()
     self:SetActive(false)
     self:SetDestroyed(false)
     self:SetEngineActive(false)
+    self:SetTakingOff(false)
+    self:SetLanding(false)
+
+    self:SetVehicleState(swvr.enum.State.Idle)
+    self:SetLastVehicleState(swvr.enum.State.Idle)
 
     self:SetMaxVelocity(self.MaxVelocity)
     self:SetHP(self.MaxHealth)
@@ -191,8 +203,10 @@ end
 -- @vector pos The position of the seat in local coordinated
 -- @angle ang The angles of the seat in local angles
 -- @treturn entity The seat `Entity` itself for convenience
-function ENT:AddSeat(name, pos, ang)
+function ENT:AddSeat(name, pos, ang, options)
   if CLIENT then return end
+
+  options = options or {}
 
   assert(not self.Initialized, "[SWVR] Seats cannot be added after the vehicle is initialized! (This can cause weird bugs)")
 
@@ -214,6 +228,7 @@ function ENT:AddSeat(name, pos, ang)
   seat:DrawShadow(false)
   seat:SetColor(Color(255, 255, 255, 0))
   seat:SetRenderMode(RENDERMODE_TRANSALPHA)
+  seat:SetCameraDistance(options.ViewDistance or 0)
   seat.DoNotDuplicate = true
 
   local phys = seat:GetPhysicsObject()
@@ -226,9 +241,9 @@ function ENT:AddSeat(name, pos, ang)
 
   self:DeleteOnRemove(seat)
 
-  seat:SetNWBool("SWVRSeat", true)
-  seat:SetNWInt("SWVR.SeatIndex", self:GetSeatCount() + 1)
-  seat:SetNWString("SWVR.SeatName", string.upper(name))
+  seat:SetNW2Bool("SWVRSeat", true)
+  seat:SetNW2Int("SWVR.SeatIndex", self:GetSeatCount() + 1)
+  seat:SetNW2String("SWVR.SeatName", string.upper(name))
 
   -- CPPI support
   if seat.CPPISetOwner and self.CPPIGetOwner then
@@ -249,7 +264,7 @@ function ENT:GetSeat(index)
 
   -- Have we cached the entity for the server/client?
   local seat = self.Seats[index]
-  if IsValid(seat) and ((isstring(index) and seat:GetNWString("SWVR.SeatName") == index) or (isnumber(index) and seat:GetNWInt("SWVR.SeatIndex") == index)) then
+  if IsValid(seat) and ((isstring(index) and seat:GetNW2String("SWVR.SeatName") == index) or (isnumber(index) and seat:GetNW2Int("SWVR.SeatIndex") == index)) then
     return seat
   end
 
@@ -257,8 +272,8 @@ function ENT:GetSeat(index)
   for _, child in ipairs(self:GetChildren()) do
     if not (child:IsVehicle() and child:GetClass():lower() == "prop_vehicle_prisoner_pod") then continue end
 
-    if isstring(index) and child:GetNWString("SWVR.SeatName", "") ~= string.upper(index) then continue end
-    if isnumber(index) and child:GetNWInt("SWVR.SeatIndex", 0) ~= index then continue end
+    if isstring(index) and child:GetNW2String("SWVR.SeatName", "") ~= string.upper(index) then continue end
+    if isnumber(index) and child:GetNW2Int("SWVR.SeatIndex", 0) ~= index then continue end
 
     self.Seats[index] = child
 
@@ -282,9 +297,9 @@ function ENT:GetSeats()
   local seats = {}
   for _, child in ipairs(self:GetChildren()) do
     if not (child:IsVehicle() and child:GetClass():lower() == "prop_vehicle_prisoner_pod") then continue end
-    if child:GetNWInt("SWVR.SeatIndex", 0) < 1 then continue end
+    if child:GetNW2Int("SWVR.SeatIndex", 0) < 1 then continue end
 
-    seats[child:GetNWInt("SWVR.SeatIndex", 0)] = child
+    seats[child:GetNW2Int("SWVR.SeatIndex", 0)] = child
   end
 
   self.Seats = seats
@@ -341,7 +356,7 @@ function ENT:AddWeapon(name, pos, callback)
   phys:EnableCollisions(false)
   phys:EnableMotion(false)
 
-  ent:SetNWString("SWVR.WeaponName", name)
+  ent:SetNW2String("SWVR.WeaponName", name)
 
   self:SetWeaponCount(self:GetWeaponCount() + 1)
 
@@ -359,7 +374,7 @@ function ENT:GetWeapon(name)
 
   -- Have we cached the entity for the server/client?
   local weapon = self.Weapons[name]
-  if IsValid(weapon) and weapon:GetNWString("SWVR.WeaponName") == name then
+  if IsValid(weapon) and weapon:GetNW2String("SWVR.WeaponName") == name then
     return weapon
   end
 
@@ -367,7 +382,7 @@ function ENT:GetWeapon(name)
   for _, child in ipairs(self:GetChildren()) do
     if child:GetClass():lower() ~= "prop_physics" then continue end
 
-    if string.upper(child:GetNWString("SWVR.WeaponName", "")) ~= string.upper(name) then continue end
+    if string.upper(child:GetNW2String("SWVR.WeaponName", "")) ~= string.upper(name) then continue end
 
     self.Weapons[name] = child
 
@@ -391,9 +406,9 @@ function ENT:GetWeapons()
   local weapons = {}
   for _, child in ipairs(self:GetChildren()) do
     if child:GetClass():lower() ~= "prop_physics" then continue end
-    if child:GetNWString("SWVR.WeaponName", "NULL_") == "NULL_" then continue end
+    if child:GetNW2String("SWVR.WeaponName", "NULL_") == "NULL_" then continue end
 
-    weapons[child:GetNWString("SWVR.WeaponName", "")] = child
+    weapons[child:GetNW2String("SWVR.WeaponName", "")] = child
   end
 
   self.Weapons = weapons
@@ -411,7 +426,10 @@ function ENT:FireWeapon(name, options)
   options = options or {}
 
   local wtype = options.Type or "cannon"
-  local t = wtype:sub(1,1):upper() .. wtype:sub(2):lower()
+  local t = ""
+  for k, v in ipairs(string.Split(wtype, "_")) do
+    t = t .. (#v > 0 and v:sub(1,1):upper() .. v:sub(2):lower() or "_")
+  end
 
   if self["Fire" .. t] then self["Fire" .. t](self, name, options) end
 end
@@ -524,8 +542,17 @@ function ENT:GetPassenger(index)
   if SERVER then
     return seat:GetDriver()
   else
-    return seat:GetNWEntity("Driver", NULL)
+    return seat:GetNW2Entity("Driver", NULL)
   end
+end
+
+function ENT:SetVehicleState(value)
+  self:SetLastVehicleState(self:GetVehicleState())
+  self:SetNW2Int("SWVR.VehicleState", value)
+end
+
+function ENT:GetVehicleState()
+  return self:GetNW2Int("SWVR.VehicleState", 0)
 end
 
 function ENT:PlaySound(path, callback, options)
@@ -693,7 +720,7 @@ end
 function ENT:GetCooldown(action)
   self.Cooldowns = self.Cooldowns or {}
 
-  return self.Cooldowns[action]
+  return self.Cooldowns[action] or -1
 end
 
 -- NETWORKING

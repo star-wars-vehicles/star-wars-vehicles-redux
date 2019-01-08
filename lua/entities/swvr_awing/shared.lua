@@ -13,7 +13,7 @@ ENT.Spawnable = false
 ENT.AdminSpawnable = false
 
 ENT.Model = Model("models/diggerthings/awing/awing3.mdl")
-ENT.SpawnHeight = 120
+ENT.SpawnHeight = 50
 
 ENT.Mass = 2000
 ENT.Inertia = Vector(150000, 150000, 150000)
@@ -65,12 +65,12 @@ ENT.Sounds = {
 }
 
 ENT.Gibs = {
-  "models/DiggerThings/AWing/gib1.mdl",
-  "models/DiggerThings/AWing/gib2.mdl",
-  "models/DiggerThings/AWing/gib3.mdl",
-  "models/DiggerThings/AWing/gib4.mdl",
-  "models/DiggerThings/AWing/gib5.mdl",
-  "models/DiggerThings/AWing/gib6.mdl"
+  Model("models/DiggerThings/AWing/gib1.mdl"),
+  Model("models/DiggerThings/AWing/gib2.mdl"),
+  Model("models/DiggerThings/AWing/gib3.mdl"),
+  Model("models/DiggerThings/AWing/gib4.mdl"),
+  Model("models/DiggerThings/AWing/gib5.mdl"),
+  Model("models/DiggerThings/AWing/gib6.mdl")
 }
 
 sound.Add({

@@ -33,9 +33,9 @@ function ENT:Initialize()
     local engines = {}
     for k, v in pairs(self.Engines) do
       if isvector(v) then
-        engines[#engines + 1] = { Pos = v, Callback = nil }
+        engines[#engines + 1] = { Pos = v, Options = {} }
       elseif istable(v) then
-        engines[#engines + 1] = v
+        engines[#engines + 1] = { Pos = v.Pos, Options = v.Options or {} }
       end
     end
 
@@ -124,8 +124,10 @@ function ENT:GetDamagePositions()
   return self.DamageVectors
 end
 
-function ENT:AddEngine(pos, cb)
-  self.Engines[#self.Engines + 1] = { Pos = pos, Callback = cb }
+function ENT:AddEngine(pos, options)
+  self.Engines = self.Engines or {}
+
+  self.Engines[#self.Engines + 1] = { Pos = pos, Options = options or {} }
 end
 
 function ENT:GetEngines()
@@ -177,7 +179,7 @@ function ENT:DrawExhaust()
 
   if self.Settings.Engine.Type == 1 then
     for _, v in ipairs(self:GetEngines()) do
-      if v.Callback and v.Callback(self) == false then continue end
+      if v.Options.Callback and v.Options.Callback(self) == false then continue end
 
       local normal = (self:GetForward() * -1):GetNormalized()
       local roll = math.Rand(-90, 90)
@@ -199,7 +201,7 @@ function ENT:DrawExhaust()
 
       if self.FXEmitter then
         for _, v in ipairs(self:GetEngines()) do
-          if v.Callback and v.Callback(self) == false then continue end
+          if v.Options.Callback and v.Options.Callback(self) == false then continue end
 
           local vOffset = self:LocalToWorld(v.Pos * self:GetModelScale())
           local vNormal = -self:GetForward()
@@ -241,7 +243,7 @@ function ENT:DrawDamageEffects()
 
       if vectors then
         for _, v in ipairs(vectors) do
-          if isfunction(v.Callback) and v.Callback(self) ~= false then
+          if isfunction(v.Options.Callback) and v.Options.Callback(self) ~= false then
             local fx = EffectData()
             fx:SetOrigin(self:LocalToWorld(v.Pos * self:GetModelScale()))
             util.Effect("swvr_smoke", fx)
@@ -274,7 +276,7 @@ function ENT:DrawGlow()
   render.SetMaterial(mat)
 
   for _, v in ipairs(self:GetEngines()) do
-    if v.Callback and v.Callback(self) == false then continue end
+    if v.Options.Callback and v.Options.Callback(self) == false then continue end
 
     render.DrawSprite(self:LocalToWorld(v.Pos * self:GetModelScale()), size, size, color)
   end
@@ -670,7 +672,7 @@ function ENT:CalcView(ply, pos, ang, fov)
   if not seat:GetThirdPersonMode() then
     view.drawviewer = false
 
-    return self:CalcFirstPersonView(view)
+    return self:CalcFirstPersonView(view, ply)
   end
 
   local radius = 550
@@ -697,7 +699,7 @@ function ENT:CalcView(ply, pos, ang, fov)
     view.origin = view.origin + tr.HitNormal * offset
   end
 
-  return self:CalcThirdPersonView(view)
+  return self:CalcThirdPersonView(view, ply)
 end
 
 --- View functions
@@ -706,14 +708,14 @@ end
 --- Override first person view calculations
 -- @client
 -- @tparam table view The view information
-function ENT:CalcFirstPersonView(view)
+function ENT:CalcFirstPersonView(view, ply)
   return view
 end
 
 --- Override third person view calculations
 -- @client
 -- @tparam table view The view information
-function ENT:CalcThirdPersonView(view)
+function ENT:CalcThirdPersonView(view, ply)
   return view
 end
 

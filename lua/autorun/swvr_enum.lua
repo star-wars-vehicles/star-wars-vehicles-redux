@@ -19,6 +19,13 @@ enum.Allegiances = {
   DEV = "In Development" -- In Development
 }
 
+enum.State = {
+  Flight = 0,
+  Takeoff = 1,
+  Landing = 2,
+  Idle = 3
+}
+
 --- Maps allegiances to side numerical constants
 enum.Sides = {
   [1] = { enum.Allegiances.NEU, enum.Allegiances.IND, enum.Allegiances.DEV }, -- Neutral, Independent, In Development

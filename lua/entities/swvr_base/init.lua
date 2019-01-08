@@ -18,6 +18,7 @@ function ENT:SpawnFunction(ply, tr, ClassName)
 
   local ent = ents.Create(ClassName)
   ent:SetPos(tr.HitPos + tr.HitNormal * (scripted_ents.GetMember(ClassName, "SpawnHeight") or 15))
+  ent:SetAngles(scripted_ents.GetMember(ClassName, "LandAngles") or Angle(0, ply:GetAimVector().Yaw - 180, 0))
   ent:SetCreator(ply)
   ent:SetVar("Player", ply)
   ent:Spawn()
@@ -58,11 +59,25 @@ function ENT:Initialize()
 
   self.DefaultInertia = phys:GetInertia()
 
+  self.StartPos = self:GetPos()
+  self.LandPos = self:GetPos() + Vector(0, 0, 10)
+  self.LandAng = self:GetAngles()
+
   phys:SetInertia(self.Inertia)
   phys:EnableMotion(true)
 
   self:PhysWake()
   self:StartMotionController()
+
+  self.ShadowParams = {
+    secondstoarrive = 1,
+    maxangular = 5000,
+    maxangulardamp = 10000,
+    maxspeed = 1000000,
+    maxspeeddamp = 500000,
+    dampfactor = 0.8,
+    teleportdistance = 5000
+  }
 
   -- Generate control surface helpers
   for control in pairs(self.Controls) do
@@ -80,7 +95,7 @@ function ENT:Initialize()
     for k, v in pairs(self.Seats) do
       if not istable(v) or k == "BaseClass" then continue end
 
-      self:AddSeat(k, v.Pos, v.Ang)
+      self:AddSeat(k, v.Pos, v.Ang, v.Options or {})
     end
 
     self.Seats = {}
@@ -153,7 +168,7 @@ local WEAPON_MAP = {
 }
 
 local MODIFIER_FUNCTION_MAP = {
-  ENGINE = "Land",
+  DOWN = "Land",
   UP = "Takeoff"
 }
 
@@ -247,7 +262,7 @@ function ENT:Enter(ply)
   local pilot = self:GetSeat(1)
 
   if IsValid(pilot) and not IsValid(pilot:GetDriver()) and not ply:KeyDown(IN_WALK) then
-    ply:SetNWInt("SWVR.SeatIndex", 1)
+    ply:SetNW2Int("SWVR.SeatIndex", 1)
     ply:EnterVehicle(pilot)
   else
     local vehicle = NULL
@@ -266,17 +281,23 @@ function ENT:Enter(ply)
       end
     end
 
-    if IsValid(vehicle) then ply:EnterVehicle(vehicle) ply:SetNWInt("SWVR.SeatIndex", vehicle:GetNWInt("SeatIndex")) return end
-    if IsValid(pilot) and not IsValid(pilot:GetDriver()) then ply:EnterVehicle(pilot) ply:SetNWInt("SWVR.SeatIndex", 1) end -- In case they held IN_WALK
+    if IsValid(vehicle) then
+      ply:EnterVehicle(vehicle)
+      ply:SetNW2Int("SWVR.SeatIndex", vehicle:GetNW2Int("SeatIndex"))
+    elseif IsValid(pilot) and not IsValid(pilot:GetDriver()) then
+      ply:EnterVehicle(pilot)
+      ply:SetNW2Int("SWVR.SeatIndex", 1) -- In case they held IN_WALK
+    end
   end
 
-  local seat = self:GetSeat(ply:GetNWInt("SWVR.SeatIndex"))
+  local seat = self:GetSeat(ply:GetNW2Int("SWVR.SeatIndex"))
 
   if IsValid(seat) then
-    seat:SetNWEntity("Driver", ply)
+    ply:SetNoDraw(true)
+    seat:SetNW2Entity("Driver", ply)
   end
 
-  self:DispatchNWEvent("OnEnter", ply, ply:GetNWInt("SWVR.SeatIndex") == 1)
+  self:DispatchNWEvent("OnEnter", ply, ply:GetNW2Int("SWVR.SeatIndex") == 1)
 end
 
 --- Called when a `Player` exits the vehicle
@@ -286,9 +307,11 @@ end
 function ENT:Exit(ply)
   if not IsValid(ply) then return end
 
-  self:DispatchNWEvent("OnExit", ply, ply:GetNWInt("SWVR.SeatIndex") == 1)
+  ply:SetNoDraw(false)
 
-  ply:SetNWInt("SWVR.SeatIndex", 0)
+  self:DispatchNWEvent("OnExit", ply, ply:GetNW2Int("SWVR.SeatIndex") == 1)
+
+  ply:SetNW2Int("SWVR.SeatIndex", 0)
 end
 
 --- Engine Interaction
@@ -372,22 +395,30 @@ end
 -- @see Takeoff
 function ENT:Land()
   if self:GetCooldown("Land") > CurTime() then return false end
-  if true then return end
 
   local tr = util.TraceLine({
-    start = self.Landing.TracePos or self:GetPos(),
+    start = self.LandTracePos or self:GetPos(),
     endpos = self:GetPos() + self:GetUp() * -(self.LandDistance or 300),
     filter = table.Add({ self }, self:GetChildren())
   })
 
   if not (tr.HitWorld or (IsValid(tr.Entity) and swvr.enum.LandingSurfaces[tr.Entity:GetClass()])) then return false end
 
-  self.Landed = true
+  if self:EngineActive() then
+    self:ToggleEngine()
+  end
+
   self.LandPos = tr.HitPos + (self.LandOffset or Vector(0, 0, 0))
+
+  self:SetVehicleState(swvr.enum.State.Landing)
+  self:IsLanding(true)
 
   self:DispatchNWEvent("OnLand")
 
   self:SetCooldown("Land", CurTime() + 1)
+
+  -- TODO: Reset throttle and velocity on landing
+  -- TODO: Consider an option where vehicles can only land when under a certain speed
 
   return true
 end
@@ -396,7 +427,14 @@ end
 -- @treturn bool If the vehicle did takeoff or not
 function ENT:Takeoff()
   if self:GetCooldown("Land") > CurTime() then return false end
-  if not self.Landed then return false end
+  if self:GetVehicleState() ~= swvr.enum.State.Idle then return false end
+
+  if not self:EngineActive() then
+    self:ToggleEngine()
+  end
+
+  self:SetVehicleState(swvr.enum.State.Takeoff)
+  self:IsTakingOff(true)
 
   self:DispatchNWEvent("OnTakeoff")
 
@@ -411,9 +449,24 @@ end
 -- @tparam PhysObj phys The physics object of the vehicle.
 -- @number delta Time since the last call.
 function ENT:PhysicsSimulate(phys, delta)
-  self:SimulateThrust(phys, delta)
+  -- By splitting up the vehicle into multiple states,
+  -- we can do the heavy aerodynamic calculations in "flight" only
+  -- and use simply translation calculations otherwise
 
-  self:SimulateAerodynamics(phys, delta)
+  local state = self:GetVehicleState()
+  if state == swvr.enum.State.Flight then
+    self:SimulateThrust(phys, delta)
+
+    self:SimulateAerodynamics(phys, delta)
+  elseif state == swvr.enum.State.Takeoff then
+    self:SimulateTakeoff(phys, delta)
+  elseif state == swvr.enum.State.Landing then
+    self:SimulateLanding(phys, delta)
+  elseif state == swvr.enum.State.Idle then
+    self:SimulateIdle(phys, delta)
+  end
+
+  self:PhysWake()
 end
 
 function ENT:SimulateThrust(phys, delta)
@@ -555,6 +608,76 @@ function ENT:SimulateAerodynamics(phys, delta)
   phys:ApplyForceOffset(-self:GetUp() * (self:GetElevatorVelocity() + pitch * stability ) * mass * stability, self:LocalToWorld(self.Controls.Elevator))
 
   phys:ApplyForceOffset(-self:GetRight() * (math.Clamp(self:GetRudderVelocity(), -max_yaw, max_yaw) + yaw * stability) * mass * stability, self:LocalToWorld(self.Controls.Rudder))
+end
+
+function ENT:SimulateIdle(phys, delta)
+  if self:EngineActive() then
+    self.ShadowParams.pos = self.LandPos
+    self.ShadowParams.angle = self:GetAngles()
+    self.ShadowParams.deltatime = delta
+
+    phys:ComputeShadowControl(self.ShadowParams)
+  elseif not self:IsPlayerHolding() then -- TODO: Check if vehicle wants to be frozen during idle
+    self.ShadowParams.angle = self:GetAngles()
+    self.ShadowParams.deltatime = delta
+    self.ShadowParams.pos = self:GetPos()
+
+    phys:ComputeShadowControl(self.ShadowParams)
+  end
+end
+
+function ENT:SimulateTakeoff(phys, delta)
+  if self:EngineActive() then
+    self.NextPos = self.StartPos + (self.TakeoffVector or Vector(0, 0, 100))
+    self:IsTakingOff(true)
+  end
+
+  if self:IsTakingOff() then
+    self.ShadowParams.pos = self.NextPos
+  else
+    self.ShadowParams.pos = self.LandPos
+  end
+
+  self.ShadowParams.angle = self:GetAngles()
+  self.ShadowParams.deltatime = delta
+
+  phys:ComputeShadowControl(self.ShadowParams)
+
+  -- Let's make sure we actually took off, in case some
+  -- idiot tried to take off while inside or something
+
+  local pos, threshold = self:GetPos(), 90
+
+  if self.TakeOffVector then threshold = self.TakeOffVector.z * 0.9 end
+
+  if pos.z >= self.StartPos.z + threshold then
+    -- Reset our velocity just to make the transition to flight easier
+    phys:SetVelocityInstantaneous(Vector(0, 0, 0))
+
+    self:SetVehicleState(swvr.enum.State.Flight)
+    self:IsTakingOff(false)
+    self.NextPos = nil
+  end
+end
+
+function ENT:SimulateLanding(phys, delta)
+  -- TODO: CHECK FOR WINGS AND TOGGLE
+
+  self.ShadowParams.angle = Angle(0, self:GetAngles().y, 0) + (self.LandAngles or Angle(0, 0, 0))
+  self.ShadowParams.deltatime = delta
+  self.ShadowParams.pos = self.LandPos
+
+  phys:ComputeShadowControl(self.ShadowParams)
+
+  local pos = self:GetPos()
+
+  if pos.z <= self.LandPos.z + 10 then
+    phys:SetVelocityInstantaneous(Vector(0, 0, 0))
+
+    self.StartPos = self.LandPos
+    self:SetVehicleState(swvr.enum.State.Idle)
+    self:IsLanding(false)
+  end
 end
 
 function ENT:GetAngularVelocity()

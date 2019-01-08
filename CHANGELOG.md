@@ -5,7 +5,27 @@ This file uses change log convention from [Keep a CHANGELOG].
 
 ## [Unreleased]
 ### Changed
-- Working on Travis CI documentation generating and building.
+- Changing weapons internally to support more options.
+
+## [0.3.0] - 2019-01-08
+### Changed
+- Changed all NWVars to use NW2Vars instead, as per recommendation.
+- Changed `ENT:PhysicsSimulate` again, splitting into even more methods to support vehicle states.
+- Changed `ENT:Takeoff` to support new vehicle states.
+- Changed `ENT:Land` to support new vehicle states.
+- Changed `ENT:CalcFirstPersonView` and `ENT:CalcThirdPersonView` to accept the player as a second argument.
+
+### Added
+- Added new state enumerations under `swvr.enum.State`.
+- Added `ENT:GetVehicleState` and `ENT:SetVehicleState`.
+- Added `ENT:SimulateIdle`. This is the default behavior upon spawning and when landed.
+- Added `ENT:SimulateTakeoff`. This controls the physics interactions when taking off.
+- Added `ENT:SimulateLanding`. This controls the physics interactions when landing.
+- Added helper function `ENT:IsTakingOff`.
+- Added helper function `ENT:IsLanding`.
+
+### Fixed
+- `ENT:GetCooldown` will now return `-1` instead of `nil` if the cooldown has not ever been set.
 
 ## [0.2.0] - 2019-01-04
 ### Changed
