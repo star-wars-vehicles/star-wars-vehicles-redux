@@ -35,6 +35,11 @@ ENT.MaxHealth = 1000
 --- Maximum shields of the vehicle, if any
 ENT.MaxShield = 0
 
+-- Shield regen per second.
+ENT.ShieldRegen = 20
+-- Time after a hit that the shield starts regenerating in seconds.
+ENT.ShieldRegenTime = 2
+
 ENT.Mass = 2000
 ENT.Inertia = Vector(250000, 250000, 250000)
 
