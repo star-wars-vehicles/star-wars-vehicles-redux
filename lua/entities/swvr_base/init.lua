@@ -146,6 +146,10 @@ function ENT:Think()
     end
   end
 
+  if self:GetShield() < self:GetMaxShield() and self.NextShieldThink and self.NextShieldThink <= CurTime() then
+    self:SetShield(self:GetShield() + self.ShieldRegen * FrameTime())
+  end
+
   self:ThinkControls()
 
   self:OnThink()
@@ -727,17 +731,26 @@ end
 function ENT:OnTakeDamage(dmg)
   self:TakePhysicsDamage(dmg)
 
+  -- Set next shield think to delay shield regeneration after being hit.
+  self.NextShieldThink = CurTime() + self.ShieldRegenTime
+
   local damage = dmg:GetDamage()
-  local cur_health = self:Health()
-  local new_health = math.max(cur_health - damage, 0)
 
   if self:GetMaxShield() > 0 and self:GetShield() > 0 then
-    -- self:SetNextShieldRecharge(CurTime() + 3)
     dmg:SetDamagePosition(dmg:GetDamagePosition() + dmg:GetDamageForce():GetNormalized() * 250)
-
     self:ShieldDamage()
-    self:SetShield(math.max(self:GetShield() - damage, 0))
-  else
+    
+    local absorbedDamage = math.min(damage, self:GetShield())
+    self:SetShield(self:GetShield() - absorbedDamage)
+
+    damage = damage - absorbedDamage
+  end
+
+  -- Check if some damage got by the shields.
+  if damage > 0 then
+    local cur_health = self:Health()
+    local new_health = math.max(cur_health - damage, 0)
+
     self:SetHP(new_health)
 
     local fx = EffectData()
@@ -745,21 +758,21 @@ function ENT:OnTakeDamage(dmg)
     fx:SetNormal(dmg:GetDamageForce():GetNormalized())
 
     util.Effect("MetalSpark", fx)
-  end
 
-  -- TODO: Crash landing mode
-  if new_health <= 0 and not (self:GetShield() > damage and shield) and not self.Done then
-    self:Destroy(dmg:GetAttacker(), dmg:GetInflictor())
+    -- TODO: Crash landing mode
+    if new_health <= 0 and not (self:GetShield() > damage and shield) and not self.Done then
+      self:Destroy(dmg:GetAttacker(), dmg:GetInflictor())
 
-    local fx = ents.Create("info_particle_system")
-    fx:SetKeyValue("effect_name", "fire_large_01")
-    fx:SetKeyValue("start_active", 1)
-    fx:SetOwner(self)
-    fx:SetPos(self:LocalToWorld(self:GetPhysicsObject():GetMassCenter()))
-    fx:SetAngles(self:GetAngles())
-    fx:Spawn()
-    fx:Activate()
-    fx:SetParent(self)
+      local fx = ents.Create("info_particle_system")
+      fx:SetKeyValue("effect_name", "fire_large_01")
+      fx:SetKeyValue("start_active", 1)
+      fx:SetOwner(self)
+      fx:SetPos(self:LocalToWorld(self:GetPhysicsObject():GetMassCenter()))
+      fx:SetAngles(self:GetAngles())
+      fx:Spawn()
+      fx:Activate()
+      fx:SetParent(self)
+    end
   end
 end
 
