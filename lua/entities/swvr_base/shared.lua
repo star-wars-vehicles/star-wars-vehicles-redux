@@ -473,10 +473,10 @@ function ENT:FireMissile(name, options)
     filter = { self }
   })
 
-  local pos = self:LocalToWorld(options.Pos) or weapon:GetPos()
+  local pos = (isvector(options.Pos) and self:LocalToWorld(options.Pos)) or weapon:GetPos()
 
   local ent = ents.Create("lunasflightschool_missile")
-  ent:SetPos()
+  ent:SetPos(pos)
   ent:SetAngles((tr.HitPos - pos):Angle())
   ent:Spawn()
   ent:Activate()
