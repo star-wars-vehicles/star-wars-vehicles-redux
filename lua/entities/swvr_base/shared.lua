@@ -46,6 +46,9 @@ ENT.Inertia = Vector(250000, 250000, 250000)
 ENT.MaxVelocity = 2500
 ENT.MinVelocity = 1
 
+-- How fast can you be to be able to land?
+ENT.MaxLandingVelocity = 500
+
 ENT.MaxPower = 500
 
 ENT.MaxThrust = 1200

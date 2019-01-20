@@ -399,6 +399,7 @@ end
 -- @see Takeoff
 function ENT:Land()
   if self:GetCooldown("Land") > CurTime() then return false end
+  if self:GetVelocity():Length() > self.MaxLandingVelocity then return false end
 
   local tr = util.TraceLine({
     start = self.LandTracePos or self:GetPos(),
@@ -412,7 +413,7 @@ function ENT:Land()
     self:ToggleEngine()
   end
 
-  self.LandPos = tr.HitPos + (self.LandOffset or Vector(0, 0, 0))
+  self.LandPos = tr.HitPos + (self.LandOffset or Vector(0, 0, self.SpawnHeight))
 
   self:SetVehicleState(swvr.enum.State.Landing)
   self:IsLanding(true)
@@ -420,6 +421,9 @@ function ENT:Land()
   self:DispatchNWEvent("OnLand")
 
   self:SetCooldown("Land", CurTime() + 1)
+
+  self.TargetThrust = 0
+  self:SetThrust(0)
 
   -- TODO: Reset throttle and velocity on landing
   -- TODO: Consider an option where vehicles can only land when under a certain speed
@@ -675,7 +679,7 @@ function ENT:SimulateLanding(phys, delta)
 
   local pos = self:GetPos()
 
-  if pos.z <= self.LandPos.z + 10 then
+  if pos.z <= self.LandPos.z then
     phys:SetVelocityInstantaneous(Vector(0, 0, 0))
 
     self.StartPos = self.LandPos
