@@ -276,7 +276,7 @@ function ENT:DrawGlow()
   render.SetMaterial(mat)
 
   for _, v in ipairs(self:GetEngines()) do
-    if v.Options.Callback and v.Options.Callback(self) == false then continue end
+    if v.Options and v.Options.Callback and v.Options.Callback(self) == false then continue end
 
     render.DrawSprite(self:LocalToWorld(v.Pos * self:GetModelScale()), size, size, color)
   end
