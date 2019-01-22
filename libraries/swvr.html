@@ -33,7 +33,6 @@
 <h2>Contents</h2>
 <ul>
 <li><a href="#Functions">Functions</a></li>
-<li><a href="#Tables">Tables</a></li>
 <li><a href="#Fields">Fields</a></li>
 </ul>
 
@@ -78,23 +77,12 @@
 	<td class="summary">Retrieve the cached config value for better performance</td>
 	</tr>
 	<tr>
+	<td class="name" nowrap><a href="#GetSide"><span class="realm shared" title="Shared"></span>GetSide(value)</a></td>
+	<td class="summary">Get the side of an entity (light, dark, or neutral).</td>
+	</tr>
+	<tr>
 	<td class="name" nowrap><a href="#util.GenerateTransponder">util.GenerateTransponder(entity)</a></td>
 	<td class="summary">Generate a transponder for an entity.</td>
-	</tr>
-</table>
-<h2><a href="#Tables">Tables</a></h2>
-<table class="function_list">
-	<tr>
-	<td class="name" nowrap><a href="#enum.Allegiances">enum.Allegiances</a></td>
-	<td class="summary">Contains shorthand to full allegiance name mapping</td>
-	</tr>
-	<tr>
-	<td class="name" nowrap><a href="#enum.Sides">enum.Sides</a></td>
-	<td class="summary">Maps allegiances to side numerical constants</td>
-	</tr>
-	<tr>
-	<td class="name" nowrap><a href="#enum.LandingSurfaces">enum.LandingSurfaces</a></td>
-	<td class="summary">Landing surfaces that vehicles can land on</td>
 	</tr>
 </table>
 <h2><a href="#Fields">Fields</a></h2>
@@ -166,7 +154,7 @@
     <h3>Returns:</h3>
     <ol>
 
-           <span class="types"><span class="type">tablecc</span></span>
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.1/manual.html#5.5">table</a></span>
         Table of Players
     </ol>
 
@@ -221,6 +209,39 @@
 
 </dd>
     <dt>
+    <a name = "GetSide"></a>
+    <strong><span class="realm shared" title="Shared"></span>GetSide(value)</strong>
+    </dt>
+    <dd>
+    Get the side of an entity (light, dark, or neutral).
+
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+    </ul>
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">value</span>
+         An <code>Entity</code> or <a href="https://www.lua.org/manual/5.1/manual.html#5.4">string</a> to get the side value of.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">number</span></span>
+        The side enumeration value
+    </ol>
+
+
+
+
+</dd>
+    <dt>
     <a name = "util.GenerateTransponder"></a>
     <strong>util.GenerateTransponder(entity)</strong>
     </dt>
@@ -249,154 +270,6 @@
            <span class="types"><a class="type" href="https://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
         The transponder code
     </ol>
-
-
-
-
-</dd>
-</dl>
-    <h2 class="section-header "><a name="Tables"></a>Tables</h2>
-
-    <dl class="function">
-    <dt>
-    <a name = "enum.Allegiances"></a>
-    <strong>enum.Allegiances</strong>
-    </dt>
-    <dd>
-    Contains shorthand to full allegiance name mapping
-
-    </ul>
-    </ul>
-    </ul>
-    </ul>
-    </ul>
-    </ul>
-    </ul>
-
-    <h3>Fields:</h3>
-    <ul>
-        <li><span class="parameter">REP</span>
-        Galactic Republic
-        </li>
-        <li><span class="parameter">EMP</span>
-        Galactic Empire
-        </li>
-        <li><span class="parameter">CIS</span>
-        Confederacy of Independent Systems
-        </li>
-        <li><span class="parameter">FO</span>
-        First Order
-        </li>
-        <li><span class="parameter">REB</span>
-        Rebel Alliance
-        </li>
-        <li><span class="parameter">NEU</span>
-        Neutral
-        </li>
-        <li><span class="parameter">IND</span>
-        Independent
-        </li>
-        <li><span class="parameter">DEV</span>
-        In Development
-        </li>
-    </ul>
-
-
-
-
-
-</dd>
-    <dt>
-    <a name = "enum.Sides"></a>
-    <strong>enum.Sides</strong>
-    </dt>
-    <dd>
-    Maps allegiances to side numerical constants
-
-    </ul>
-    </ul>
-    </ul>
-    </ul>
-    </ul>
-    </ul>
-    </ul>
-
-    <h3>Fields:</h3>
-    <ul>
-        <li><span class="parameter">[1]</span>
-
-
-        </li>
-        <li><span class="parameter">enum</span>
-
-
-        </li>
-        <li><span class="parameter">enum</span>
-
-
-        </li>
-    </ul>
-
-
-
-
-
-</dd>
-    <dt>
-    <a name = "enum.LandingSurfaces"></a>
-    <strong>enum.LandingSurfaces</strong>
-    </dt>
-    <dd>
-    Landing surfaces that vehicles can land on
-
-    </ul>
-    </ul>
-    </ul>
-    </ul>
-    </ul>
-    </ul>
-    </ul>
-
-    <h3>Fields:</h3>
-    <ul>
-        <li><span class="parameter">[prop_physics]</span>
-
-
-        </li>
-        <li><span class="parameter">[func_rotating]</span>
-
-
-        </li>
-        <li><span class="parameter">[func_movelinear]</span>
-
-
-        </li>
-        <li><span class="parameter">[func_tracktrain]</span>
-
-
-        </li>
-        <li><span class="parameter">[func_door_rotating]</span>
-
-
-        </li>
-        <li><span class="parameter">[func_door]</span>
-
-
-        </li>
-        <li><span class="parameter">[func_brush]</span>
-
-
-        </li>
-        <li><span class="parameter">[func_conveyor]</span>
-
-
-        </li>
-        <li><span class="parameter">[func_reflective_glass]</span>
-
-
-        </li>
-    </ul>
-
 
 
 
@@ -484,7 +357,7 @@
 </div> <!-- id="main" -->
 <div id="about">
 <i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.4.6</a></i>
-<i style="float:right;">Last updated 2019-01-20 06:33:10 </i>
+<i style="float:right;">Last updated 2019-01-22 07:24:34 </i>
 </div> <!-- id="about" -->
 </div> <!-- id="container" -->
 </body>
