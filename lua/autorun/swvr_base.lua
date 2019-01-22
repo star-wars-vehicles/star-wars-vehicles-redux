@@ -20,6 +20,18 @@ include("swvr_menu.lua")
 include("swvr_meta.lua")
 include("swvr_util.lua")
 
+local LAND_SURFACES = {
+  ["prop_physics"] = true,
+  ["func_rotating"] = true,
+  ["func_movelinear"] = true,
+  ["func_tracktrain"] = true,
+  ["func_door_rotating"] = true,
+  ["func_door"] = true,
+  ["func_brush"] = true,
+  ["func_conveyor"] = true,
+  ["func_reflective_glass"] = true
+}
+
 --- Retrieve all existing SWVR vehicles
 -- @shared
 -- @treturn table Table of `Entity` classes
@@ -36,7 +48,7 @@ end
 
 --- Retrieve all players current in a SWVR vehicle
 -- @shared
--- @treturn tablecc Table of Players
+-- @treturn table Table of Players
 -- @usage for _, ply in ipairs(swvr.GetPlayers()) do
 -- 	print(ply:SteamID64())
 -- end
@@ -51,6 +63,10 @@ function swvr.GetPlayers()
   end
 
   return players
+end
+
+function swvr.GetLandingSurfaces()
+  return LAND_SURFACES
 end
 
 --- Retrieve the cached config value for better performance

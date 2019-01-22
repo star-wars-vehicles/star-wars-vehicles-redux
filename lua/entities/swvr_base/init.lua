@@ -407,7 +407,7 @@ function ENT:Land()
     filter = table.Add({ self }, self:GetChildren())
   })
 
-  if not (tr.HitWorld or (IsValid(tr.Entity) and swvr.enum.LandingSurfaces[tr.Entity:GetClass()])) then return false end
+  if not (tr.HitWorld or (IsValid(tr.Entity) and swvr.GetLandingSurfaces()[tr.Entity:GetClass()])) then return false end
 
   if self:EngineActive() then
     self:ToggleEngine()
@@ -415,7 +415,7 @@ function ENT:Land()
 
   self.LandPos = tr.HitPos + (self.LandOffset or Vector(0, 0, self.SpawnHeight))
 
-  self:SetVehicleState(swvr.enum.State.Landing)
+  self:SetVehicleState(SWVR_STATE_LANDING)
   self:IsLanding(true)
 
   self:DispatchNWEvent("OnLand")
@@ -435,13 +435,13 @@ end
 -- @treturn bool If the vehicle did takeoff or not
 function ENT:Takeoff()
   if self:GetCooldown("Land") > CurTime() then return false end
-  if self:GetVehicleState() ~= swvr.enum.State.Idle then return false end
+  if self:GetVehicleState() ~= SWVR_STATE_IDLE then return false end
 
   if not self:EngineActive() then
     self:ToggleEngine()
   end
 
-  self:SetVehicleState(swvr.enum.State.Takeoff)
+  self:SetVehicleState(SWVR_STATE_TAKEOFF)
   self:IsTakingOff(true)
 
   self:DispatchNWEvent("OnTakeoff")
@@ -462,15 +462,15 @@ function ENT:PhysicsSimulate(phys, delta)
   -- and use simply translation calculations otherwise
 
   local state = self:GetVehicleState()
-  if state == swvr.enum.State.Flight then
+  if state == SWVR_STATE_FLIGHT then
     self:SimulateThrust(phys, delta)
 
     self:SimulateAerodynamics(phys, delta)
-  elseif state == swvr.enum.State.Takeoff then
+  elseif state == SWVR_STATE_TAKEOFF then
     self:SimulateTakeoff(phys, delta)
-  elseif state == swvr.enum.State.Landing then
+  elseif state == SWVR_STATE_LANDING then
     self:SimulateLanding(phys, delta)
-  elseif state == swvr.enum.State.Idle then
+  elseif state == SWVR_STATE_IDLE then
     self:SimulateIdle(phys, delta)
   end
 
@@ -662,7 +662,7 @@ function ENT:SimulateTakeoff(phys, delta)
     -- Reset our velocity just to make the transition to flight easier
     phys:SetVelocityInstantaneous(Vector(0, 0, 0))
 
-    self:SetVehicleState(swvr.enum.State.Flight)
+    self:SetVehicleState(SWVR_STATE_FLIGHT)
     self:IsTakingOff(false)
     self.NextPos = nil
   end
@@ -679,11 +679,11 @@ function ENT:SimulateLanding(phys, delta)
 
   local pos = self:GetPos()
 
-  if pos.z <= self.LandPos.z then
+  if pos.z <= self.LandPos.z + 10 then
     phys:SetVelocityInstantaneous(Vector(0, 0, 0))
 
     self.StartPos = self.LandPos
-    self:SetVehicleState(swvr.enum.State.Idle)
+    self:SetVehicleState(SWVR_STATE_IDLE)
     self:IsLanding(false)
   end
 end
@@ -739,8 +739,11 @@ function ENT:OnTakeDamage(dmg)
   self.NextShieldThink = CurTime() + self.ShieldRegenTime
 
   local damage = dmg:GetDamage()
+  local cur_health = self:Health()
+  local new_health = math.max(cur_health - damage, 0)
 
   if self:GetMaxShield() > 0 and self:GetShield() > 0 then
+    -- self:SetNextShieldRecharge(CurTime() + 3)
     dmg:SetDamagePosition(dmg:GetDamagePosition() + dmg:GetDamageForce():GetNormalized() * 250)
     self:ShieldDamage()
     
@@ -762,6 +765,7 @@ function ENT:OnTakeDamage(dmg)
     fx:SetNormal(dmg:GetDamageForce():GetNormalized())
 
     util.Effect("MetalSpark", fx)
+  end
 
     -- TODO: Crash landing mode
     if new_health <= 0 and not (self:GetShield() > damage and shield) and not self.Done then

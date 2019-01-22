@@ -412,11 +412,11 @@ function ENT:HUDDrawCompass(fpvX, fpvY)
   surface.DrawTexturedRectRotated(x, y, size, size, 0)
 
   local rotate = (self:GetAngles().y - 90) * -1
-  local al = 1 -- swvr.LightOrDark(self)
+  local al = swvr.GetSide(self)
   local maxDist = 5000
 
   for k, v in pairs(ents.FindInSphere(self:GetPos(), maxDist)) do
-    if (IsValid(v) and (v.IsSWVRVehicle or v.IsSWVehicle) and v ~= self and al ~= swvr.LightOrDark(v)) then
+    if (IsValid(v) and (v.IsSWVRVehicle or v.IsSWVehicle) and v ~= self and al ~= swvr.GetSide(v)) then
       local dist = (self:GetPos() - v:GetPos()):Length() / maxDist
       local a = 1 - dist
       local r = ((self:GetPos() - v:GetPos()):Angle().y - 90) + rotate - 180

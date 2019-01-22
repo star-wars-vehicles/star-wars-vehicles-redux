@@ -10,15 +10,13 @@ properties.Add("allegiance", {
   MenuOpen = function(self, option, ent, tr)
     local submenu = option:AddSubMenu()
 
-    for _, faction in pairs(swvr.enum.Sides) do
-      for _, allegiance in pairs(faction) do
-        local opt = submenu:AddOption(allegiance, function()
-          self:SetAllegiance(ent, allegiance)
-        end)
+    for _, allegiance in ipairs(swvr.GetAllegiances()) do
+      local opt = submenu:AddOption(allegiance, function()
+        self:SetAllegiance(ent, swvr.GetAllegiance(allegiance))
+      end)
 
-        if (ent:GetAllegiance() == allegiance) then
-          opt:SetChecked(true)
-        end
+      if (ent:GetAllegiance() == allegiance) then
+        opt:SetChecked(true)
       end
     end
   end,

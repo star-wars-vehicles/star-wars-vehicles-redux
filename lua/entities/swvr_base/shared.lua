@@ -56,7 +56,6 @@ ENT.BoostThrust = 2000
 
 --- How fast can the vehicle pitch/yaw/roll?
 ENT.Handling = Vector(300, 300, 300)
-ENT.Landing = {}
 
 ENT.Controls = {
   Wings = Vector(),
@@ -64,10 +63,6 @@ ENT.Controls = {
   Rudder = Vector(),
   Thrust = Vector()
 }
-
-ENT.Throttle = Vector()
-
-ENT.Acceleration = Vector()
 
 ENT.Engines = nil
 ENT.Parts = nil
@@ -91,7 +86,7 @@ function ENT:SetupDataTables()
   self:NetworkVar("Bool", 4, "Landing")
   self:NetworkVar("Bool", 5, "Starting")
 
-  self:NetworkVar("Int", 0, "Allegiance", { KeyName = "allegiance", Edit = { type = "Int", order = 1, min = 0, max = 2, category = "Details" } })
+  self:NetworkVar("Int", 0, "Allegiance", { KeyName = "allegiance", Edit = { type = "Int", order = 1, min = 1, max = #swvr.GetAllegiances(), category = "Details" } })
   self:NetworkVar("Int", 1, "SeatCount")
   self:NetworkVar("Int", 2, "WeaponCount")
   self:NetworkVar("Int", 3, "LastVehicleState")
@@ -117,7 +112,7 @@ function ENT:SetupDataTables()
   self:NetworkVar("Float", 14, "PrimaryOverheat")
   self:NetworkVar("Float", 15, "SecondaryOverheat")
 
-  self:NetworkVar("String", 0, "Transponder")
+  self:NetworkVar("String", 0, "Transponder", { KeyName = "transponder", Edit = { type = "Generic", order = 2, waitforenter = false, category = "Details" } })
 
   -- Generate nice helper functions
   AccessorBool(self, "Destroyed", "Is")
@@ -142,8 +137,8 @@ function ENT:SetupDataTables()
     self:SetTakingOff(false)
     self:SetLanding(false)
 
-    self:SetVehicleState(swvr.enum.State.Idle)
-    self:SetLastVehicleState(swvr.enum.State.Idle)
+    self:SetVehicleState(SWVR_STATE_IDLE)
+    self:SetLastVehicleState(SWVR_STATE_IDLE)
 
     self:SetMaxVelocity(self.MaxVelocity)
     self:SetHP(self.MaxHealth)
