@@ -6,8 +6,7 @@ swvr = swvr or {}
 
 swvr.Allegiances = swvr.Allegiances or {}
 swvr.Sides = swvr.Sides or {}
-
-local AllegianceMap = {}
+swvr.AllegianceMap = swvr.AllegianceMap or {}
 
 function swvr.GetAllegiances()
   return swvr.Allegiances
@@ -22,7 +21,7 @@ function swvr.RegisterSide(side)
 
   swvr.Sides[#swvr.Sides + 1] = side
 
-  AllegianceMap[string.upper(side)] = {}
+  swvr.AllegianceMap[string.upper(side)] = {}
 
   return #swvr.Sides
 end
@@ -32,18 +31,22 @@ function swvr.RegisterAllegiance(name, side)
   assert(isstring(side) or isnumber(side), "Cannot register allegiance with side of type \"" .. type(side) .. "\"! Side names must be of type \"string\" or \"number\".")
 
   for i, v in ipairs(swvr.Allegiances) do
-    if string.upper(v) == string.upper(side) then return i end
+    if isnumber(side) then
+      if string.upper(v) == string.upper(name) then return i end
+    elseif isstring(side) then
+      if string.upper(v) == string.upper(side) then return i end
+    end
   end
 
   swvr.Allegiances[#swvr.Allegiances + 1] = name
 
   if isnumber(side) then
     for i, v in ipairs(swvr.Sides) do
-      if i == side then table.insert(AllegianceMap[v:upper()], name) end
+      if i == side then table.insert(swvr.AllegianceMap[v:upper()], name) end
     end
   elseif isstring(side) then
     for _, v in ipairs(swvr.Sides) do
-      if v:lower() == side:lower() then table.insert(AllegianceMap[side:upper()], name) break end
+      if v:lower() == side:lower() then table.insert(swvr.AllegianceMap[side:upper()], name) break end
     end
   end
 
@@ -57,7 +60,7 @@ end
 function swvr.GetSide(value)
   if isstring(value) then
     for i, side in ipairs(swvr.Sides) do
-      for _, al in ipairs(AllegianceMap[side:upper()]) do
+      for _, al in ipairs(swvr.AllegianceMap[side:upper()]) do
         if string.match(string.upper(al), string.upper(value)) then return i end
       end
     end
