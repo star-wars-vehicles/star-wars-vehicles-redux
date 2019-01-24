@@ -438,6 +438,9 @@ function ENT:Takeoff()
   if self:GetVehicleState() ~= SWVR_STATE_IDLE then return false end
 
   if not self:EngineActive() then
+    -- Don't start anything on takeoff if manual cold start is needed.
+    if self.ColdStart then return end
+
     self:ToggleEngine()
   end
 
