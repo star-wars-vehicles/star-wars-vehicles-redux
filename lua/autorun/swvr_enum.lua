@@ -16,8 +16,8 @@ end
 function swvr.RegisterSide(side)
   assert(isstring(side), "Cannot register side with name of type \"" .. type(side) .. "\"! Side names must be of type \"string\".")
 
-  for _, v in ipairs(swvr.Sides) do
-    if string.upper(v) == string.upper(side) then return end
+  for i, v in ipairs(swvr.Sides) do
+    if string.upper(v) == string.upper(side) then return i end
   end
 
   swvr.Sides[#swvr.Sides + 1] = side
@@ -31,8 +31,8 @@ function swvr.RegisterAllegiance(name, side)
   assert(isstring(name), "Cannot register allegiance with name of type \"" .. type(side) .. "\"! Side names must be of type \"string\".")
   assert(isstring(side) or isnumber(side), "Cannot register allegiance with side of type \"" .. type(side) .. "\"! Side names must be of type \"string\" or \"number\".")
 
-  for _, v in ipairs(swvr.Allegiances) do
-    if string.upper(v) == string.upper(side) then return end
+  for i, v in ipairs(swvr.Allegiances) do
+    if string.upper(v) == string.upper(side) then return i end
   end
 
   swvr.Allegiances[#swvr.Allegiances + 1] = name
