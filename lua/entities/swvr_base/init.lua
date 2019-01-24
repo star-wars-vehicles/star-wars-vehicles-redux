@@ -739,11 +739,8 @@ function ENT:OnTakeDamage(dmg)
   self.NextShieldThink = CurTime() + self.ShieldRegenTime
 
   local damage = dmg:GetDamage()
-  local cur_health = self:Health()
-  local new_health = math.max(cur_health - damage, 0)
 
   if self:GetMaxShield() > 0 and self:GetShield() > 0 then
-    -- self:SetNextShieldRecharge(CurTime() + 3)
     dmg:SetDamagePosition(dmg:GetDamagePosition() + dmg:GetDamageForce():GetNormalized() * 250)
     self:ShieldDamage()
     
@@ -765,7 +762,6 @@ function ENT:OnTakeDamage(dmg)
     fx:SetNormal(dmg:GetDamageForce():GetNormalized())
 
     util.Effect("MetalSpark", fx)
-  end
 
     -- TODO: Crash landing mode
     if new_health <= 0 and not (self:GetShield() > damage and shield) and not self.Done then
