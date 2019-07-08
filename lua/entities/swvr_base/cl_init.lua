@@ -29,6 +29,10 @@ function ENT:Initialize()
     self:EmitSound("swvr/shields/swvr_shield_absorb_" .. math.Round(math.random(1, 4)) .. ".wav", 500, 100,  cvars.Number("swvr_effect_volume", 100) / 100, CHAN_BODY)
   end)
 
+  self:AddEvent("OnShieldRecharge", function()
+    self:EmitSound("mvm/mvm_revive.wav")
+  end)
+
   if istable(self.Engines) then
     local engines = {}
     for k, v in pairs(self.Engines) do
@@ -55,7 +59,9 @@ function ENT:Initialize()
     self.DamageVectors = dmg
   end
 
-  self:OnInitialize()
+  if self.OnInitialize then
+    self:OnInitialize()
+  end
 
   self.Initialized = true
 end
@@ -147,9 +153,10 @@ function ENT:Draw()
   self:DrawDamageEffects()
 
   -- Engine Effects
-
-  self:DrawExhaust()
-  self:DrawGlow()
+  if cvars.Bool("swvr_engines_draw") then
+    self:DrawExhaust()
+    self:DrawGlow()
+  end
 end
 
 --- Draw the engine exhaust
@@ -231,6 +238,8 @@ end
 -- @client
 -- @internal
 function ENT:DrawDamageEffects()
+  if not cvars.Bool("swvr_damage_draw") then return end
+
   local health = self:Health()
 
   if health ~= 0 and health < self:GetMaxHealth() * 0.5 then
@@ -476,7 +485,9 @@ function ENT:HUDDrawReticle()
 end
 
 function ENT:HUDDrawOverheating()
-  local group = NULL
+  local group = self:GetSeat(LocalPlayer():GetNW2Int("SWVR.SeatIndex"))
+
+  if not IsValid(group) then return end
 
   if not (group and group.CanOverheat) then return end
 
@@ -791,5 +802,36 @@ hook.Add("PostDrawTranslucentRenderables", "SWVR.DebugVisuals", function()
     render.DrawSphere(ent:LocalToWorld(controls.Wings * ent:GetModelScale()), 15, 20, 20, Color(175, 175, 0, 100))
     render.DrawSphere(ent:LocalToWorld(controls.Elevator * ent:GetModelScale()), 15, 20, 20, Color(175, 0, 175, 100))
     render.DrawSphere(ent:LocalToWorld(controls.Rudder * ent:GetModelScale()), 15, 20, 20, Color(0, 175, 0, 100))
+
+    cam.Start2D()
+      local THRUST = ent:LocalToWorld(controls.Thrust):ToScreen()
+      draw.SimpleText("THRUST", "DermaDefault", THRUST.x, THRUST.y)
+
+      local LIFT = ent:LocalToWorld(controls.Wings):ToScreen()
+      draw.SimpleText("LIFT", "DermaDefault", LIFT.x, LIFT.y)
+
+      local PITCH = ent:LocalToWorld(controls.Elevator):ToScreen()
+      draw.SimpleText("PITCH", "DermaDefault", PITCH.x, PITCH.y + 10)
+
+      local YAW = ent:LocalToWorld(controls.Rudder):ToScreen()
+      draw.SimpleText("YAW", "DermaDefault", YAW.x, YAW.y)
+    cam.End2D()
+
+    for k, v in pairs(ent:GetWeapons()) do
+      cam.Start2D()
+        local pos = v:GetPos():ToScreen()
+        draw.SimpleText(v:GetNW2String("SWVR.WeaponName"), "DermaDefault", pos.x, pos.y)
+      cam.End2D()
+      render.DrawSphere(v:GetPos(), 5, 20, 20, Color(0, 0, 255, 100))
+    end
+
+    for k, v in pairs(ent:GetSeats()) do
+      cam.Start2D()
+        local pos = v:GetPos():ToScreen()
+        draw.SimpleText(v:GetNW2String("SWVR.SeatName"), "DermaDefault", pos.x, pos.y)
+      cam.End2D()
+
+      render.DrawSphere(v:GetPos(), 10, 20, 20, Color(255, 0, 0, 100))
+    end
   end
 end)

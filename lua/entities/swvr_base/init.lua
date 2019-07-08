@@ -79,6 +79,9 @@ function ENT:Initialize()
     teleportdistance = 5000
   }
 
+  self:SetWeaponCount(0)
+  self:SetWeaponGroupCount(0)
+
   -- Generate control surface helpers
   for control in pairs(self.Controls) do
     self["Get" .. control .. "Velocity"] = function()
@@ -115,7 +118,7 @@ function ENT:Initialize()
 
   self:SetCooldown("Engine", CurTime())
 
-  self.ColdStart = cvars.Bool("swvr_coldstart_enabled")
+  self.ColdStart = true
 
   self:OnInitialize()
 
@@ -147,7 +150,12 @@ function ENT:Think()
   end
 
   if self:GetShield() < self:GetMaxShield() and self.NextShieldThink and self.NextShieldThink <= CurTime() then
-    self:SetShield(self:GetShield() + self.ShieldRegen * FrameTime())
+    self:SetShield(math.Clamp(self:GetShield() + self.ShieldRegen * FrameTime(), 0, self:GetMaxShield()))
+
+    if self:GetShield() >= self:GetMaxShield() then
+      self:DispatchNWEvent("OnShieldRecharge")
+      self:ShieldDamage()
+    end
   end
 
   self:ThinkControls()
@@ -168,7 +176,7 @@ end
 local WEAPON_MAP = {
   Primary = "PrimaryAttack",
   Secondary = "SecondaryAttack",
-  Alternate = "AlternateFire"
+  Alternate = "AlternateAttack"
 }
 
 local MODIFIER_FUNCTION_MAP = {
@@ -205,32 +213,12 @@ function ENT:ThinkControls()
     if not cvars.Bool("swvr_weapons_enabled") then return end
 
     for key, action in pairs(WEAPON_MAP) do
-      if index == 1 and self["GetNext" .. key .. "Fire"](self) > CurTime() then continue end
-      if ply:ControlDown(key) then self:DispatchNWEvent((index ~= 1 and "Gunner" or "") .. action, { Index = index, Player = ply, Seat = seat }) end
+      if ply:ControlDown(key) then self[(index ~= 1 and seat:GetNW2String("SWVR.SeatName") or "") .. action](self) end
+
+      -- This section of code is disabled until we decide if ~30% higher network usage per ship is worth the extra event flexibility
+      -- if ply:ControlDown(key) then self:DispatchNWEvent((index ~= 1 and seat:GetNW2String("SWVR.SeatName") or "") .. action, { Index = index, Player = ply, Seat = seat }) end
     end
   end
-end
-
---- Primary attack function.
--- @shared
-function ENT:PrimaryAttack()
-  if self:GetNextPrimaryFire() > CurTime() then return end
-
-  self:SetNextPrimaryFire(CurTime() + 1)
-end
-
---- Secondary attack function
--- @shared
-function ENT:SecondaryAttack()
-  if self:GetNextSecondaryFire() > CurTime() then return end
-
-  self:SetNextSecondaryFire(CurTime() + 1)
-end
-
-function ENT:GunnerPrimaryAttack(data)
-  if self:GetNextPrimaryFire() > CurTime() then return end
-
-  self:SetNextPrimaryFire(CurTime() + 1)
 end
 
 function ENT:HitGround()
@@ -746,7 +734,13 @@ function ENT:OnTakeDamage(dmg)
   if self:GetMaxShield() > 0 and self:GetShield() > 0 then
     dmg:SetDamagePosition(dmg:GetDamagePosition() + dmg:GetDamageForce():GetNormalized() * 250)
     self:ShieldDamage()
-    
+
+    self:DispatchNWEvent("OnShieldDamage")
+
+    if self:GetShield() <= 0 then
+      self:DispatchNWEvent("OnShieldDepleat")
+    end
+
     local absorbedDamage = math.min(damage, self:GetShield())
     self:SetShield(self:GetShield() - absorbedDamage)
 
@@ -760,11 +754,13 @@ function ENT:OnTakeDamage(dmg)
 
     self:SetHP(new_health)
 
-    local fx = EffectData()
-    fx:SetOrigin(dmg:GetDamagePosition())
-    fx:SetNormal(dmg:GetDamageForce():GetNormalized())
+    do -- Minimize scope of variables
+      local fx = EffectData()
+      fx:SetOrigin(dmg:GetDamagePosition())
+      fx:SetNormal(dmg:GetDamageForce():GetNormalized())
 
-    util.Effect("MetalSpark", fx)
+      util.Effect("MetalSpark", fx)
+    end
 
     -- TODO: Crash landing mode
     if new_health <= 0 and not (self:GetShield() > damage and shield) and not self.Done then
@@ -791,6 +787,10 @@ function ENT:ShieldDamage()
     return
   end
 
+  local col = Vector(255, 0, 0)
+
+  self:SetNW2Vector("SWVR.ShieldColor", col)
+
   local fx = EffectData()
   fx:SetEntity(self)
   fx:SetOrigin(self:GetPos())
@@ -800,14 +800,14 @@ function ENT:ShieldDamage()
   for k, v in pairs(self.Parts or {}) do
     if not v.Entity then continue end
 
+    v.Entity:SetNW2Vector("SWVR.ShieldColor", col)
+
     local partFX = EffectData()
     partFX:SetEntity(v.Entity)
     partFX:SetOrigin(v.Entity:GetPos())
     partFX:SetScale(self:GetModelScale())
     util.Effect("swvr_shield", partFX)
   end
-
-  self:DispatchNWEvent("OnShieldDamage")
 end
 
 --- Destroys the vehicle physically
@@ -840,7 +840,7 @@ function ENT:Explode()
 
     if not IsValid(passenger) then continue end
 
-    passenger:TakeDamage(200, self.Attacker or game.GetWorld(), self.Inflictor or game.GetWorld())
+    passenger:TakeDamage(passenger:Health(), self.Attacker or game.GetWorld(), self.Inflictor or game.GetWorld())
   end
 
   local ent = ents.Create("swvr_explosion")

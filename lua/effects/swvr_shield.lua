@@ -46,10 +46,12 @@ function EFFECT:Init(data)
     e:SetRenderMode(RENDERMODE_TRANSALPHA)
     e:SetColor(ColorAlpha(color, 1 + 150 * col_frac))
 
+    local col = e:GetNW2Vector("SWVR.ShieldColor")
+
     -- Draw our model with the Light material
     -- This is the underlying blue effect and it doubles as the DX7 only effect
     if col_frac > 0 then
-      render.SetColorModulation(0, 160 / 255, 1)
+      render.SetColorModulation(col.x / 255, col.y / 255, col.z / 255)
       render.MaterialOverride(mat_light)
         e:DrawModel()
       render.MaterialOverride(nil)

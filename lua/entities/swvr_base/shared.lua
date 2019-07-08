@@ -35,9 +35,9 @@ ENT.MaxHealth = 1000
 --- Maximum shields of the vehicle, if any
 ENT.MaxShield = 0
 
--- Shield regen per second.
+--- Shield regen per second.
 ENT.ShieldRegen = 20
--- Time after a hit that the shield starts regenerating in seconds.
+--- Time after a hit that the shield starts regenerating in seconds.
 ENT.ShieldRegenTime = 2
 
 ENT.Mass = 2000
@@ -68,6 +68,12 @@ ENT.Engines = nil
 ENT.Parts = nil
 ENT.Seats = nil
 
+ENT.Cache = {
+  Weapons = {},
+  WeaponGroups = {},
+  Seats = {}
+}
+
 -- Base Setup and Networking
 
 local AccessorBool = swvr.util.AccessorBool
@@ -89,7 +95,8 @@ function ENT:SetupDataTables()
   self:NetworkVar("Int", 0, "Allegiance", { KeyName = "allegiance", Edit = { type = "Int", order = 1, min = 1, max = #swvr.GetAllegiances(), category = "Details" } })
   self:NetworkVar("Int", 1, "SeatCount")
   self:NetworkVar("Int", 2, "WeaponCount")
-  self:NetworkVar("Int", 3, "LastVehicleState")
+  self:NetworkVar("Int", 3, "WeaponGroupCount")
+  self:NetworkVar("Int", 4, "LastVehicleState")
 
   self:NetworkVar("Float", 0, "HP", { KeyName = "health", Edit = { type = "Float", order = 1, min = 0, max = self.MaxHealth, category = "Condition" } })
   self:NetworkVar("Float", 1, "MaxHP")
@@ -102,15 +109,11 @@ function ENT:SetupDataTables()
   self:NetworkVar("Float", 7, "BoostThrust")
   self:NetworkVar("Float", 8, "MaxVerticalThrust")
 
-  self:NetworkVar("Float", 9, "NextPrimaryFire")
-  self:NetworkVar("Float", 10, "NextSecondaryFire")
-  self:NetworkVar("Float", 11, "NextAlternateFire")
+  self:NetworkVar("Float", 9, "MaxVelocity")
+  self:NetworkVar("Float", 10, "MaxPower")
 
-  self:NetworkVar("Float", 12, "MaxVelocity")
-  self:NetworkVar("Float", 13, "MaxPower")
-
-  self:NetworkVar("Float", 14, "PrimaryOverheat")
-  self:NetworkVar("Float", 15, "SecondaryOverheat")
+  self:NetworkVar("Float", 11, "PrimaryOverheat")
+  self:NetworkVar("Float", 12, "SecondaryOverheat")
 
   self:NetworkVar("String", 0, "Transponder", { KeyName = "transponder", Edit = { type = "Generic", order = 2, waitforenter = false, category = "Details" } })
 
@@ -152,10 +155,6 @@ function ENT:SetupDataTables()
     self:SetMaxVerticalThrust(isnumber(self.MaxVerticalThrust) and self.MaxVerticalThrust or self:GetMaxThrust() * 0.15)
 
     self:SetMaxPower(self.MaxPower)
-
-    self:SetNextPrimaryFire(CurTime())
-    self:SetNextSecondaryFire(CurTime())
-    self:SetNextAlternateFire(CurTime())
 
     self:SetAllegiance(1)
     self:SetSeatCount(0)
@@ -248,6 +247,14 @@ function ENT:AddSeat(name, pos, ang, options)
   seat:SetNW2Int("SWVR.SeatIndex", self:GetSeatCount() + 1)
   seat:SetNW2String("SWVR.SeatName", string.upper(name))
 
+  if string.upper(name) == "PILOT" then
+    name = ""
+  end
+
+  for _, attack in ipairs({"Primary", "Secondary", "Alternate"}) do
+    self:AddWeaponGroup(name .. attack)
+  end
+
   -- CPPI support
   if seat.CPPISetOwner and self.CPPIGetOwner then
     seat:CPPISetOwner(self:CPPIGetOwner())
@@ -313,6 +320,9 @@ end
 --- Weapon Functions
 -- @section weapons
 
+--- Add a weapon to the vehicle.
+-- @server
+-- @string name The name of the weapon group
 function ENT:AddWeaponGroup(name)
   if CLIENT then return end
 
@@ -332,6 +342,100 @@ function ENT:AddWeaponGroup(name)
   phys:EnableCollisions(false)
   phys:EnableMotion(false)
 
+  ent:SetNW2String("SWVR.GroupName", name)
+
+  self[name .. "Attack"] = self[name .. "Attack"] or function(e)
+
+  end
+
+  self["GetNext" .. name .. "Fire"] = self["GetNext" .. name .. "Fire"] or function(e)
+    return self:GetNW2Float("Next" .. name .. "Fire", 0)
+  end
+
+  self["SetNext" .. name .. "Fire"] = self["SetNext" .. name .. "Fire"] or function(e, time)
+    self:SetNW2Float("Next" .. name .. "Fire", time)
+  end
+
+  self["Can" .. name .. "Attack"] = self["Can" .. name .. "Attack"] or function(e)
+    return self:GetNW2Float("Next" .. name .. "Fire") < CurTime()
+  end
+
+  self["Get" .. name .. "Ammo"] = self["Get" .. name .. "Ammo"] or function(e)
+    return self:GetNW2Int(name .. "Ammo", 0)
+  end
+
+  self["Set" .. name .. "Ammo"] = self["Set" .. name .. "Ammo"] or function(e, ammo)
+    self:SetNW2Int(name .. "Ammo", math.max(ammo, 0))
+  end
+
+  self["Take" .. name .. "Ammo"] = self["Take" .. name .. "Ammo"] or function(e, ammo)
+    self:SetNW2Int(name .. "Ammo", math.max(self:GetNW2Int(name .. "Ammo") - ammo, 0))
+  end
+
+  self["Get" .. name .. "Overheat"] = self["Get" .. name .. "Overheat"] or function(e)
+    return self:GetNW2Int(name .. "Overheat", 0)
+  end
+
+  self["Set" .. name .. "Overheat"] = self["Set" .. name .. "Overheat"] or function(e, overheat)
+    self:SetNW2Int(name .. "Overheat", math.max(overheat, 0))
+  end
+
+  self:SetWeaponGroupCount(self:GetWeaponGroupCount() + 1)
+
+  return ent
+end
+
+--- Retrieve one of the vehicle's weapon groups
+-- @shared
+-- @string name The name of the weapon group to retrieve
+-- @treturn entity The found `Entity` or `NULL`
+function ENT:GetWeaponGroup(name)
+  if not isstring(name) then return NULL end
+
+  if self.Cache.WeaponGroups[name] then
+    -- Have we cached the entity for the server/client?
+    local weapon = self.Cache.WeaponGroups[name]
+    if IsValid(weapon) and weapon:GetNW2String("SWVR.GroupName") == name then
+      return weapon
+    end
+  else
+    -- Loop over children instead of Seats table because the table isn't networked but children are
+    for _, child in ipairs(self:GetChildren()) do
+      if child:GetClass():lower() ~= "prop_physics" then continue end
+
+      if string.upper(child:GetNW2String("SWVR.GroupName", "")) ~= string.upper(name) then continue end
+
+      self.Cache.WeaponGroups[name] = child
+
+      return child
+    end
+  end
+
+  return NULL
+end
+
+--- Get all the vehicle's weapon groups
+-- @shared
+-- @treturn table Table of `Entity` classes
+function ENT:GetWeaponGroups()
+  self.WeaponGroups = self.WeaponGroups or {}
+
+  -- Have we cached the weapons?
+  if #self.WeaponGroups == self:GetWeaponGroupCount() then return self.WeaponGroups end
+
+  -- We must be missing some weapons then
+
+  local weapons = {}
+  for _, child in ipairs(self:GetChildren()) do
+    if child:GetClass():lower() ~= "prop_physics" then continue end
+    if child:GetNW2String("SWVR.GroupName") == "" then continue end
+
+    weapons[child:GetNW2String("SWVR.GroupName", "")] = child
+  end
+
+  self.WeaponGroups = weapons
+
+  return self.WeaponGroups or {}
 end
 
 --- Add a weapon to the vehicle.
@@ -340,14 +444,18 @@ end
 -- @vector[opt] pos The position of the weapon
 -- @func[opt] callback Callback used to update entity positioning
 -- @treturn entity The new weapon `Entity` for convenience
-function ENT:AddWeapon(name, pos, callback)
+function ENT:AddWeapon(group, name, pos, callback)
   if CLIENT then return end
+
+  local parent = self:GetWeaponGroup(group)
+
+  if not IsValid(parent) then error("Cannot add weapon to group which does not exist!") end
 
   local ent = ents.Create("prop_physics")
   ent:SetModel("models/props_junk/PopCan01a.mdl")
   ent:SetPos(pos and self:LocalToWorld(pos) or self:GetPos())
   ent:SetAngles(self:GetAngles())
-  ent:SetParent(self)
+  ent:SetParent(parent)
   ent:Spawn()
   ent:Activate()
   ent:SetRenderMode(RENDERMODE_TRANSALPHA)
@@ -360,6 +468,7 @@ function ENT:AddWeapon(name, pos, callback)
   phys:EnableMotion(false)
 
   ent:SetNW2String("SWVR.WeaponName", name)
+  ent:SetNW2String("SWVR.WeaponGroup", group)
 
   self:SetWeaponCount(self:GetWeaponCount() + 1)
 
@@ -371,25 +480,27 @@ end
 -- @string name The name of the weapon to retrieve
 -- @treturn entity The found `Entity` or `NULL`
 function ENT:GetWeapon(name)
-  self.Weapons = self.Weapons or {}
-
   if not isstring(name) then return NULL end
 
-  -- Have we cached the entity for the server/client?
-  local weapon = self.Weapons[name]
-  if IsValid(weapon) and weapon:GetNW2String("SWVR.WeaponName") == name then
-    return weapon
-  end
+  if self.Cache.Weapons[name] then
+    -- Have we cached the entity for the server/client?
+    local weapon = self.Cache.Weapons[name]
+    if IsValid(weapon) and weapon:GetNW2String("SWVR.WeaponName") == name then
+      return weapon
+    end
+  else
+    -- Loop over children instead of Seats table because the table isn't networked but children are
+    for _, group in pairs(self:GetWeaponGroups()) do
+      for _, child in ipairs(group:GetChildren()) do
+        if child:GetClass():lower() ~= "prop_physics" then continue end
 
-  -- Loop over children instead of Seats table because the table isn't networked but children are
-  for _, child in ipairs(self:GetChildren()) do
-    if child:GetClass():lower() ~= "prop_physics" then continue end
+        if string.upper(child:GetNW2String("SWVR.WeaponName", "")) ~= string.upper(name) then continue end
 
-    if string.upper(child:GetNW2String("SWVR.WeaponName", "")) ~= string.upper(name) then continue end
+        self.Cache.Weapons[name] = child
 
-    self.Weapons[name] = child
-
-    return child
+        return child
+      end
+    end
   end
 
   return NULL
@@ -398,7 +509,7 @@ end
 --- Get all the vehicle's weapons
 -- @shared
 -- @treturn table Table of `Entity` classes
-function ENT:GetWeapons()
+function ENT:GetWeapons(name)
   self.Weapons = self.Weapons or {}
 
   -- Have we cached the weapons?
@@ -407,16 +518,29 @@ function ENT:GetWeapons()
   -- We must be missing some weapons then
 
   local weapons = {}
-  for _, child in ipairs(self:GetChildren()) do
-    if child:GetClass():lower() ~= "prop_physics" then continue end
-    if child:GetNW2String("SWVR.WeaponName", "NULL_") == "NULL_" then continue end
+  for _, group in pairs(self:GetWeaponGroups()) do
+    if not IsValid(group) then continue end
+    for _, child in ipairs(group:GetChildren()) do
+      -- if child:GetClass():lower() ~= "prop_physics" then continue end
+      -- if child:GetNW2String("SWVR.WeaponGroup") == "" then continue end
 
-    weapons[child:GetNW2String("SWVR.WeaponName", "")] = child
+      if name and string.lower(child:GetNW2String("SWVR.WeaponGroup")) ~= string.lower(name) then continue end
+
+      weapons[child:GetNW2String("SWVR.WeaponName")] = child
+    end
   end
 
   self.Weapons = weapons
 
   return self.Weapons or {}
+end
+
+function ENT:FireWeaponGroup(name)
+  if CLIENT then return end
+
+  for weapon in pairs(self:GetWeapons(name)) do
+    self:FireWeapon(weapon)
+  end
 end
 
 --- Fire one of the vehicle's weapons
@@ -610,6 +734,7 @@ local EVENTS = {
   "OnLand",
   "OnTakeoff",
   "OnCollide",
+  "OnShieldRecharge",
   "PrimaryAttack",
   "SecondaryAttack",
   "AlternateFire",

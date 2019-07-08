@@ -1,6 +1,6 @@
 project = 'SWVR'
-title = 'Star Wars Vehicles Redux'
-description = 'The rewrite of the popular Star Wars Vehicles Episode 1 base'
+title = 'Star Wars Vehicles'
+description = 'Star Wars Vehicles Redux'
 
 merge = true
 not_luadoc = true

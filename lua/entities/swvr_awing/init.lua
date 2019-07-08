@@ -6,20 +6,20 @@ include("shared.lua")
 function ENT:OnInitialize()
   self:SetupDefaults()
 
-  self:AddWeapon("FrontL", Vector(50, -91.88, 6.196))
-  self:AddWeapon("FrontR", Vector(50, 91.88, 6.196))
+  self:AddSeat("Pilot", Vector(-20), Angle(0, -90, 0))
+
+  self:AddWeapon("Primary", "FrontL", Vector(50, -91.88, 6.196))
+  self:AddWeapon("Primary", "FrontR", Vector(50, 91.88, 6.196))
 end
 
 function ENT:PrimaryAttack()
-  if self:GetNextPrimaryFire() > CurTime() then return end
+  if not self:CanPrimaryAttack() then return end
 
   self:SetNextPrimaryFire(CurTime() + 0.1)
 
   self:EmitSound( "AWING_FIRE1" )
 
-  for _, name in ipairs({"FrontL", "FrontR"}) do
-    self:FireWeapon(name)
-  end
+  self:FireWeaponGroup("Primary")
 end
 
 function ENT:SecondaryAttack()

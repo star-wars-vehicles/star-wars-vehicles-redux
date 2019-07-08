@@ -53,13 +53,6 @@ ENT.Settings = {
 
 ENT.Parts = {}
 
-ENT.Seats = {
-  ["Pilot"] = {
-    Pos = Vector(-20),
-    Ang = Angle(0, -90, 0)
-  }
-}
-
 ENT.Sounds = {
   Engine = "YWING_ENGINE"
 }

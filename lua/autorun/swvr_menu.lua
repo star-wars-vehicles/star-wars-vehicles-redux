@@ -109,6 +109,7 @@ else
 
   CreateClientConVar("swvr_shields_draw", "1", true, false, "Draw shield effects.")
   CreateClientConVar("swvr_engines_draw", "1", true, false, "Draw engine effects.")
+  CreateClientConVar("swvr_damage_draw", "1", true, false, "Draw damage effects.")
 
   CreateClientConVar("swvr_debug_statistics", "0", true, false, "Draw debug information.")
   CreateClientConVar("swvr_debug_visuals", "0", true, false, "Draw debug visuals.")
@@ -256,6 +257,7 @@ if CLIENT then
     swvr_engine_volume = "100",
     swvr_shields_draw = "1",
     swvr_engines_draw = "1",
+    swvr_damage_draw = "1",
     swvr_debug_statistics = "0",
     swvr_debug_visuals = "0",
     swvr_hud_color_r = "0",
@@ -285,8 +287,9 @@ if CLIENT then
 
     pnl:Help("Draw Settings")
 
-    pnl:CheckBox("Draw Shields", "swvr_shields_draw")
-    pnl:CheckBox("Draw Engines", "swvr_engines_draw")
+    pnl:CheckBox("Draw Shield Effects", "swvr_shields_draw")
+    pnl:CheckBox("Draw Engine Effects", "swvr_engines_draw")
+    pnl:CheckBox("Draw Damage Effects", "swvr_damage_draw")
 
     pnl:CheckBox("Draw Debug Statistics", "swvr_debug_statistics")
     pnl:CheckBox("Draw Debug Visuals", "swvr_debug_visuals")
