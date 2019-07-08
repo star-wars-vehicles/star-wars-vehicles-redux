@@ -19,7 +19,7 @@ install:
   - cd $TRAVIS_BUILD_DIR
 
 before_script:
-  - wget -O ldoc.css https://gist.githubusercontent.com/DoctorJew/018661e82c4fb724c48962d8667d27fa/raw/3d1e00522012f87ae8980d07c77a1bbd4cb3d85d/ldoc.css
+  - wget -O ldoc.css https://gist.githubusercontent.com/dhkatz/018661e82c4fb724c48962d8667d27fa/raw/3d1e00522012f87ae8980d07c77a1bbd4cb3d85d/ldoc.css
 
 script:
   - ldoc .
