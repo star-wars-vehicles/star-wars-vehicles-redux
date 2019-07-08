@@ -37,8 +37,13 @@ ENT.MaxShield = 0
 
 --- Shield regen per second.
 ENT.ShieldRegen = 20
+
 --- Time after a hit that the shield starts regenerating in seconds.
 ENT.ShieldRegenTime = 2
+
+--- Color of ship's shield
+-- @shared
+ENT.ShieldColor = Color(0, 160, 255)
 
 ENT.Mass = 2000
 ENT.Inertia = Vector(250000, 250000, 250000)

@@ -51,7 +51,7 @@ function EFFECT:Init(data)
     -- Draw our model with the Light material
     -- This is the underlying blue effect and it doubles as the DX7 only effect
     if col_frac > 0 then
-      render.SetColorModulation(col.x / 255, col.y / 255, col.z / 255)
+      render.SetColorModulation(col.x, col.y, col.z)
       render.MaterialOverride(mat_light)
         e:DrawModel()
       render.MaterialOverride(nil)

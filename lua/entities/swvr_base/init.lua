@@ -787,7 +787,7 @@ function ENT:ShieldDamage()
     return
   end
 
-  local col = Vector(255, 0, 0)
+  local col = IsColor(self.ShieldColor) and self.ShieldColor:ToVector() or (self.ShieldColor or Vector(0, 160 / 255, 1))
 
   self:SetNW2Vector("SWVR.ShieldColor", col)
 
