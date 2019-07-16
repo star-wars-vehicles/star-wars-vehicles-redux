@@ -16,6 +16,21 @@ ENT.Information = ""
 --- `Entity` category, used to assign to a faction
 ENT.Category = "Other"
 
+--[[ Vehicle Allegiance, which faction does your vehicle belong to - used for targeting
+
+List of Valid Allegiances:
+  "Galactic Republic"
+  "Rebel Alliance"
+  "Galactic Empire"
+  "Confederacy of Independent Systems"
+  "First Order"
+  "Neutral"
+  "Independent"
+  "In Development"
+]]
+
+ENT.Allegiance = "Independent"
+
 --- Vehicle class (fighter, bomber, etc.)
 ENT.Class = "Other"
 ENT.IsSWVRVehicle = true
