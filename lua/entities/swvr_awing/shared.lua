@@ -7,6 +7,7 @@ ENT.PrintName = "RZ-1 A-Wing"
 ENT.Author = "Doctor Jew"
 ENT.Information = ""
 ENT.Category = "Republic"
+ENT.Allegiance = "Galactic Republic"
 ENT.Class = "Fighter"
 
 ENT.Spawnable = false
