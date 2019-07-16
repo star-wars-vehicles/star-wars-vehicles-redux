@@ -82,7 +82,7 @@ properties.Add("repair", {
     if hook.Run("CanProperty", ply, "repair", ent) == false then return end
 
     ent:SetHealth(ent:GetMaxHealth())
-    ent:SetShieldHealth(ent:GetMaxShieldHealth())
+    ent:SetShield(ent:GetMaxShield())
   end
 })
 
