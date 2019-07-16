@@ -8,6 +8,10 @@ swvr.Allegiances = swvr.Allegiances or {}
 swvr.Sides = swvr.Sides or {}
 swvr.AllegianceMap = swvr.AllegianceMap or {}
 
+
+--- Retrieve all valid Allegiances
+-- @shared
+-- @treturn table Table of all valid registered Allegiances
 function swvr.GetAllegiances()
   return swvr.Allegiances
 end
